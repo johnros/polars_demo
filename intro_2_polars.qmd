@@ -1,0 +1,55 @@
+---
+title: "Intro 2 Polars"
+execute:
+  warning: true
+  error: true
+  keep-ipynb: true
+  cache: true
+jupyter: python3
+html:
+    code-tools: true
+---
+
+
+# Motivation
+
+## Speed
+
+### Of import
+
+### Of Join
+
+### Of Sort
+
+### Query Optimization
+
+
+## Memory Footprint
+
+## Profile Memory
+
+## From Disk to Disk
+
+
+
+
+
+# Basics
+
+
+
+
+
+## Import
+
+- From csv
+- From parquet
+- From multiple parquets
+- From Arrow DataSet
+
+Notice:
+1. String caching
+
+
+
+

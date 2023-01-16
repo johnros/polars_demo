@@ -1,0 +1,1391 @@
+---
+title: "Polars Cheat Sheet"
+execute:
+  warning: true
+  error: true
+  keep-ipynb: true
+  cache: true
+jupyter: python3
+html:
+    code-tools: true
+---
+
+
+```{python}
+# %pip install polars>=0.14.31
+import numpy as np
+import polars as pl
+import pandas as pd
+```
+
+
+# Motivation
+
+- Fast (if in-memory possible)
+- Lazy, with query optimization
+- Native dtypes (including strings!)
+- Missing values for all dtypes
+
+## Memory Footprint
+
+```{python}
+import string
+import random
+
+letters = pl.Series(list(string.ascii_letters))
+
+n = int(10e6)
+letter1 = letters.sample(n,with_replacement=True)
+letter1.estimated_size(unit='gb')
+letter2 = letter1.to_pandas()
+letter2.memory_usage(deep=True, index=False) / 1e9
+```
+
+```{python}
+%timeit -n 4 letter1.sort()
+```
+
+```{python}
+%timeit -n 4 letter2.sort_values()
+```
+
+
+
+## Performance
+
+
+### Query Planning
+
+Eager evaluation, without query planning:
+```{python}
+%timeit -n 4 letter1.sort().filter(letter1.is_in(['a','b','c']))
+```
+
+```{python}
+%timeit -n 4 letter1.filter(letter1.is_in(['a','b','c'])).sort()
+```
+
+Lazy evaluation with query planning. Note, almost no planning overhead. 
+```{python}
+%timeit -n 4 letter1.alias('letters').to_frame().lazy().sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect()
+```
+
+
+Pandas eager evaluation in the wrong order:
+ ```{python}
+%timeit -n 2 letter2.sort_values().loc[lambda x: x.isin(['a','b','c'])]
+```
+
+Pandas eager evaluation in the right order. 
+4X slower, than Polars lazy evaluation.
+```{python}
+%timeit -n 2 letter2.loc[lambda x: x.isin(['a','b','c'])].sort_values()
+```
+
+Pandas alternative syntax, just as slow. 
+```{python}
+%timeit -n 4 letter2.loc[letter2.isin(['a','b','c'])].sort_values()
+```
+
+### Describe plan:
+
+- describe_plan
+- show_graph
+- describe_optimized_plan
+
+
+
+### Joins
+TODO
+
+
+
+### Parallel Execution
+Sublinear scaling due to colum-parallelism
+(you can tell my laptop has 4 cores).
+
+```{python}
+n = int(1e7)
+A = pl.DataFrame(np.random.randn(n,1))
+%timeit A.sum()
+```
+    
+```{python}
+B = pl.DataFrame(np.random.randn(n,4))
+%timeit B.sum()
+```
+    
+```{python}
+C = pl.DataFrame(np.random.randn(n,20))
+%timeit C.sum()
+```
+
+
+
+
+# General Notes
+
+1. The above is mostly collecting the examples in the official documentation. 
+1. Two words will be separated by _: is_in, with_replacement, ...
+1. The printing of Series and Frames will differ from your Pandas habits.  
+
+
+
+
+#  Series
+Adapted from the API: https://pola-rs.github.io/polars/py-polars/html/reference/series/api/polars.Series.is_in.html
+
+
+```{python}
+s = pl.Series("a", [1, 2, 3])
+s
+```
+```{python}
+type(s)
+```
+```{python}
+f = pl.Series("a", [1., 2., 3.])
+f
+```
+```{python}
+s.dtype
+```
+```{python}
+f.dtype
+```
+
+
+## Aggregations
+
+```{python}
+s.sum()
+```
+```{python}
+s.min()
+```
+```{python}
+s.arg_min()
+```
+```{python}
+s.mean()
+```
+```{python}
+s.median()
+```
+
+
+## Math
+
+```{python}
+s.abs()
+```
+```{python}
+s.sin()
+```
+```{python}
+s.cummax()
+```
+```{python}
+s.cumsum()
+```
+```{python}
+s.cumprod()
+```
+```{python}
+s.diff()
+```
+```{python}
+s.entropy()
+# s.cumulative_eval() # experimental
+```
+```{python}
+s.dot(pl.Series("b", [1, 2, 3]))
+```
+```{python}
+s.ewm_mean(com=0.5)
+```
+```{python}
+s.exp()
+```
+```{python}
+s.hash()
+```
+```{python}
+s.log()
+```
+```{python}
+s.pct_change()
+```
+```{python}
+s.peak_max()
+```
+```{python}
+s.rolling_apply(pl.sum, window_size=2)
+```
+```{python}
+# s.rolling_apply(np.sum, window_size=2) # will not work
+```
+```{python}
+s.rolling_max(window_size=2)
+```
+```{python}
+s.sqrt()
+
+```
+```{python}
+f.round(2)
+```
+```{python}
+f.ceil()
+```
+```{python}
+f.floor()
+```
+```{python}
+# s.round(2) # will not work
+```
+```{python}
+# s.ceil() # will not work
+```
+```{python}
+s.cleared() # creates an empty series
+```
+```{python}
+s.clip(1, 2)
+```
+```{python}
+s.clip_max(2)
+```
+```{python}
+s.clip_min(1)
+```
+```{python}
+s.clone()
+```
+```{python}
+# check equality with clone
+s == s.clone()
+```
+
+
+
+## Descriptives
+
+```{python}
+s.dtype
+```
+```{python}
+s.chunk_lengths()
+```
+```{python}
+s.describe()
+```
+```{python}
+s.estimated_size(unit="b")
+```
+```{python}
+s.is_in(pl.Series([1, 10]))
+```
+```{python}
+s.value_counts()
+```
+```{python}
+```
+
+
+
+## Uniques
+
+```{python}
+s.is_duplicated()
+```
+```{python}
+s.is_unique()
+```
+```{python}
+pl.Series([1,2,3,4,1]).is_first()
+```
+```{python}
+s.n_unique()
+```
+```{python}
+pl.Series([1,2,3,4,1]).unique_counts()
+```
+
+
+
+
+## dtypes
+
+```{python}
+s.is_numeric()
+```
+```{python}
+s.is_float()
+```
+```{python}
+s.is_utf8()
+```
+```{python}
+s.is_boolean()
+```
+```{python}
+s.is_datelike()
+```
+
+### Optimizing dtypes
+
+
+```{python}
+s.shrink_dtype()
+```
+Also see [here](http://braaannigan.github.io/software/2022/10/31/polars-dtype-diet.html).
+
+```{python}
+s.shrink_to_fit() # what does this do?
+```
+
+
+
+
+
+## Missing
+
+```{python}
+pl.Series([1,2,None]).is_null()
+```
+```{python}
+pl.Series([1,2,None]).is_not_null()
+```
+```{python}
+# pl.Series([1,2,None]).is_nan() # Will not work for Int64
+```
+```{python}
+# pl.Series([1.,2.,None]).is_nan() # Will work for float64
+```
+```{python}
+s.null_count()
+```
+```{python}
+pl.Series([1,2,None]).drop_nulls()
+```
+```{python}
+pl.Series([1.,2.,None]).drop_nans()
+```
+```{python}
+pl.Series([1.,2.,np.nan]).drop_nans()
+```
+```{python}
+pl.Series([1.,2.,None]).fill_null(999)
+```
+```{python}
+pl.Series([1.,2.,None]).fill_nan(999)
+```
+```{python}
+pl.Series([1.,2.,np.nan]).fill_nan(999)
+```
+```{python}
+pl.Series([1.,None,2.]).interpolate()
+```
+
+
+
+## Export
+
+```{python}
+s.to_frame()
+```
+```{python}
+s.to_list()
+```
+```{python}
+s.to_numpy()
+```
+```{python}
+s.to_pandas()
+```
+```{python}
+s.to_arrow()
+```
+
+
+
+## Manipulation
+```{python}
+s.alias("b")
+```
+```{python}
+s.append(pl.Series("a", [4, 5, 6])) # in place!
+```
+```{python}
+s.arg_sort()
+```
+
+Casting is Polars' `.astype()`:
+```{python}
+s.cast(pl.Int32) # dtypes: see https://pola-rs.github.io/polars/py-polars/html/reference/datatypes.html
+```
+```{python}
+pl.Series("a", [[1, 2], [3, 4], [9, 10]]).explode()
+```
+```{python}
+s.extend_constant(666, n=2)
+# s.new_from_index()
+```
+```{python}
+s.rechunk()
+```
+```{python}
+s.rename("b", in_place=False) # has an in_place option. Unlike .alias()
+```
+```{python}
+pl.Series("a",[1,2,3,4]).reshape(dims = (2,2))
+```
+```{python}
+s.shift(1)
+```
+```{python}
+s.shift(-1)
+```
+```{python}
+s.shift_and_fill(1, 999)
+```
+```{python}
+s.to_dummies()
+```
+
+
+
+
+## Ordering and sorting 
+```{python}
+s = pl.Series("a", [2, 1, 3])
+s.reverse()
+```
+```{python}
+s.rank()
+```
+```{python}
+s.arg_sort() # the ranks that sort the series
+```
+```{python}
+s.sort() == s[s.arg_sort()]
+```
+```{python}
+s == s[s[s.arg_sort()].arg_sort()] # arg_sort() of arg_sort() returns the original
+```
+
+
+
+
+
+## Selecting 
+
+```{python}
+s.filter(pl.Series("a", [True, False, True]))
+```
+```{python}
+s[[True, False, True]] # works but not recommended
+```
+```{python}
+# s.loc[[True, False, True]] # Polars is not Pandas!
+```
+```{python}
+s.head(2)
+```
+```{python}
+s.limit(2)
+```
+```{python}
+# s.head(-1) # will not work
+```
+```{python}
+# s.limit(-1) # will not work
+```
+```{python}
+s.tail(2)
+```
+```{python}
+# s.tail(-1) # will not work
+```
+```{python}
+s.sample(2, with_replacement=False)
+```
+```{python}
+s.shuffle(seed=1)
+```
+```{python}
+s.slice(1, 2) # Usecase unclear to me
+```
+```{python}
+s.take([0, 2]) # same as .iloc
+```
+```{python}
+s.take_every(2)
+```
+
+
+
+## Booleans
+
+```{python}
+s = pl.Series("a", [True, True, False])
+s.dtype
+```
+```{python}
+s.all()
+```
+```{python}
+s.any()
+```
+
+
+
+## Apply
+
+Applying your own function:
+```{python}
+s.apply(lambda x: x + 1)
+```
+
+Comes with a perforance cost
+
+```{python}
+s1 = pl.Series(np.random.randn(int(1e5)))
+%timeit s1+1
+%timeit s1.apply(lambda x: x + 1)
+(s1+1 == s1.apply(lambda x: x + 1)).all()
+```
+
+## Comparison 
+```{python}
+s.series_equal(pl.Series("a", [1, 2, 3]))
+```
+
+
+
+## Strings 
+Like Pandas, accessed with the `.str` attribute.
+
+```{python}
+pl.Series([1, None, 2]).str.concat("-")
+```
+
+```{python}
+s = pl.Series(["Crab", "cat and dog", "rab$bit", None])
+s.str.contains("cat|bit")
+```
+
+```{python}
+s = pl.Series("foo", ["123 bla 45 asd", "xyz 678 910t"])
+s.str.count_match(r"\d") # regexp for digits
+```
+
+
+```{python}
+s = pl.Series("fruits", ["apple", "mango", None])
+s.str.ends_with("go")
+```
+
+```{python}
+s.str.starts_with("ap")
+```
+
+
+```{python}
+s = pl.Series("a", [
+            "http://vote.com/ballon_dor?candidate=messi&ref=polars",
+            "http://vote.com/ballon_dor?candidat=jorginho&ref=polars",
+            "http://vote.com/ballon_dor?candidate=ronaldo&ref=polars"
+            ])
+s.str.extract(r"candidate=(\w+)", 1)
+```
+
+```{python}
+s = pl.Series("foo", ["123 bla 45 asd", "xyz 678 910t"])
+s.str.extract_all(r"(\d+)")
+```
+
+```{python}
+s.str.extract(r"(\d+)",2) #will only exctract the first appearance of the pattern in the string
+```
+
+```{python}
+s = pl.Series(["Café", None, "345", "東京"])
+s.str.lengths() # gets number of bytes
+```
+
+```{python}
+s.str.n_chars() # gets number of chars. In ASCII this is the same as lengths()
+```
+
+
+```{python}
+s = pl.Series("a", ["cow", "monkey", None, "hippopotamus"])
+s.str.ljust(8, "*")
+```
+
+```{python}
+s.str.ljust(14, "*")
+```
+
+```{python}
+s.str.rjust(8, "*")
+```
+
+
+```{python}
+s.str.lstrip('c')
+```
+
+```{python}
+# s.str.lstrip('co') # will not work
+```
+
+```{python}
+s.str.rstrip('w')
+
+```
+
+
+```{python}
+s = pl.Series(["123aabc", "aabc456"])
+s.str.replace(r"abc\b", "ABC")  
+```
+
+```{python}
+s.str.replace_all("a", "-")
+```
+
+```{python}
+s.str.split(by="a")
+```
+
+```{python}
+s.str.split(by="a", inclusive=True)
+```
+
+
+```{python}
+s = pl.Series("x", ["a_1", None, "c", "d_4"])
+s.str.split_exact("_", 1)
+```
+
+```{python}
+s.str.splitn("_", 1)
+```
+
+```{python}
+s.str.splitn("_", 6)
+```
+
+
+```{python}
+pl.Series(['      ohhh     ']).str.strip()[0]
+```
+
+
+```{python}
+s = pl.Series(
+    "date",
+    [
+        "2021-04-22",
+        "2022-01-04 00:00:00",
+        "01/31/22",
+        "Sun Jul  8 00:34:60 2001",
+    ],
+)
+s.str.strptime(pl.Date, "%F", strict=False)
+```
+
+```{python}
+s.str.strptime(pl.Date, "%F %T",strict=False)
+```
+
+```{python}
+s.str.strptime(pl.Date, "%D", strict=False)
+```
+
+```{python}
+s = pl.Series("a", ["cow", "MONKEY", None, "hippopotamus"])
+s.str.to_uppercase()
+```
+
+```{python}
+s.str.to_lowercase()
+```
+
+```{python}
+s = pl.Series("a", ["1", "22", "333", None])
+s.str.zfill(5)
+```
+
+
+
+## Temporal (Pandas datetime)
+
+dtypes:
+- datetime
+- duration
+
+Cast underpying time representation
+```{python}
+from datetime import datetime, timedelta
+start = datetime(2001, 1, 1)
+stop = datetime(2001, 3, 3)
+date = pl.date_range(start, stop, interval=timedelta(days=20))
+date
+```
+
+```{python}
+date.dtype
+```
+
+```{python}
+date.dt.cast_time_unit(tu="ms")
+```
+
+Select cols along time_unit and convert
+```{python}
+# df.with_column(
+#     pl.col(pl.Datetime("ns")).dt.cast_time_unit(tu="ms")
+# )            
+```
+
+
+
+
+### Exctractions
+```{python}
+date.dt.second()
+```
+
+```{python}
+date.dt.minute()
+```
+
+```{python}
+date.dt.hour()
+```
+
+```{python}
+date.dt.day()
+```
+
+
+```{python}
+date.dt.week()
+```
+
+```{python}
+date.dt.weekday()
+```
+
+```{python}
+date.dt.month()
+```
+
+```{python}
+date.dt.year()
+```
+
+```{python}
+date.dt.ordinal_day() # day in year
+```
+
+```{python}
+date.dt.quarter()
+```
+
+
+
+### Durations (Pandas period)
+```{python}
+diffs = date.diff()
+diffs.dtype
+```
+
+```{python}
+diffs.dt.seconds()
+```
+
+```{python}
+diffs.dt.minutes()
+```
+
+```{python}
+diffs.dt.days()
+```
+
+```{python}
+diffs.dt.hours()
+```
+
+```{python}
+# diffs.dt.weeks() # not implemented yet
+```
+
+### Date Arithmetic
+```{python}
+date.dt.max()
+```
+
+```{python}
+date.dt.mean()
+```
+
+```{python}
+date.dt.min()
+```
+
+```{python}
+date.dt.median()
+```
+
+```{python}
+date.dt.offset_by(by="1y2m20d")
+```
+
+```{python}
+date.dt.offset_by(by="-1y2m20d")
+```
+
+```{python}
+date.dt.round("1y")
+```
+
+```{python}
+date2 = date.dt.truncate("30d") # round to period
+pd.crosstab(date,date2)
+```
+
+
+### Date strings
+
+```{python}
+date.dt.strftime("%Y-%m-%d")
+```
+
+
+# Dataframe
+
+General:
+1. Will not accept duplicat column names. 
+1. There is no row index (like data.frame, data.table, and tibble in R; unlike Pandas). 
+
+
+Constructing from dict:
+```{python}
+data = {"a": [1, 2], "b": [3, 4]}
+df = pl.DataFrame(data)
+df
+```
+
+## Object Descriptives
+
+- columns
+- dtypes
+- height (n_rows)
+- width (n_cols)
+- shape
+- schema
+- describe
+- estimated_size
+- is_duplicated
+- is_empty
+- is_unique
+- n_chunks
+- n_unique
+- null_count
+
+```{python}
+df.n_chunks() # number of ChunkedArrays in the dataframe
+```
+
+```{python}
+df.schema
+```
+
+
+
+## Statistical Aggregations 
+
+As you would expect:
+
+- max
+- min
+- mean
+- median
+- sum
+- std
+- var
+- quantile
+
+
+## Select and Manipulate
+
+update using 
+https://www.rhosignal.com/posts/polars-pandas-cheatsheet/
+
+```{python}
+df.cleared() # make empty copy
+```
+
+```{python}
+df.clone() # deep copy
+```
+
+```{python}
+df.drop("a")
+```
+
+```{python}
+# df.drop_in_place("a") # will work
+```
+
+`.hstack()` is like pandas pd.concat() or R's cbind.
+```{python}
+df.hstack([pl.Series("c", np.repeat(1, df.height))])
+```
+
+
+```{python}
+def cast_str_to_int(data, col_name):
+    return data.with_column(pl.col(col_name).cast(pl.Int64))
+
+df = pl.DataFrame({"a": [1, 2, 3, 4], "b": ["10", "20", "30", "40"]})
+df.pipe(cast_str_to_int, col_name="b")
+```
+
+
+
+
+
+### Select (columns) 
+
+```{python}
+df = pl.DataFrame(
+    {
+        "foo": ["one", "two", "two", "one", "three"], 
+        "bar": [5, 3, 2, 4, 1]
+        }
+)
+```
+
+
+```{python}
+df["foo"]
+```
+```{python}
+df[["foo","bar"]]
+```
+```{python}
+df.get_column("foo")
+```
+```{python}
+df.get_column(["foo",'bar'])
+```
+```{python}
+df.get_columns() # get a list of series
+```
+
+
+```{python}
+df.rename({"foo": "wow"}) # rename columns
+```
+
+
+```{python}
+df.replace("foo", pl.Series([10,20,30,40,50])) # replaces a column
+```
+
+Select all columns:
+```{python}
+df.select(pl.all().n_unique())
+```
+
+
+### Filter (rows)
+
+```{python}
+df.head(2)
+```
+
+```{python}
+df.limit(2)
+```
+
+```{python}
+df.row(0) # get single(!) row as tuple
+```
+
+```{python}
+df.row(by_predicate=(pl.col("foo")==50)) # predicate needs to return single row
+```
+
+
+
+
+```{python}
+df.filter(pl.col("foo") > 20)
+# df.filter("a > 1") # .filter is not a .query()!
+```
+
+
+Compounding conditions using "&", "|", and "~":
+```{python}
+df = pl.DataFrame(
+    {
+        "foo": [1, 2, 3],
+        "bar": [6, 7, 8],
+        "ham": ["a", "b", "c"],
+    }
+)
+df.filter(
+    (pl.col("foo") < 3) & 
+    (pl.col("ham") == "a")
+    )
+```
+
+### Compute with columns
+
+Change in place:
+```{python}
+df.with_column(
+    pl.col('foo') * 2
+    )
+```
+
+Create new column
+```{python}
+df.with_column(
+    (pl.col('foo') * 2).alias("foo2")
+    )
+```
+
+
+Multiple Operations
+```{python}
+df.with_columns([
+    (pl.col('foo') * 2).alias("foo2"),
+    # pl.col('foo2') * 10, # will not work
+    pl.col('bar') * 3
+    ])
+```
+
+```{python}
+df.with_columns([
+    (pl.col('foo') * 2).alias("foo2"),
+    pl.col('bar') * 3
+    ]).with_column(
+            pl.col('foo2') * 10, 
+    )
+```
+
+
+Things to note:
+- Use `with_column` for a single operation.
+- Use `with_columns` for multiple operations.
+- `with_columns` evaluates with respect to the *original* columns. 
+- `with_columns` can be chained.
+
+
+
+Multiple operations in the same with_columns([]) call:
+(caution: will use original frame, not updates columns!)
+
+
+## Conditionals
+
+
+```{python}
+repeat_sales3 = repeat_sales3.with_columns([
+  pl.when(pl.col(pl.Utf8).str.lengths() ==0)
+    .then(None)
+    .otherwise(pl.col(pl.Utf8))
+    .keep_name()
+  ])
+```
+
+
+## Missing
+
+Methods:
+- drop_nulls
+- fill_nulls
+- fill_nan (for np.nan only)
+- interpolate
+
+
+
+
+## Joins
+
+How:
+- inner
+- outer
+- left
+- outer
+- semi
+- anti
+- cross
+
+```{python}
+other_df = pl.DataFrame(
+    {
+        "apple": ["x", "y", "z"],
+        "ham": ["a", "b", "d"],
+    }
+)
+df.join(other_df, on="ham", how="inner")
+```
+
+
+```{python}
+from datetime import datetime
+gdp = pl.DataFrame(
+    {
+        "date": [
+            datetime(2016, 1, 1),
+            datetime(2017, 1, 1),
+            datetime(2018, 1, 1),
+            datetime(2019, 1, 1),
+        ],  # note record date: Jan 1st (sorted!)
+        "gdp": [4164, 4411, 4566, 4696],
+    }
+)
+population = pl.DataFrame(
+    {
+        "date": [
+            datetime(2016, 5, 12),
+            datetime(2017, 5, 12),
+            datetime(2018, 5, 12),
+            datetime(2019, 5, 12),
+        ],  # note record date: May 12th (sorted!)
+        "population": [82.19, 82.66, 83.12, 83.52],
+    }
+)
+population.join_asof(
+    gdp, left_on="date", right_on="date", strategy="backward"
+)
+```
+
+
+## Reshape
+
+```{python}
+df = pl.DataFrame(
+    {
+        "a": ["x", "y", "z"],
+        "b": [1, 3, 5],
+        "c": [2, 4, 6],
+    }
+)
+df
+```
+    
+```{python}
+df.melt(
+    id_vars="a", 
+    value_vars=["b", "c"], 
+    value_name="values", 
+    variable_name='group')
+```
+
+```{python}
+df = pl.DataFrame(
+    {
+        "foo": ["one", "one", "one", "two", "two", "two"],
+        "bar": ["A", "B", "C", "A", "B", "C"],
+        "baz": [1, 2, 3, 4, 5, 6],
+    }
+)
+df.pivot(
+    values="baz", 
+    index="foo", 
+    columns="bar")
+```
+
+
+
+
+
+
+## Computations
+
+- fold
+- hash_rows
+
+## Object Maitainance
+
+- rechunk(): will ensure contigous representation in memory. 
+
+
+## Export
+
+```{python}
+df.to_arrow()
+```
+
+```{python}
+df.to_dict() # dict of lists
+```
+
+```{python}
+df.to_dicts() # list of dicts
+```
+
+```{python}
+df.to_numpy()
+```
+
+```{python}
+df.to_pandas()
+```
+
+```{python}
+df.to_struct('a') # to a series of type struct
+```
+
+
+
+## Groupby
+
+```{python}
+df = pl.DataFrame(
+    {"foo": ["one", "two", "two", "one", "two"], "bar": [5, 3, 2, 4, 1]}
+)
+
+df_groups = df.groupby("foo", maintain_order=True)
+```
+
+
+### Loop over groups:
+```{python}
+for df in df_groups:
+    print(df)
+```
+
+### Aggregate
+```{python}
+df_groups.agg(
+    [
+        pl.sum("bar").suffix("_sum"),
+        pl.col("bar").sort().tail(2).sum().suffix("_tail_sum"),
+    ]
+)
+```
+
+
+```{python}
+df.groupby("foo").agg_list()
+```
+
+### Apply
+```{python}
+#TODO:fix
+# df.groupby("foo").apply(lambda group_df: group_df.get_column("bar").sum())
+```
+
+### Partition
+
+```{python}
+df = pl.DataFrame(
+    {
+        "foo": ["A", "A", "B", "B", "C"],
+        "N": [1, 2, 2, 4, 2],
+        "bar": ["k", "l", "m", "m", "l"],
+    }
+)
+df_partitions = df.partition_by(groups="foo", maintain_order=True)
+df_partitions
+```
+
+
+### Difference between `groupby` and `partition_by`:
+
+```{python}
+df_groups =  df.groupby(by="foo", maintain_order=True)
+
+type(df_partitions)
+type(df_groups)
+```
+
+
+Groups is an iterator, partitions is a list:
+```{python}
+# df_groups[0] # will now work
+df_partitions[0]
+df_partitions[0] 
+list(df_groups)[0]
+list(df_groups)[0]
+list(df_groups)[0]
+```
+
+
+
+
+
+
+- `groupby` is a lazy operation that returns a `GroupBy` object.
+- `partition_by` is a lazy operation that returns a `PartitionBy` object.
+- `groupby` is a relational operation that groups rows by a column.
+- `partition_by` is a relational operation that groups rows by a column, but also maintains the order of the rows within each group.
+
+
+
+### Groupby Dynamic for Time Series
+
+http://braaannigan.github.io/software/2022/09/12/polars-groupby_dynamic.html
+
+
+
+### Groupby Rolling
+TODO
+
+
+
+### Learning from one DF and Applying in Another 
+
+http://braaannigan.github.io/software/2022/11/08/polars-with-context.html
+
+
+
+
+## Ordering
+
+- reverse
+
+
+# Query Profiling
+
+http://braaannigan.github.io/software/2022/11/10/polars-query-profiling.html
+
+
+
+# I/O
+
+## Reading from File
+
+## Reading from multiple files
+
+### Parquet
+
+using read_parquet
+using scan_parquet
+using pl.concat[]
+
+
+
+## Reading from Database
+http://braaannigan.github.io/software/2022/09/05/polars-database.html
+
+# Plotting
+
+http://braaannigan.github.io/software/2022/11/03/polars-matplotlib.html
+
+
+# Polars and ML
+
+http://braaannigan.github.io/software/2022/10/11/polars-arrow-xgboost.html
+
