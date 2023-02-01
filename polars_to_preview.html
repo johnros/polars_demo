@@ -178,14 +178,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="bu">int</span>(<span class="fl">10e6</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>letter1 <span class="op">=</span> letters.sample(n,with_replacement<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>letter1.estimated_size(unit<span class="op">=</span><span class="st">'gb'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="2">
+<div class="cell-output cell-output-display" data-execution_count="20">
 <pre><code>0.08381903916597366</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>letter1_pandas <span class="op">=</span> letter1.to_pandas() </span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>letter1_pandas.memory_usage(deep<span class="op">=</span><span class="va">True</span>, index<span class="op">=</span><span class="va">False</span>) <span class="op">/</span> <span class="fl">1e9</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="3">
+<div class="cell-output cell-output-display" data-execution_count="21">
 <pre><code>0.58</code></pre>
 </div>
 </div>
@@ -196,29 +196,33 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>You are probably storing your data to compute with it. Let’s compare the memory footprint of computations.</p>
 <div class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>load_ext memory_profiler</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>The memory_profiler extension is already loaded. To reload it, use:
+  %reload_ext memory_profiler</code></pre>
+</div>
 </div>
 <div class="cell" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1.sort()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1.sort()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 535.46 MiB, increment: 206.49 MiB</code></pre>
+<pre><code>peak memory: 837.88 MiB, increment: 208.45 MiB</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="6">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1_pandas.sort_values()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1_pandas.sort_values()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 691.25 MiB, increment: 361.85 MiB</code></pre>
+<pre><code>peak memory: 1026.31 MiB, increment: 396.52 MiB</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="7">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1[<span class="dv">10</span>]<span class="op">=</span><span class="st">'a'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1[<span class="dv">10</span>]<span class="op">=</span><span class="st">'a'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 460.14 MiB, increment: 44.50 MiB</code></pre>
+<pre><code>peak memory: 761.43 MiB, increment: 38.53 MiB</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="8">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1_pandas[<span class="dv">10</span>]<span class="op">=</span><span class="st">'a'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1_pandas[<span class="dv">10</span>]<span class="op">=</span><span class="st">'a'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 416.77 MiB, increment: 0.00 MiB</code></pre>
+<pre><code>peak memory: 722.92 MiB, increment: 0.00 MiB</code></pre>
 </div>
 </div>
 <p>Things to notice:</p>
@@ -238,23 +242,23 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Consider a sort opperation that follows a filter operation. Ideally, filter precededs the sort, but we did not ensure this… We now demonstarte that polars’ query planner will do it for you. En passant, we see polars is more efficient also without the query planner.</p>
 <p>Polars’ Eager evaluation, without query planning. Sort then filter.</p>
 <div class="cell" data-execution_count="9">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.sort().<span class="bu">filter</span>(letter1.is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.sort().<span class="bu">filter</span>(letter1.is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>875 ms ± 49.4 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>686 ms ± 18.9 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Polars’ Eager evaluation, without query planning. Filter then sort.</p>
 <div class="cell" data-execution_count="10">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.<span class="bu">filter</span>(letter1.is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])).sort()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.<span class="bu">filter</span>(letter1.is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])).sort()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>228 ms ± 5.3 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>226 ms ± 14.2 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Polars’ Lazy evaluation with query planning. Recieves sort then filter; executes filter then sort.</p>
 <div class="cell" data-execution_count="11">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.alias(<span class="st">'letters'</span>).to_frame().lazy().sort(by<span class="op">=</span><span class="st">'letters'</span>).<span class="bu">filter</span>(pl.col(<span class="st">'letters'</span>).is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])).collect()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.alias(<span class="st">'letters'</span>).to_frame().lazy().sort(by<span class="op">=</span><span class="st">'letters'</span>).<span class="bu">filter</span>(pl.col(<span class="st">'letters'</span>).is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])).collect()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>206 ms ± 5.14 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>199 ms ± 533 µs per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Pandas’ eager evaluation in the wrong order: Sort then filter.</p>
@@ -267,14 +271,14 @@ Pandas eager evaluation in the right order: Filter then sort.
 ``` {.python .cell-code}
 %timeit -n 2 letter1_pandas.loc[lambda x: x.isin(['a','b','c'])].sort_values()</code></pre>
 <div class="cell-output cell-output-stdout">
-<pre><code>771 ms ± 18.6 ms per loop (mean ± std. dev. of 7 runs, 2 loops each)</code></pre>
+<pre><code>742 ms ± 57.1 ms per loop (mean ± std. dev. of 7 runs, 2 loops each)</code></pre>
 </div>
 <p>:::</p>
 <p>Pandas alternative syntax, just as slow.</p>
 <div class="cell" data-execution_count="13">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1_pandas.loc[letter1_pandas.isin([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])].sort_values()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1_pandas.loc[letter1_pandas.isin([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])].sort_values()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>814 ms ± 35.3 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>767 ms ± 75.4 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Things to note:</p>
@@ -287,43 +291,43 @@ Pandas eager evaluation in the right order: Filter then sort.
 <h2 class="anchored" data-anchor-id="parallelism">Parallelism</h2>
 <p>Polars seamlessly parallelizes over columns (also within, when possible). As the number of columns in the data grows, we would expect fixed runtime until all cores are used, and then linear scaling. The following code demonstrates this idea, using a simple sum-within-column.</p>
 <div class="cell" data-execution_count="14">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scaling_of_sums(n_rows, n_cols):</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_cols = 2</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_rows = int(1e6)</span></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  A <span class="op">=</span> {}</span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  A_numpy <span class="op">=</span> np.random.randn(n_rows,n_cols)</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  A[<span class="st">'numpy'</span>] <span class="op">=</span> A_numpy.copy()</span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>  A[<span class="st">'polars'</span>] <span class="op">=</span> pl.DataFrame(A_numpy)</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>  A[<span class="st">'pandas'</span>] <span class="op">=</span> pd.DataFrame(A_numpy)</span>
-<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>  times <span class="op">=</span> {}</span>
-<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> key,value <span class="kw">in</span> A.items():</span>
-<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    start <span class="op">=</span> time.time()</span>
-<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>    value.<span class="bu">sum</span>()</span>
-<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>    end <span class="op">=</span> time.time()</span>
-<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>    times[key] <span class="op">=</span> end<span class="op">-</span>start</span>
-<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span>(times)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scaling_of_sums(n_rows, n_cols):</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_cols = 2</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_rows = int(1e6)</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  A <span class="op">=</span> {}</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  A_numpy <span class="op">=</span> np.random.randn(n_rows,n_cols)</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  A[<span class="st">'numpy'</span>] <span class="op">=</span> A_numpy.copy()</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  A[<span class="st">'polars'</span>] <span class="op">=</span> pl.DataFrame(A_numpy)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>  A[<span class="st">'pandas'</span>] <span class="op">=</span> pd.DataFrame(A_numpy)</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>  times <span class="op">=</span> {}</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> key,value <span class="kw">in</span> A.items():</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>    start <span class="op">=</span> time.time()</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>    value.<span class="bu">sum</span>()</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>    end <span class="op">=</span> time.time()</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>    times[key] <span class="op">=</span> end<span class="op">-</span>start</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span>(times)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell" data-execution_count="15">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>scaling_of_time <span class="op">=</span> {</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  p:scaling_of_sums(n_rows<span class="op">=</span> <span class="bu">int</span>(<span class="fl">1e6</span>),n_cols <span class="op">=</span> p) <span class="cf">for</span> p <span class="kw">in</span> np.arange(<span class="dv">1</span>,<span class="dv">16</span>)}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>scaling_of_time <span class="op">=</span> {</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  p:scaling_of_sums(n_rows<span class="op">=</span> <span class="bu">int</span>(<span class="fl">1e6</span>),n_cols <span class="op">=</span> p) <span class="cf">for</span> p <span class="kw">in</span> np.arange(<span class="dv">1</span>,<span class="dv">16</span>)}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell" data-execution_count="16">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> pd.DataFrame(scaling_of_time).T</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>px.line(</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  data, </span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  labels<span class="op">=</span><span class="bu">dict</span>(</span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    index<span class="op">=</span><span class="st">"Number of Columns"</span>, </span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="st">"Runtime"</span>)</span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> pd.DataFrame(scaling_of_time).T</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>px.line(</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  data, </span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  labels<span class="op">=</span><span class="bu">dict</span>(</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    index<span class="op">=</span><span class="st">"Number of Columns"</span>, </span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    value<span class="op">=</span><span class="st">"Runtime"</span>)</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 
-<div>                            <div id="b332a31b-2708-4f8f-b8fc-a61204703403" class="plotly-graph-div" style="height:525px; width:100%;"></div>            <script type="text/javascript">                require(["plotly"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("b332a31b-2708-4f8f-b8fc-a61204703403")) {                    Plotly.newPlot(                        "b332a31b-2708-4f8f-b8fc-a61204703403",                        [{"hovertemplate":"variable=numpy<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"numpy","line":{"color":"#636efa","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"numpy","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0006237030029296875,0.0011012554168701172,0.0014824867248535156,0.0019943714141845703,0.002911090850830078,0.004269599914550781,0.0052928924560546875,0.004271507263183594,0.005663633346557617,0.0060350894927978516,0.008040666580200195,0.00841665267944336,0.00917816162109375,0.008280515670776367,0.009933710098266602],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=polars<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"polars","line":{"color":"#EF553B","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"polars","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0006608963012695312,0.0009572505950927734,0.0011601448059082031,0.0013704299926757812,0.0018684864044189453,0.002424001693725586,0.0027036666870117188,0.002741575241088867,0.0034279823303222656,0.003668546676635742,0.0041086673736572266,0.004563093185424805,0.005012035369873047,0.005663633346557617,0.00527501106262207],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=pandas<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"pandas","line":{"color":"#00cc96","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"pandas","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0043392181396484375,0.03877878189086914,0.0446012020111084,0.041783809661865234,0.05655336380004883,0.06229424476623535,0.05997824668884277,0.060915470123291016,0.06517672538757324,0.07246923446655273,0.08344244956970215,0.07593441009521484,0.08331799507141113,0.08279132843017578,0.08530473709106445],"yaxis":"y","type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmapgl":[{"type":"heatmapgl","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Number of Columns"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Runtime"}},"legend":{"title":{"text":"variable"},"tracegroupgap":0},"margin":{"t":60}},                        {"responsive": true}                    ).then(function(){
+<div>                            <div id="a8b8cf12-fc92-4293-a6fb-c88c10e05bb5" class="plotly-graph-div" style="height:525px; width:100%;"></div>            <script type="text/javascript">                require(["plotly"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("a8b8cf12-fc92-4293-a6fb-c88c10e05bb5")) {                    Plotly.newPlot(                        "a8b8cf12-fc92-4293-a6fb-c88c10e05bb5",                        [{"hovertemplate":"variable=numpy<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"numpy","line":{"color":"#636efa","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"numpy","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0005695819854736328,0.0011432170867919922,0.0015916824340820312,0.0024628639221191406,0.002561807632446289,0.003381490707397461,0.0046176910400390625,0.004529237747192383,0.0065097808837890625,0.007390737533569336,0.006180524826049805,0.00868988037109375,0.008254528045654297,0.009702682495117188,0.009364128112792969],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=polars<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"polars","line":{"color":"#EF553B","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"polars","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0004858970642089844,0.0007882118225097656,0.0010752677917480469,0.0015666484832763672,0.0017557144165039062,0.002329587936401367,0.002438068389892578,0.0025103092193603516,0.003144502639770508,0.003242969512939453,0.0037338733673095703,0.005118608474731445,0.0042994022369384766,0.005698442459106445,0.004862070083618164],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=pandas<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"pandas","line":{"color":"#00cc96","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"pandas","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0022783279418945312,0.03766798973083496,0.04810786247253418,0.06409811973571777,0.05880284309387207,0.06419992446899414,0.06368589401245117,0.0599827766418457,0.06914186477661133,0.07371687889099121,0.06878972053527832,0.07311344146728516,0.07491087913513184,0.0807960033416748,0.08222723007202148],"yaxis":"y","type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmapgl":[{"type":"heatmapgl","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Number of Columns"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Runtime"}},"legend":{"title":{"text":"variable"},"tracegroupgap":0},"margin":{"t":60}},                        {"responsive": true}                    ).then(function(){
                             
-var gd = document.getElementById('b332a31b-2708-4f8f-b8fc-a61204703403');
+var gd = document.getElementById('a8b8cf12-fc92-4293-a6fb-c88c10e05bb5');
 var x = new MutationObserver(function (mutations, observer) {{
         var display = window.getComputedStyle(gd).display;
         if (!display || display === 'none') {{
@@ -361,41 +365,41 @@ if (outputEl) {{
 <p>We now make synthetic data, save it as csv or parquet, and reimport it with polars and pandas.</p>
 <p>Starting with CSV:</p>
 <div class="cell" data-execution_count="17">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>n_rows <span class="op">=</span> <span class="bu">int</span>(<span class="fl">1e5</span>)</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>n_cols <span class="op">=</span> <span class="dv">10</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> np.random.randn(n_rows,n_cols)</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>data.tofile(<span class="st">'data.csv'</span>, sep <span class="op">=</span> <span class="st">','</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>n_rows <span class="op">=</span> <span class="bu">int</span>(<span class="fl">1e5</span>)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>n_cols <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> np.random.randn(n_rows,n_cols)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>data.tofile(<span class="st">'data/data.csv'</span>, sep <span class="op">=</span> <span class="st">','</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Import with pandas.</p>
 <div class="cell" data-execution_count="18">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_pandas <span class="op">=</span> pd.read_csv(<span class="st">'data.csv'</span>, header <span class="op">=</span> <span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_pandas <span class="op">=</span> pd.read_csv(<span class="st">'data/data.csv'</span>, header <span class="op">=</span> <span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>20.8 s ± 259 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>20.5 s ± 78.8 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Import with polars.</p>
 <div class="cell" data-execution_count="19">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_polars <span class="op">=</span> pl.read_csv(<span class="st">'data.csv'</span>, has_header <span class="op">=</span> <span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_polars <span class="op">=</span> pl.read_csv(<span class="st">'data/data.csv'</span>, has_header <span class="op">=</span> <span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>3.19 s ± 303 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>3.01 s ± 164 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Moving to parquet:</p>
 <div class="cell" data-execution_count="20">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>data_pandas <span class="op">=</span> pd.DataFrame(data)</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>data_pandas.columns <span class="op">=</span> data_pandas.columns.astype(<span class="bu">str</span>)</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>data_pandas.to_parquet(<span class="st">'data.parquet'</span>, index <span class="op">=</span> <span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>data_pandas <span class="op">=</span> pd.DataFrame(data)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>data_pandas.columns <span class="op">=</span> data_pandas.columns.astype(<span class="bu">str</span>)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>data_pandas.to_parquet(<span class="st">'data/data.parquet'</span>, index <span class="op">=</span> <span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell" data-execution_count="21">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_pandas <span class="op">=</span> pd.read_parquet(<span class="st">'data.parquet'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_pandas <span class="op">=</span> pd.read_parquet(<span class="st">'data/data.parquet'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>22.9 ms ± 10.8 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>19 ms ± 6.6 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="22">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_polars <span class="op">=</span> pl.read_parquet(<span class="st">'data.parquet'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_polars <span class="op">=</span> pl.read_parquet(<span class="st">'data/data.parquet'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>13 ms ± 3.91 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>9.15 ms ± 1.14 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Things to note:</p>
@@ -410,43 +414,57 @@ if (outputEl) {{
 <p>Because pandas is built on numpy, people see it as both an in-memory database, and a matrix/array library. With polars, it is quite clear it is an in-memory database, and not an array processing library. As such, you cannot multiply two polars dataframes, but you can certainly join then efficiently.</p>
 <p>Make some data:</p>
 <div class="cell" data-execution_count="23">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_data(n_rows, n_cols):</span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  data <span class="op">=</span> np.concatenate(</span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  (</span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>    np.arange(n_rows)[:,np.newaxis], <span class="co"># index</span></span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>    np.random.randn(n_rows,n_cols), <span class="co"># values</span></span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>    axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> data</span>
-<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>n_rows <span class="op">=</span> <span class="bu">int</span>(<span class="fl">1e6</span>)</span>
-<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>n_cols <span class="op">=</span> <span class="dv">10</span></span>
-<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>data_left <span class="op">=</span> make_data(n_rows, n_cols)</span>
-<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a>data_right <span class="op">=</span> make_data(n_rows, n_cols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_data(n_rows, n_cols):</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  data <span class="op">=</span> np.concatenate(</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  (</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    np.arange(n_rows)[:,np.newaxis], <span class="co"># index</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>    np.random.randn(n_rows,n_cols), <span class="co"># values</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>    axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> data</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>n_rows <span class="op">=</span> <span class="bu">int</span>(<span class="fl">1e6</span>)</span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>n_cols <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>data_left <span class="op">=</span> make_data(n_rows, n_cols)</span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>data_right <span class="op">=</span> make_data(n_rows, n_cols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Polars join:</p>
 <div class="cell" data-execution_count="24">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>data_left_polars <span class="op">=</span> pl.DataFrame(data_left)</span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>data_right_polars <span class="op">=</span> pl.DataFrame(data_right)</span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 polars_joined <span class="op">=</span> data_left_polars.join(data_right_polars, on <span class="op">=</span> <span class="st">'column_0'</span>, how <span class="op">=</span> <span class="st">'inner'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>data_left_polars <span class="op">=</span> pl.DataFrame(data_left)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>data_right_polars <span class="op">=</span> pl.DataFrame(data_right)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 polars_joined <span class="op">=</span> data_left_polars.join(data_right_polars, on <span class="op">=</span> <span class="st">'column_0'</span>, how <span class="op">=</span> <span class="st">'inner'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>301 ms ± 61.1 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>211 ms ± 14 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Pandas join:</p>
 <div class="cell" data-execution_count="25">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>data_left_pandas <span class="op">=</span> pd.DataFrame(data_left)</span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>data_right_pandas <span class="op">=</span> pd.DataFrame(data_right)</span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 pandas_joined <span class="op">=</span> data_left_pandas.merge(data_right_pandas, on <span class="op">=</span> <span class="dv">0</span>, how <span class="op">=</span> <span class="st">'inner'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>data_left_pandas <span class="op">=</span> pd.DataFrame(data_left)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>data_right_pandas <span class="op">=</span> pd.DataFrame(data_right)</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 pandas_joined <span class="op">=</span> data_left_pandas.merge(data_right_pandas, on <span class="op">=</span> <span class="dv">0</span>, how <span class="op">=</span> <span class="st">'inner'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>700 ms ± 66.9 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>600 ms ± 11.4 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 </section>
+<section id="moving-forward" class="level2">
+<h2 class="anchored" data-anchor-id="moving-forward">Moving Forward…</h2>
+<p>If this motivational seection has convinced you to try polars instead of pandas, here is a more structured intro.</p>
+</section>
+</section>
+<section id="basics" class="level1">
+<h1>Basics</h1>
+<p>Much like pandas, polars’ fundamental building block is the series. A series is a column of data, with a name, and a dtype. In the following we:</p>
+<ol type="1">
+<li>Create a series and demonstrate basic operations on it.</li>
+<li>Demonstrate the various dtypes.</li>
+<li>Discuss missing values.</li>
+<li>Filter a series.</li>
+</ol>
 </section>
 
 </main>

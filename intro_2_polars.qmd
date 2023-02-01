@@ -225,17 +225,17 @@ Starting with CSV:
 n_rows = int(1e5)
 n_cols = 10
 data = np.random.randn(n_rows,n_cols)
-data.tofile('data.csv', sep = ',')
+data.tofile('data/data.csv', sep = ',')
 ```
 
 Import with pandas. 
 ```{python}
-%timeit -n2 -r2 data_pandas = pd.read_csv('data.csv', header = None)
+%timeit -n2 -r2 data_pandas = pd.read_csv('data/data.csv', header = None)
 ```
 
 Import with polars. 
 ```{python}
-%timeit -n2 -r2 data_polars = pl.read_csv('data.csv', has_header = False)
+%timeit -n2 -r2 data_polars = pl.read_csv('data/data.csv', has_header = False)
 ```
 
 
@@ -245,15 +245,15 @@ Moving to parquet:
 ```{python}
 data_pandas = pd.DataFrame(data)
 data_pandas.columns = data_pandas.columns.astype(str)
-data_pandas.to_parquet('data.parquet', index = False)
+data_pandas.to_parquet('data/data.parquet', index = False)
 ```
 
 ```{python}
-%timeit -n2 -r2 data_pandas = pd.read_parquet('data.parquet')
+%timeit -n2 -r2 data_pandas = pd.read_parquet('data/data.parquet')
 ```
 
 ```{python}
-%timeit -n2 -r2 data_polars = pl.read_parquet('data.parquet')
+%timeit -n2 -r2 data_polars = pl.read_parquet('data/data.parquet')
 ```
 
 
@@ -328,6 +328,213 @@ In the following we:
 
 
 ## Operations
+
+Construct a series
+```{python}
+s = pl.Series("a", [1, 2, 3])
+s
+```
+
+```{python}
+type(s)
+```
+
+```{python}
+s.dtype
+```
+
+### Aggregations
+```{python}
+s.sum()
+```
+```{python}
+s.min()
+```
+```{python}
+s.arg_min()
+```
+```{python}
+s.mean()
+```
+```{python}
+s.median()
+```
+```{python}
+s.entropy()
+```
+
+### Transformations
+```{python}
+s.abs()
+```
+```{python}
+s.sin()
+```
+```{python}
+s.cummax()
+```
+```{python}
+s.cumsum()
+```
+```{python}
+s.cumprod()
+```
+```{python}
+s.diff()
+```
+
+
+```{python}
+s.dot(pl.Series("b", [1, 2, 3]))
+```
+```{python}
+s.ewm_mean(com=0.5)
+```
+```{python}
+s.exp()
+```
+```{python}
+s.hash()
+```
+```{python}
+s.log()
+```
+```{python}
+s.pct_change()
+```
+```{python}
+s.peak_max()
+```
+```{python}
+s.rolling_apply(pl.sum, window_size=2)
+```
+```{python}
+# s.rolling_apply(np.sum, window_size=2) # will not work
+```
+```{python}
+s.rolling_max(window_size=2)
+```
+```{python}
+s.sqrt()
+
+```
+```{python}
+f.round(2)
+```
+```{python}
+f.ceil()
+```
+```{python}
+f.floor()
+```
+```{python}
+# s.round(2) # will not work
+```
+```{python}
+# s.ceil() # will not work
+```
+```{python}
+s.cleared() # creates an empty series
+```
+```{python}
+s.clip(1, 2)
+```
+```{python}
+s.clip_max(2)
+```
+```{python}
+s.clip_min(1)
+```
+```{python}
+s.clone()
+```
+```{python}
+# check equality with clone
+s == s.clone()
+```
+
+
+
+## Descriptives
+
+```{python}
+s.dtype
+```
+```{python}
+s.chunk_lengths()
+```
+```{python}
+s.describe()
+```
+```{python}
+s.estimated_size(unit="b")
+```
+```{python}
+s.is_in(pl.Series([1, 10]))
+```
+```{python}
+s.value_counts()
+```
+```{python}
+```
+
+
+
+## Uniques
+
+```{python}
+s.is_duplicated()
+```
+```{python}
+s.is_unique()
+```
+```{python}
+pl.Series([1,2,3,4,1]).is_first()
+```
+```{python}
+s.n_unique()
+```
+```{python}
+pl.Series([1,2,3,4,1]).unique_counts()
+```
+
+
+
+
+## dtypes
+
+```{python}
+s.is_numeric()
+```
+```{python}
+s.is_float()
+```
+```{python}
+s.is_utf8()
+```
+```{python}
+s.is_boolean()
+```
+```{python}
+s.is_datelike()
+```
+
+### Optimizing dtypes
+
+
+```{python}
+s.shrink_dtype()
+```
+Also see [here](http://braaannigan.github.io/software/2022/10/31/polars-dtype-diet.html).
+
+```{python}
+s.shrink_to_fit() # what does this do?
+```
+
+
+
+
+
 
 ## dtypes
 
