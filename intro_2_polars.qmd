@@ -8,37 +8,356 @@ execute:
 jupyter: python3
 html:
     code-tools: true
+    fold-code: false
+    author: Jonathan D. Rosenblatt
+    data: 02-01-2023
+    toc: true
 ---
+
+```{python}
+import polars as pl
+import pandas as pd
+import numpy as np
+import pyarrow as pa
+import plotly.express as px
+import string
+import random
+```
+
 
 
 # Motivation
 
-## Speed
+1. Small memory footpring
+  - Native dtypes: missing, strings.
+  - Arrow format.
+1. Query Planning
+1. Parallelism:
+    - Speed
+    - Debugging
 
-### Of import
 
-### Of Join
-
-### Of Sort
-
-### Query Optimization
 
 
 ## Memory Footprint
 
-## Profile Memory
 
-## From Disk to Disk
+### Memory Footprint of Storage
 
+Polars vs. Pandas:
+```{python}
+letters = pl.Series(list(string.ascii_letters))
+
+n = int(10e6)
+letter1 = letters.sample(n,with_replacement=True)
+letter1.estimated_size(unit='gb')
+```
+
+
+```{python}
+letter1_pandas = letter1.to_pandas() 
+letter1_pandas.memory_usage(deep=True, index=False) / 1e9
+```
+
+The memory footprint of the polars Series is 1/7 of the pandas Series(!).
+But I did cheat- I used string type data to emphasize the difference. The difference would have been smaller if I had used integers or floats. 
+
+
+
+
+### Memory Footprint of Compute
+
+You are probably storing your data to compute with it.
+Let's compare the memory footprint of computations. 
+
+```{python}
+%load_ext memory_profiler
+```
+
+
+```{python}
+%memit letter1.sort()
+```
+
+```{python}
+%memit letter1_pandas.sort_values()
+```
+
+
+```{python}
+%memit letter1[10]='a'
+```
+
+```{python}
+%memit letter1_pandas[10]='a'
+```
+
+Things to notice:
+
+- Operating on existing data consumes less memory in polars than in pandas.
+- Changing the data consumes more memory in polars than in pandas. Why is that?
+
+
+### Operating From Disk to Disk
+
+What if my data does not fit into RAM?
+Turns out you can read from disk, process in RAM, and write to disk. This allows you to process data larger than your memory. 
+
+TODO: demonstrate sink_parquet from [here](https://www.rhosignal.com/posts/sink-parquet-files/).
+
+
+
+
+
+## Query Planning
+
+Consider a sort opperation that follows a filter operation. 
+Ideally, filter precededs the sort, but we did not ensure this...
+We now demonstarte that polars' query planner will do it for you. 
+En passant, we see polars is more efficient also without the query planner. 
+
+
+Polars' Eager evaluation, without query planning. 
+Sort then filter. 
+```{python}
+%timeit -n 2 -r 2 letter1.sort().filter(letter1.is_in(['a','b','c']))
+```
+
+Polars' Eager evaluation, without query planning. 
+Filter then sort. 
+```{python}
+%timeit -n 2 -r 2 letter1.filter(letter1.is_in(['a','b','c'])).sort()
+```
+
+
+Polars' Lazy evaluation with query planning. 
+Recieves sort then filter; executes filter then sort. 
+```{python}
+%timeit -n 2 -r 2 letter1.alias('letters').to_frame().lazy().sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect()
+```
+
+
+Pandas' eager evaluation in the wrong order: Sort then filter. 
+ ```{python}
+%timeit -n 2 -r 2 letter1_pandas.sort_values().loc[lambda x: x.isin(['a','b','c'])]
+```
+
+Pandas eager evaluation in the right order: Filter then sort. 
+```{python}
+%timeit -n 2 letter1_pandas.loc[lambda x: x.isin(['a','b','c'])].sort_values()
+```
+
+Pandas alternative syntax, just as slow. 
+```{python}
+%timeit -n 2 -r 2 letter1_pandas.loc[letter1_pandas.isin(['a','b','c'])].sort_values()
+```
+
+
+Things to note:
+
+1. Query planning works!
+1. Polars faster than Pandas even in eager evaluation (without query planning).
+
+
+
+## Parallelism
+
+Polars seamlessly parallelizes over columns (also within, when possible).
+As the number of columns in the data grows, we would expect fixed runtime until all cores are used, and then linear scaling.
+The following code demonstrates this idea, using a simple sum-within-column.
+
+```{python}
+import time
+
+def scaling_of_sums(n_rows, n_cols):
+  # n_cols = 2
+  # n_rows = int(1e6)
+  A = {}
+  A_numpy = np.random.randn(n_rows,n_cols)
+  A['numpy'] = A_numpy.copy()
+  A['polars'] = pl.DataFrame(A_numpy)
+  A['pandas'] = pd.DataFrame(A_numpy)
+
+  times = {}
+  for key,value in A.items():
+    start = time.time()
+    value.sum()
+    end = time.time()
+    times[key] = end-start
+
+  return(times)
+```
+
+
+```{python}
+scaling_of_time = {
+  p:scaling_of_sums(n_rows= int(1e6),n_cols = p) for p in np.arange(1,16)}
+```
+
+
+```{python}
+data = pd.DataFrame(scaling_of_time).T
+px.line(
+  data, 
+  labels=dict(
+    index="Number of Columns", 
+    value="Runtime")
+)
+```
+
+
+Things to note:
+
+- Pandas is slow. 
+- Numpy is quite efficient.
+- My machine has 8 cores. I would thus expect a fixed timing until 8 columns, and then linear scaling. This is not the case. I wonder why?
+
+
+## Speed Of Import
+
+Polar's `read_x` functions are quite faster than Pandas. 
+This is due to better type "guessing" heuristics, and to native support of the parquet file format. 
+
+We now make synthetic data, save it as csv or parquet, and reimport it with polars and pandas.
+
+Starting with CSV:
+```{python}
+n_rows = int(1e5)
+n_cols = 10
+data = np.random.randn(n_rows,n_cols)
+data.tofile('data.csv', sep = ',')
+```
+
+Import with pandas. 
+```{python}
+%timeit -n2 -r2 data_pandas = pd.read_csv('data.csv', header = None)
+```
+
+Import with polars. 
+```{python}
+%timeit -n2 -r2 data_polars = pl.read_csv('data.csv', has_header = False)
+```
+
+
+
+Moving to parquet:
+
+```{python}
+data_pandas = pd.DataFrame(data)
+data_pandas.columns = data_pandas.columns.astype(str)
+data_pandas.to_parquet('data.parquet', index = False)
+```
+
+```{python}
+%timeit -n2 -r2 data_pandas = pd.read_parquet('data.parquet')
+```
+
+```{python}
+%timeit -n2 -r2 data_polars = pl.read_parquet('data.parquet')
+```
+
+
+Things to note:
+
+- The difference in speed is quite large.
+- I dare argue that polars' type guessing is better, but I am not demonstrating it here. 
+- Bonus fact: parquet is much faster than csv, and also saves the frame's schema.
+
+
+
+## Speed Of Join
+
+Because pandas is built on numpy, people see it as both an in-memory database, and a matrix/array library.
+With polars, it is quite clear it is an in-memory database, and not an array processing library.
+As such, you cannot multiply two polars dataframes, but you can certainly join then efficiently.
+
+Make some data:
+```{python}
+def make_data(n_rows, n_cols):
+  data = np.concatenate(
+  (
+    np.arange(n_rows)[:,np.newaxis], # index
+    np.random.randn(n_rows,n_cols), # values
+    ),
+    axis=1)
+    
+  return data
+
+
+n_rows = int(1e6)
+n_cols = 10
+data_left = make_data(n_rows, n_cols)
+data_right = make_data(n_rows, n_cols)
+```
+
+Polars join:
+```{python}
+data_left_polars = pl.DataFrame(data_left)
+data_right_polars = pl.DataFrame(data_right)
+
+%timeit -n2 -r2 polars_joined = data_left_polars.join(data_right_polars, on = 'column_0', how = 'inner')
+```
+
+Pandas join:
+```{python}
+data_left_pandas = pd.DataFrame(data_left)
+data_right_pandas = pd.DataFrame(data_right)
+
+%timeit -n2 -r2 pandas_joined = data_left_pandas.merge(data_right_pandas, on = 0, how = 'inner')
+```
+
+
+
+## Moving Forward...
+
+If this motivational seection has convinced you to try polars instead of pandas, here is a  more structured intro. 
 
 
 
 
 # Basics
 
+Much like pandas, polars' fundamental building block is the series. 
+A series is a column of data, with a name, and a dtype.
+In the following we:
+
+1. Create a series and demonstrate basic operations on it.
+1. Demonstrate the various dtypes. 
+1. Discuss missing values.
+1. Filter a series.
+
+
+## Operations
+
+## dtypes
+
+## Missing
+
+## Filtering
+
+# DataFrames
+
+## Object Descriptives
+
+## Statistical Aggregations
+
+## Filtering, Selection, and Other Manipulations
+
+## Joins
+
+## Reshaping
+
+## Groupby
+
+## Query Planning and Optimization
+
+- describe_plan
+- show_graph
+- describe_optimized_plan
 
 
 
+# I/O
 
 ## Import
 
@@ -47,8 +366,34 @@ html:
 - From multiple parquets
 - From Arrow DataSet
 
-Notice:
+
+
+Warnings:
+
 1. String caching
+
+
+
+## Export
+
+
+# Plotting
+
+# Polars and ML
+
+# Strings
+
+# Datatimes
+
+
+# Config
+
+```{python}
+list(dir(pl.Config))
+```
+
+
+
 
 
 
