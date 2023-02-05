@@ -870,8 +870,8 @@ date.dt.strftime("%Y-%m-%d")
 # Dataframe
 
 General:
-1. Will not accept duplicat column names. 
-1. There is no row index (like data.frame, data.table, and tibble in R; unlike Pandas). 
+1. There is no row index (like R's `data.frame`, `data.table`, and `tibble`; unlike Python's `pandas`). 
+1. Will not accept duplicat column names (unlike pandas).
 
 
 Constructing from dict:

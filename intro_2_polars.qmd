@@ -12,6 +12,7 @@ html:
     author: Jonathan D. Rosenblatt
     data: 02-01-2023
     toc: true
+    number-sections: true
 ---
 
 ```{python}
@@ -22,6 +23,7 @@ import pyarrow as pa
 import plotly.express as px
 import string
 import random
+from datetime import datetime
 ```
 
 
@@ -268,7 +270,7 @@ Things to note:
 ## Speed Of Join
 
 Because pandas is built on numpy, people see it as both an in-memory database, and a matrix/array library.
-With polars, it is quite clear it is an in-memory database, and not an array processing library.
+With polars, it is quite clear it is an in-memory database, and not an array processing library (despite having a `pl.dot()` function for inner products).
 As such, you cannot multiply two polars dataframes, but you can certainly join then efficiently.
 
 Make some data:
@@ -315,7 +317,9 @@ If this motivational seection has convinced you to try polars instead of pandas,
 
 
 
-# Basics
+
+
+# Polars Series
 
 Much like pandas, polars' fundamental building block is the series. 
 A series is a column of data, with a name, and a dtype.
@@ -326,24 +330,176 @@ In the following we:
 1. Discuss missing values.
 1. Filter a series.
 
-
-## Operations
-
+## Series Housekeeping
 Construct a series
 ```{python}
 s = pl.Series("a", [1, 2, 3])
 s
 ```
 
+Make pandas series for comparison:
+```{python}
+s_pandas = pd.Series([1, 2, 3], name = "a")
+```
+
+
 ```{python}
 type(s)
 ```
 
 ```{python}
+type(s_pandas)
+```
+
+
+```{python}
 s.dtype
 ```
 
-### Aggregations
+```{python}
+s_pandas.dtype
+```
+
+Renaming a series; will be very useful when operating on dataframe columns.
+```{python}
+s.alias("b")
+```
+
+```{python}
+s.clone()
+```
+
+```{python}
+s.clone().append(pl.Series("a", [4, 5, 6]))
+```
+Note: `series.append` operates in-place. That is why we cloned the series first.
+
+Flatten a list of lists using `explode()`.
+```{python}
+pl.Series("a", [[1, 2], [3, 4], [9, 10]]).explode()
+```
+
+
+```{python}
+s.extend_constant(666, n=2)
+```
+
+```{python}
+#| eval: false
+s.new_from_index()
+```
+
+```{python}
+s.rechunk()
+```
+```{python}
+s.rename("b", in_place=False) # has an in_place option. Unlike .alias()
+```
+
+```{python}
+s.to_dummies()
+```
+
+```{python}
+s.cleared() # creates an empty series, with same dtype
+```
+
+
+Consturcting a series of floats, for later use.
+```{python}
+f = pl.Series("a", [1., 2., 3.])
+f
+```
+
+
+```{python}
+f.dtype
+```
+
+
+
+
+
+## Memory Representation of Series
+
+Object size in memory. Super useful for profiling:
+```{python}
+s.estimated_size(unit="gb")
+```
+
+
+
+```{python}
+s.chunk_lengths() # what is the length of each memory chunk?
+```
+
+
+
+
+
+
+## Filtering and Subsetting
+
+```{python}
+s[0]
+```
+
+Filtering with boolneas requires a series of booleans, not a list:
+```{python}
+s.filter(pl.Series("a", [True, False, True])) # works
+```
+
+Will not work:
+```{python}
+#| eval: false
+
+s[[True, False, True]]
+```
+
+Don't be confused with pandas!
+```{python}
+#| eval: false
+
+s.loc[[True, False, True]] 
+```
+
+```{python}
+s.head(2)
+```
+```{python}
+s.limit(2)
+```
+
+Negative indexing is not supported:
+```{python}
+#| eval: false
+
+s.head(-1)
+s.limit(-1)
+```
+```{python}
+s.tail(2)
+```
+```{python}
+s.sample(2, with_replacement=False)
+```
+
+```{python}
+s.take([0, 2]) # same as .iloc
+```
+
+```{python}
+s.slice(1, 2) # same as pandas .iloc[1:2]
+```
+
+```{python}
+s.take_every(2)
+```
+
+
+
+
+## Aggregations
 ```{python}
 s.sum()
 ```
@@ -363,33 +519,44 @@ s.median()
 s.entropy()
 ```
 
-### Transformations
+```{python}
+s.describe()
+```
+
+```{python}
+s.value_counts()
+```
+
+
+
+## Object Transformations
+
+```{python}
+pl.Series("a",[1,2,3,4]).reshape(dims = (2,2))
+```
+```{python}
+s.shift(1)
+```
+
+```{python}
+s.shift(-1)
+```
+
+```{python}
+s.shift_and_fill(1, 999)
+```
+
+
+
+
+## Mathematical Transformations
 ```{python}
 s.abs()
 ```
 ```{python}
 s.sin()
 ```
-```{python}
-s.cummax()
-```
-```{python}
-s.cumsum()
-```
-```{python}
-s.cumprod()
-```
-```{python}
-s.diff()
-```
 
-
-```{python}
-s.dot(pl.Series("b", [1, 2, 3]))
-```
-```{python}
-s.ewm_mean(com=0.5)
-```
 ```{python}
 s.exp()
 ```
@@ -399,25 +566,25 @@ s.hash()
 ```{python}
 s.log()
 ```
-```{python}
-s.pct_change()
-```
+
 ```{python}
 s.peak_max()
 ```
-```{python}
-s.rolling_apply(pl.sum, window_size=2)
-```
-```{python}
-# s.rolling_apply(np.sum, window_size=2) # will not work
-```
-```{python}
-s.rolling_max(window_size=2)
-```
+
 ```{python}
 s.sqrt()
-
 ```
+
+```{python}
+s.clip_max(2)
+```
+```{python}
+s.clip_min(1)
+```
+
+
+You cannot round integers, but you can round floats.
+
 ```{python}
 f.round(2)
 ```
@@ -427,23 +594,87 @@ f.ceil()
 ```{python}
 f.floor()
 ```
+
 ```{python}
-# s.round(2) # will not work
+s.is_in(pl.Series([1, 10]))
+```
+
+__Caution__: `is_in()` in polars has an underscore, unlike `isin()` in pandas.
+
+
+
+## Apply
+
+Applying your own function:
+```{python}
+s.apply(lambda x: x + 1)
+```
+
+Using your own functions comes with a performance cost:
+```{python}
+s1 = pl.Series(np.random.randn(int(1e5)))
+
+%timeit -n2 -r2 s1+1
 ```
 ```{python}
-# s.ceil() # will not work
+%timeit -n2 -r2 s1.apply(lambda x: x + 1)
+```
+
+
+
+## Cummulative Operations
+
+```{python}
+s.cummax()
 ```
 ```{python}
-s.cleared() # creates an empty series
+s.cumsum()
 ```
+```{python}
+s.cumprod()
+```
+
+```{python}
+s.ewm_mean(com=0.5)
+```
+
+
+
+## Sequential Operations
+
+```{python}
+s.diff()
+```
+
+```{python}
+s.pct_change()
+```
+
+
+## Windowed Operations
+
+```{python}
+s.rolling_apply(
+  pl.sum, 
+  window_size=2)
+```
+
+
+Not all functions will work within a `rolling_apply`! Only polars' functions will.
+```{python}
+#| eval: false
+
+s.rolling_apply(np.sum, window_size=2) # will not work
+```
+
+```{python}
+s.rolling_max(window_size=2)
+```
+
+
+
 ```{python}
 s.clip(1, 2)
-```
-```{python}
-s.clip_max(2)
-```
-```{python}
-s.clip_min(1)
 ```
 ```{python}
 s.clone()
@@ -453,34 +684,27 @@ s.clone()
 s == s.clone()
 ```
 
-
-
-## Descriptives
+## Booleans
 
 ```{python}
-s.dtype
+b = pl.Series("a", [True, True, False])
+b.dtype
 ```
 ```{python}
-s.chunk_lengths()
+b.all()
 ```
 ```{python}
-s.describe()
-```
-```{python}
-s.estimated_size(unit="b")
-```
-```{python}
-s.is_in(pl.Series([1, 10]))
-```
-```{python}
-s.value_counts()
-```
-```{python}
+b.any()
 ```
 
 
 
-## Uniques
+
+
+
+
+
+## Uniques and Duplicates
 
 ```{python}
 s.is_duplicated()
@@ -489,13 +713,15 @@ s.is_duplicated()
 s.is_unique()
 ```
 ```{python}
-pl.Series([1,2,3,4,1]).is_first()
-```
-```{python}
 s.n_unique()
 ```
 ```{python}
 pl.Series([1,2,3,4,1]).unique_counts()
+```
+
+The first appearance of a value in a series:
+```{python}
+pl.Series([1,2,3,4,1]).is_first()
 ```
 
 
@@ -503,6 +729,10 @@ pl.Series([1,2,3,4,1]).unique_counts()
 
 ## dtypes
 
+__Note__. Unlike pandas, polars' test functions have an underscore: `is_numeric()` instead of `isnumeric()`.
+
+
+### Testing
 ```{python}
 s.is_numeric()
 ```
@@ -512,6 +742,7 @@ s.is_float()
 ```{python}
 s.is_utf8()
 ```
+
 ```{python}
 s.is_boolean()
 ```
@@ -519,16 +750,296 @@ s.is_boolean()
 s.is_datelike()
 ```
 
+Compare with Pandas Type Checkers:
+```{python}
+pd.api.types.is_string_dtype(s_pandas)
+```
+
+```{python}
+pd.api.types.is_string_dtype(s)
+```
+
+
+### Casting
+
+```{python}
+s.cast(pl.Int32)
+```
+
+Things to note: 
+
+- `s.cast()` is an in place operation. If you want to keep the original series, you can use `s.cast(pl.Int32).clone()`.
+- `cast()` is polars' equivalent of pandas' `astype()`.
+- For a list of dtypes see the official [documentation](see https://pola-rs.github.io/polars/py-polars/html/reference/datatypes.html).
+
+
+
 ### Optimizing dtypes
 
-
+Find the most efficient dtype for a series:
 ```{python}
 s.shrink_dtype()
 ```
 Also see [here](http://braaannigan.github.io/software/2022/10/31/polars-dtype-diet.html).
 
+Shrink the memory allocation to the size of the actual data (in place).
 ```{python}
-s.shrink_to_fit() # what does this do?
+s.shrink_to_fit() 
+```
+
+
+
+
+## Ordering and Sorting 
+
+```{python}
+s.sort()
+```
+
+```{python}
+s.reverse()
+```
+```{python}
+s.rank()
+```
+```{python}
+s.arg_sort() 
+```
+`arg_sort()` returns the indices that would sort the series. Same as R's `order()`.
+
+```{python}
+s.sort() == s[s.arg_sort()]
+```
+
+`arg_sort()` can also be used to return the original series from the sorted one:
+```{python}
+s == s[s[s.arg_sort()].arg_sort()]
+```
+
+```{python}
+s.shuffle(seed=1)
+```
+
+
+## Missing
+
+Pandas users will be excited to know that polars has built in missing value support (!) for all dtypes.
+This has been a long awaited feature in the Python data science ecosystem, with implications on performance and syntax.
+
+```{python}
+m = pl.Series("a", [1, 2, None, np.nan])
+m.is_null()
+```
+
+```{python}
+m.is_nan()
+```
+
+```{python}
+m1 = pl.Series("a", [1, None, 2, ]) # python native None
+m2 = pl.Series("a", [1, np.nan, 2, ]) # numpy's nan
+m3 = pl.Series("a", [1, float('nan'), 2, ]) # python's nan
+m4 = pd.Series([1, None, 2 ])
+m5 = pd.Series([1, np.nan, 2, ])
+m6 = pd.Series([1, float('nan'), 2, ])
+```
+
+```{python}
+[m1.sum(), m2.sum(), m3.sum(), m4.sum(), m5.sum(), m6.sum()]
+```
+
+
+Things to note:
+
+- The use of `is_null()` instead of pandas `isna()`.
+- Polars supports `np.nan` but that is a different dtype than `None` (which is a `Null` type). `None` is not considered 
+- Aggregating pandas and polars series behave differently w.r.t. missing values:
+  - Both will ignore `None`; which is unsafe.
+  - Polars will not ignore `np.nan`; which is safe. Pandas is unsafe w.r.t. `np.nan`, and will ignore it. 
+
+
+Filling missing values; `None` and `np.nan` are treated differently:
+```{python}
+m1.fill_null(0)
+```
+
+```{python}
+m1.interpolate()
+```
+
+```{python}
+m2.fill_null(0)
+```
+
+```{python}
+m2.fill_nan(0)
+```
+
+```{python}
+m1.drop_nulls()
+```
+
+```{python}
+m1.drop_nans()
+```
+
+
+```{python}
+m2.drop_nulls()
+```
+
+
+## Export
+
+```{python}
+s.to_frame()
+```
+```{python}
+s.to_list()
+```
+```{python}
+s.to_numpy()
+```
+```{python}
+s.to_pandas()
+```
+```{python}
+s.to_arrow()
+```
+
+
+## Strings 
+Like Pandas, accessed with the `.str` attribute.
+
+```{python}
+st = pl.Series("a", ["foo", "bar", "baz"])
+```
+
+```{python}
+st.str.n_chars() # gets number of chars. In ASCII this is the same as lengths()
+```
+
+```{python}
+st.str.lengths() # gets number of bytes in memory
+```
+
+
+```{python}
+st.str.concat("-")
+```
+
+```{python}
+st.str.contains("foo|tra|bar")
+```
+
+
+```{python}
+st.str.count_match(pattern= 'o') # count literal metches
+```
+
+Count pattern matches. 
+Notice the `r"<regex pattern>"` syntax for regex (more about it [here](https://stackoverflow.com/questions/2241600/python-regex-r-prefix)). 
+```{python}
+st.str.count_match(r"\w") # regex for alphanumeric
+```
+
+
+```{python}
+st.str.ends_with("oo")
+```
+
+```{python}
+st.str.starts_with("fo")
+```
+
+
+To extract the first appearance of a pattern, use `extract`:
+```{python}
+url = pl.Series("a", [
+            "http://vote.com/ballon_dor?candidate=messi&ref=polars",
+
+            "http://vote.com/ballon_dor?candidate=jorginho&ref=polars",
+
+            "http://vote.com/ballon_dor?candidate=ronaldo&ref=polars"
+            ])
+
+url.str.extract(r"=(\w+)", 1)
+```
+
+To extract all appearances of a pattern, use `extract_all`:
+```{python}
+url.str.extract_all("=(\w+)")
+```
+
+
+```{python}
+st.str.ljust(8, "*")
+```
+
+```{python}
+st.str.rjust(8, "*")
+```
+
+
+```{python}
+st.str.lstrip('f')
+```
+
+
+```{python}
+st.str.rstrip('r')
+```
+
+Replacing first appearance of a pattern:
+```{python}
+st.str.replace(r"o", "ZZ")  
+```
+
+```{python}
+st.str.replace(r"o+", "ZZ")  
+```
+
+Replace all appearances of a pattern:
+```{python}
+st.str.replace_all("o", "ZZ")
+```
+
+String to list of strings. Number of spits inferred.
+```{python}
+st.str.split(by="o")
+```
+
+```{python}
+s.str.split(by="a", inclusive=True)
+```
+
+String to dict of strings. Number of splits fixed.
+```{python}
+st.str.split_exact("a", 2)
+```
+
+String to dict of strings. Length of output fixed.
+```{python}
+st.str.splitn("a", 4)
+```
+
+Strip white spaces.
+```{python}
+st.str.rjust(8, " ").str.strip()
+```
+
+
+
+```{python}
+st.str.to_uppercase()
+```
+
+```{python}
+st.str.to_lowercase()
+```
+
+```{python}
+st.str.zfill(5)
 ```
 
 
@@ -536,21 +1047,537 @@ s.shrink_to_fit() # what does this do?
 
 
 
-## dtypes
+## Date and Time
 
-## Missing
+There are 4 datetime dtypes in polars:
 
-## Filtering
+1. Date: A date, without hours. Generated with `pl.Date()`.
+2. Datetime: Date and hours. Generated with `pl.Datetime()`.
+3. Duration: As the name suggests. Similar t o `timedelta` in pandas. Generated with `pl.Duration()`.
+4. Time: Hour of day. Generated with `pl.Time()`.
+
+
+### Converting from Strings
+
+```{python}
+sd = pl.Series(
+    "date",
+    [
+        "2021-04-22",
+        "2022-01-04 00:00:00",
+        "01/31/22",
+        "Sun Jul  8 00:34:60 2001",
+    ],
+)
+sd.str.strptime(pl.Date, "%F", strict=False)
+```
+
+```{python}
+sd.str.strptime(pl.Date, "%F %T",strict=False)
+```
+
+```{python}
+sd.str.strptime(pl.Date, "%D", strict=False)
+```
+
+
+
+### Time Range
+
+```{python}
+from datetime import datetime, timedelta
+
+start = datetime(year= 2001, month=2, day=2)
+stop = datetime(year=2001, month=2, day=3)
+
+date = pl.date_range(
+  low=start, 
+  high=stop, 
+  interval=timedelta(seconds=500*61))
+date
+```
+
+Things to note:
+
+- How else could I have constructed this series? What other types are accepted as `low` and `high`? 
+- `pl.date_range` may return a series of dtype `Date` or `Datetime`. This depens of the granularity of the inputs. 
+
+
+```{python}
+date.dtype
+```
+
+Cast to different time unit. 
+May be useful when joining datasets, and the time unit is different.
+```{python}
+date.dt.cast_time_unit(tu="ms")
+```
+
+
+
+### From Date to String
+
+```{python}
+date.dt.strftime("%Y-%m-%d")
+```
+
+
+
+
+### Ecxtract Time Sub-Units
+
+```{python}
+date.dt.second()
+```
+
+```{python}
+date.dt.minute()
+```
+
+```{python}
+date.dt.hour()
+```
+
+```{python}
+date.dt.day()
+```
+
+
+```{python}
+date.dt.week()
+```
+
+```{python}
+date.dt.weekday()
+```
+
+```{python}
+date.dt.month()
+```
+
+```{python}
+date.dt.year()
+```
+
+```{python}
+date.dt.ordinal_day() # day in year
+```
+
+```{python}
+date.dt.quarter()
+```
+
+
+
+### Durations 
+
+Equivalent to Pandas `period` dtype.
+
+```{python}
+diffs = date.diff()
+diffs
+```
+
+```{python}
+diffs.dtype
+```
+
+```{python}
+diffs.dt.seconds()
+```
+
+```{python}
+diffs.dt.minutes()
+```
+
+```{python}
+diffs.dt.days()
+```
+
+```{python}
+diffs.dt.hours()
+```
+
+
+### Date Aggregations
+Note that aggregating dates, returns a `datetime` type object. 
+
+```{python}
+date.dt.max()
+```
+
+```{python}
+date.dt.min()
+```
+
+I have no idea what is an "average date", but it can be computed.
+```{python}
+date.dt.mean()
+```
+
+```{python}
+date.dt.median()
+```
+
+
+### Data Transformations
+
+Notice the syntax of `offset_by`. It is similar to R's `lubridate` package.
+```{python}
+date.dt.offset_by(by="1y2m20d")
+```
+
+Nagative offset is also allowed.
+```{python}
+date.dt.offset_by(by="-1y2m20d")
+```
+
+```{python}
+date.dt.round("1y")
+```
+
+```{python}
+date2 = date.dt.truncate("30m") # round to period
+pd.crosstab(date,date2)
+```
+
+
+
+
+## Comparing Series 
+```{python}
+s.series_equal(pl.Series("a", [1, 2, 3]))
+```
+
+
+
+
+
+
 
 # DataFrames
 
-## Object Descriptives
+General:
+1. There is no row index (like R's `data.frame`, `data.table`, and `tibble`; unlike Python's `pandas`). 
+1. Will not accept duplicat column names (unlike pandas).
 
-## Statistical Aggregations
 
-## Filtering, Selection, and Other Manipulations
+## DataFrame Hosekeeping
+
+A frame can be created as you would expect. 
+From a dictionary of series, a numpy array, a pandas sdataframe, or a list of polars (or pandas) series, etc.
+
+```{python}
+df = pl.DataFrame({"integer": [1, 2, 3], 
+                          "date": [
+                              (datetime(2022, 1, 1)), 
+                              (datetime(2022, 1, 2)), 
+                              (datetime(2022, 1, 3))
+                          ], 
+                          "float":[4.0, 5.0, 6.0]})
+
+df
+```
+
+```{python}
+print(df)
+```
+
+Things to note:
+
+1. The frame may be printed with Jupter's styling, or as ASCII with a `print()` statement.
+1. Shape, and dtypes, are part of the output.
+
+```{python}
+df.columns
+```
+
+```{python}
+df.shape
+```
+
+```{python}
+df.height # probably more useful than df.shape[0]
+```
+
+```{python}
+df.width
+```
+
+
+```{python}
+df.schema # similar to pandas info()
+```
+
+
+```{python}
+df.schema
+```
+
+```{python}
+df.is_empty()
+```
+
+
+```{python}
+df.cleared() # make empty copy
+```
+
+```{python}
+df.clone() # deep copy
+```
+
+Renaming columns can be done with `rename()`. 
+Later, we will see it may also be done with an `alias()` statement withing a `with_columns()` context. 
+```{python}
+df.rename({'integer': 'integer2'})
+```
+
+
+
+
+## Dataframe in Memory
+
+```{python}
+df.estimated_size(unit="gb")
+```
+
+
+```{python}
+df.n_chunks() # number of ChunkedArrays in the dataframe
+```
+
+
+
+
+## Statistical Aggregations 
+
+```{python}
+df.describe()
+```
+
+The usual statistical aggregations operate column-wise (and in parallel).
+
+```{python}
+df.max()
+```
+
+```{python}
+df.min()
+```
+
+```{python}
+df.mean()
+```
+
+```{python}
+df.median()
+```
+
+```{python}
+df.sum()
+```
+
+```{python}
+df.std()
+```
+
+```{python}
+df.quantile(0.1)
+```
+
+
+
+
+## Exctraction
+
+1. If you are used to pandas, recall there is no index. There is thus no need for `loc` vs. `iloc`, `reset_index()`, etc.
+2. Filtering and selection is possible with the `[` operator, or the `filter()` and `select()` methods. The latter is recommended to facilitate lazy evaluation (discussed later).
+
+
+
+Single cell extraction.
+```{python}
+df[0,0] # like pandas .iloc[]
+```
+
+Slicing along rows.
+```{python}
+df[0:1] 
+```
+
+Slicing along columns.
+```{python}
+df[:,0:1]
+```
+
+
+
+### Filtering Rows
+
+Row filtering by label
+```{python}
+df.filter(pl.col("integer") == 2)
+```
+
+Things to note:
+
+- The `[` operator does not support indexing with boolean such as `df[df["integer"] == 2]`.
+- The `filter()` method is recommended over `[` by the authors of polars, to facilitate lazy evaluation (discussed later).
+
+
+
+
+
+
+### Selecting Columns
+
+Column selection by label
+```{python}
+df.select("integer")
+# or df['integer']
+# or df[:,'integer']
+```
+
+Multiple column selection by label
+```{python}
+df.select(["integer", "float"])
+# or df[['integer', 'float']]
+```
+
+Column slicing by label
+```{python}
+df[:,"integer":"float"]
+```
+Note: Slicing with `df.select()` does not support ranges such as `df.select("integer":"float")`; only lists of column names.
+
+
+```{python}
+df.drop("integer")
+```
+
+Polars will not have an `inplace` argument. Use `df.drop_in_place()` instead.
+
+
+Select along dtype
+```{python}
+df.select(pl.col(pl.Int64))
+```
+
+
+```{python}
+df.select(pl.col(pl.Float64))
+```
+
+
+```{python}
+df.select(pl.col(pl.Utf8))
+```
+
+
+Things to note:
+
+- The `pl.col()` function will be very useful for referencing columns in a dataframe. It may extract a single column, a list, a particular (polars) dtype, a regex pattern, or simply all columns.
+- When exctracting along dtype, use polars' dtypes, not pandas' dtypes. For example, use `pl.Int64` instead of `np.int64`.
+
+
+
+
+## Missing
+
+
+```{python}
+df.is_unique()
+```
+
+```{python}
+df.is_duplicated()
+```
+
+```{python}
+df.n_unique()
+```
+
+```{python}
+df.null_count()
+```
+
+```{python}
+df.drop_nulls()
+```
+
+
+
+
+
+
+## Transformations
+
+- The general idea of colum trasformation is to wrap all transformations in a `with_columns()` method, and the select colums to operat on with `pl.col()`. 
+- The output column will have the same name as the input, unless you use the `alias()` method to rename it. 
+- The `with_columns()` is called a __polars context__.
+- The flavor of the `with_columns()` context is similar to pandas' `assign()`.
+
+
+```{python}
+df.with_columns([
+    pl.col("integer").alias("integer2"),
+    pl.col("integer") * 2
+])
+```
+
+Things to note:
+
+- The column `integer` is copied, by renaming it to `integer2`.
+- The columns `integer` is multiplied by 2 in place, because no `alias` is used. 
+- You cannot use `[` to assign! This would not have worked `df['integer3'] = df['integer'] * 2`
+
+
+
+
+If a selection returns multiple columns, all will be transformed:
+```{python}
+df.with_columns([
+    pl.col([pl.Int64,pl.Float64])*2
+])
+```
+
+## Sorting
+
+```{python}
+df.sort("integer")
+```
+
+## Uniques
+
+```{python}
+df.unique() # same as pandas .drop_duplicates()
+```
+
+
+
+
+
 
 ## Joins
+
+
+`.hstack()` is like pandas pd.concat() or R's cbind.
+```{python}
+df.hstack([pl.Series("c", np.repeat(1, df.height))])
+```
+
+Note: Joining along rows is possible only if matched columns have the same dtype. 
+Timestamps may be tricky because they may have different time units.
+The follwing snippet may be useful when joining multiple dataframes with different time units.
+```{python}
+#| eval: false
+df.with_column(
+    pl.col(pl.Datetime("ns")).dt.cast_time_unit(tu="ms")
+)            
+```
+
+
 
 ## Reshaping
 
@@ -580,8 +1607,9 @@ Warnings:
 1. String caching
 
 
-
 ## Export
+
+
 
 
 # Plotting
