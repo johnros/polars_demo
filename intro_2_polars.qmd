@@ -29,15 +29,17 @@ from datetime import datetime
 
 
 # Motivation
+Each of the following, alone(!), is amazing.
 
 1. Small memory footpring
   - Native dtypes: missing, strings.
-  - Arrow format.
-1. Query Planning
-1. Parallelism:
-    - Speed
-    - Debugging
+  - Arrow format in memory.
 
+1. Lazy evaluation allows query Planning.
+
+1. Out of the box parallelism: Fast and informative mesages for debugging.
+
+1. Strict typing: This means the dtype of output is defined by the operation and not bu the input. This is both safers, and allows static analysis.
 
 
 
@@ -399,6 +401,8 @@ s.rename("b", in_place=False) # has an in_place option. Unlike .alias()
 ```{python}
 s.to_dummies()
 ```
+
+
 
 ```{python}
 s.cleared() # creates an empty series, with same dtype
@@ -1268,13 +1272,14 @@ A frame can be created as you would expect.
 From a dictionary of series, a numpy array, a pandas sdataframe, or a list of polars (or pandas) series, etc.
 
 ```{python}
-df = pl.DataFrame({"integer": [1, 2, 3], 
-                          "date": [
-                              (datetime(2022, 1, 1)), 
-                              (datetime(2022, 1, 2)), 
-                              (datetime(2022, 1, 3))
-                          ], 
-                          "float":[4.0, 5.0, 6.0]})
+df = pl.DataFrame({
+  "integer": [1, 2, 3], 
+  "date": [
+    (datetime(2022, 1, 1)), 
+    (datetime(2022, 1, 2)), 
+    (datetime(2022, 1, 3))], 
+    "float":[4.0, 5.0, 6.0],
+    "string": ["a", "b", "c"]})
 
 df
 ```
@@ -1309,10 +1314,42 @@ df.width
 df.schema # similar to pandas info()
 ```
 
+```{python}
+df.with_row_count()
+```
+
+Add a single column
+```{python}
+df.with_column(pl.Series("new", [1, 2, 3]))
+```
+
+Add multiple columns
+```{python}
+df.with_columns([
+  pl.Series("new1", [1, 2, 3]),
+  pl.Series("new2", [4, 5, 6])])
+```
+
+One may also use `df.insert_at_idx()` for an in place insertion of a series at a column index. 
+
+
 
 ```{python}
-df.schema
+df.clone().replace('float', pl.Series("new_float", [4.0, 5.0, 6.0])) # df.replace() works in place. I created a clone to conserve the original.
 ```
+
+
+```{python}
+#TODO: df.pipe()
+```
+
+
+
+
+```{python}
+df.clone() # deep copy
+```
+
 
 ```{python}
 df.is_empty()
@@ -1324,8 +1361,10 @@ df.cleared() # make empty copy
 ```
 
 ```{python}
-df.clone() # deep copy
+df.cleared().is_empty()
 ```
+
+
 
 Renaming columns can be done with `rename()`. 
 Later, we will see it may also be done with an `alias()` statement withing a `with_columns()` context. 
@@ -1347,6 +1386,15 @@ df.estimated_size(unit="gb")
 df.n_chunks() # number of ChunkedArrays in the dataframe
 ```
 
+```{python}
+df.rechunk() # ensure contiguous memory layout
+```
+
+```{python}
+df.shrink_to_fit() # reduce memory allocation to actual size
+```
+
+
 
 
 
@@ -1356,11 +1404,22 @@ df.n_chunks() # number of ChunkedArrays in the dataframe
 df.describe()
 ```
 
-The usual statistical aggregations operate column-wise (and in parallel).
+Compare to pandas:
+```{python}
+df.to_pandas().describe()
+```
 
+Things to note:
+
+- Polas will summarize all columns, even if they are not numeric.
+- The statistics returned are different.
+- In the following, Polars will always return a frame with the same number of columns as the original frame; pandas would have returned columns only where the operation is defined, and omit NAs. 
+
+Statistical aggregations operate column-wise (and in parallel).
 ```{python}
 df.max()
 ```
+
 
 ```{python}
 df.min()
@@ -1415,6 +1474,40 @@ df[:,0:1]
 
 ### Filtering Rows
 
+```{python}
+df.head(2)
+```
+
+
+```{python}
+df.limit(2) # same as pl.head()
+```
+
+```{python}
+df.tail(1)
+```
+
+```{python}
+df.take_every(2)
+```
+
+```{python}
+df.slice(offset=1, length=1)
+```
+
+
+```{python}
+df.sample(1)
+```
+
+```{python}
+df.row(1) # get row as tuple
+```
+
+```{python}
+df.rows() # all rows as list of tuples
+```
+
 Row filtering by label
 ```{python}
 df.filter(pl.col("integer") == 2)
@@ -1439,6 +1532,7 @@ df.select("integer")
 # or df[:,'integer']
 ```
 
+
 Multiple column selection by label
 ```{python}
 df.select(["integer", "float"])
@@ -1450,6 +1544,25 @@ Column slicing by label
 df[:,"integer":"float"]
 ```
 Note: Slicing with `df.select()` does not support ranges such as `df.select("integer":"float")`; only lists of column names.
+
+Get a column as a 1D polars frame.
+```{python}
+df.get_column('integer')
+```
+
+Get a column as a polars series.
+```{python}
+df.to_series(0)
+```
+
+```{python}
+df.find_idx_by_name('float')
+```
+
+```{python}
+df.get_columns() # get a list of series
+```
+
 
 
 ```{python}
@@ -1483,7 +1596,21 @@ Things to note:
 
 
 
-## Missing
+### Selecting A Single Item
+
+Exctracts the first element as a scalar. Useful when you output a single number as a frame object. 
+```{python}
+df.item()
+```
+
+df.replace_at_idx
+
+
+
+
+
+
+## Uniques and Duplicates
 
 
 ```{python}
@@ -1495,16 +1622,48 @@ df.is_duplicated()
 ```
 
 ```{python}
+df.unique() # same as pd.drop_duplicates()
+```
+
+
+
+```{python}
 df.n_unique()
 ```
 
+
+## Missing
+
 ```{python}
-df.null_count()
+df_with_nulls = df.with_columns([
+    pl.Series("missing", [3, None, np.nan]),
+])
+```
+
+
+```{python}
+df_with_nulls.null_count() # same as pd.isnull().sum()
 ```
 
 ```{python}
-df.drop_nulls()
+df_with_nulls.drop_nulls() # same as pd.dropna()
 ```
+
+```{python}
+df_with_nulls.fill_null(0) # same as pd.fillna(0)
+```
+
+But recall that `None` and `np.nan` are not the same thing. 
+```{python}
+df_with_nulls.fill_nan(99)
+```
+
+```{python}
+df_with_nulls.interpolate()
+```
+
+
+
 
 
 
@@ -1517,6 +1676,8 @@ df.drop_nulls()
 - The output column will have the same name as the input, unless you use the `alias()` method to rename it. 
 - The `with_columns()` is called a __polars context__.
 - The flavor of the `with_columns()` context is similar to pandas' `assign()`.
+- One can use `df.iter_rows()` to get an iterator over rows. 
+
 
 
 ```{python}
@@ -1542,17 +1703,49 @@ df.with_columns([
 ])
 ```
 
+```{python}
+df.with_columns([
+    pl.all()*2
+])
+```
+
+Apply your own labda function. 
+```{python}
+df.select([pl.col("integer"), pl.col("float")]).apply(lambda x: x[0] + x[1])
+```
+
+But wait- using your own functions may have a very serious toll on perforance:
+```{python}
+df_big = pl.DataFrame(np.random.randn(1000000, 2), columns=["a", "b"])
+%timeit -n2 -r2 df_big.sum(axis=1)
+```
+
+```{python}
+%timeit -n2 -r2 df_big.apply(lambda x: x[0] + x[1])
+```
+
+
+```{python}
+df.shift(1)
+```
+
+```{python}
+df.shift_and_fill(1, 'WOW')
+```
+
+
 ## Sorting
 
 ```{python}
 df.sort("integer")
 ```
 
-## Uniques
-
 ```{python}
-df.unique() # same as pandas .drop_duplicates()
+df.reverse()
 ```
+
+
+
 
 
 
@@ -1579,11 +1772,74 @@ df.with_column(
 
 
 
+df.join()
+df.join_asof()
+df.merge_sorted()
+df.hstack()
+df.vstack()
+df.extend()
+
+
+
+
+
 ## Reshaping
+
+
+```{python}
+df.transpose()
+```
+
+```{python}
+df.melt()
+```
+
+As you may expect, there is also a `df.pivot()`.
+
+```{python}
+df.unstack(step=1)
+```
+
+
 
 ## Groupby
 
+
+```{python}
+df2 = pl.DataFrame({
+    "integer": [1, 1, 2, 2, 3, 3],
+    "float": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+    "string": ["a", "b", "c", "d", "e", "f"],
+})
+```
+
+
+```{python}
+df2.partition_by("integer")
+```
+
+
+```{python}
+groupper = df2.groupby("integer")
+groupper.count()
+```
+
+```{python}
+groupper.sum()
+```
+
+
+
+
+df.groupby_dynamic
+df.groupby_rolling
+
+
+
+
 ## Query Planning and Optimization
+
+df.lazy
 
 - describe_plan
 - show_graph
