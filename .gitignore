@@ -3,5 +3,4 @@ polars_to_preview_files/*
 .jupyter_cache/*
 data
 **/libs
-df.csv
-df.parquet
+df*
