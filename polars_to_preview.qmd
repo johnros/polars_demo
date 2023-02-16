@@ -23,6 +23,7 @@ import pyarrow as pa
 import plotly.express as px
 import string
 import random
+import os
 from datetime import datetime
 ```
 
@@ -1014,7 +1015,7 @@ st.str.split(by="o")
 ```
 
 ```{python}
-s.str.split(by="a", inclusive=True)
+st.str.split(by="a", inclusive=True)
 ```
 
 String to dict of strings. Number of splits fixed.
@@ -1262,11 +1263,12 @@ s.series_equal(pl.Series("a", [1, 2, 3]))
 # DataFrames
 
 General:
+
 1. There is no row index (like R's `data.frame`, `data.table`, and `tibble`; unlike Python's `pandas`). 
 1. Will not accept duplicat column names (unlike pandas).
 
 
-## DataFrame Hosekeeping
+## DataFrame-Object Hosekeeping
 
 A frame can be created as you would expect. 
 From a dictionary of series, a numpy array, a pandas sdataframe, or a list of polars (or pandas) series, etc.
@@ -1330,25 +1332,35 @@ df.with_columns([
   pl.Series("new2", [4, 5, 6])])
 ```
 
-One may also use `df.insert_at_idx()` for an in place insertion of a series at a column index. 
-
-
-
-```{python}
-df.clone().replace('float', pl.Series("new_float", [4.0, 5.0, 6.0])) # df.replace() works in place. I created a clone to conserve the original.
-```
-
-
-```{python}
-#TODO: df.pipe()
-```
-
-
-
 
 ```{python}
 df.clone() # deep copy
 ```
+
+The following commands make changes in place; I am thus creating a copy of `df`.
+```{python}
+df_copy = df.clone() # making a copy since 
+df_copy.insert_at_idx(1, pl.Series("new", [1, 2, 3])) 
+```
+
+
+```{python}
+df_copy.replace_at_idx(0, pl.Series("new2", [1, 2, 3]))
+```
+
+
+```{python}
+df_copy.replace('float', pl.Series("new_float", [4.0, 5.0, 6.0])) 
+```
+
+
+```{python}
+def foo(frame):
+  return frame.with_column(pl.Series("new", [1, 2, 3]))
+df.pipe(foo)
+```
+
+
 
 
 ```{python}
@@ -1600,10 +1612,11 @@ Things to note:
 
 Exctracts the first element as a scalar. Useful when you output a single number as a frame object. 
 ```{python}
-df.item()
+pl.DataFrame([1]).item() # notice the output is not a frame, rather, a scalar.
 ```
 
-df.replace_at_idx
+
+
 
 
 
@@ -1754,15 +1767,45 @@ df.reverse()
 
 ## Joins
 
+High level: 
 
-`.hstack()` is like pandas pd.concat() or R's cbind.
+- `df.hstack()` for horizontal concatenation; like pandas `pd.concat([],axis=1)` or R's cbind.
+- `df.vstack()` for vertical concatenation; like pandas `pd.concat([],axis=0)` or R's rbind.
+- `df.join()` for joins; like pandas `pd.merge()` or `df.join()`.
+
+
 ```{python}
-df.hstack([pl.Series("c", np.repeat(1, df.height))])
+new_column = pl.Series("c", np.repeat(1, df.height))
+
+df.hstack([new_column])
 ```
 
-Note: Joining along rows is possible only if matched columns have the same dtype. 
+```{python}
+df2 = pl.DataFrame({
+  "integer": [1, 2, 3], 
+  "date": [
+    (datetime(2022, 1, 4)), 
+    (datetime(2022, 1, 5)), 
+    (datetime(2022, 1, 6))], 
+    "float":[7.0, 8.0, 9.0],
+    "string": ["d", "d", "d"]})
+
+
+df.vstack(df2)
+```
+
+```{python}
+df.extend(df2) # like vstack, but with memory re-chunking. Similar to df.vstack().rechunk()
+```
+
+```{python}
+df.merge_sorted(df2, key="integer") # vstacking with sorting (aka riffle-shuffle).
+```
+
+
+__Caution__: Joining along rows is possible only if matched columns have the same dtype. 
 Timestamps may be tricky because they may have different time units.
-The follwing snippet may be useful when joining multiple dataframes with different time units.
+Recall that timeunits may be cast before joining using `series.dt.cast_time_unit()`:
 ```{python}
 #| eval: false
 df.with_column(
@@ -1771,13 +1814,33 @@ df.with_column(
 ```
 
 
+```{python}
+df.join(df2, on="integer", how="left")
+```
 
-df.join()
-df.join_asof()
-df.merge_sorted()
-df.hstack()
-df.vstack()
-df.extend()
+Things to note:
+
+- Repeating column names have been suffixed with "_right".
+- Unlike pandas, there are no indices. The `on`/`left_on`/`right_on` argument is always required.
+- `how=` may take the following values: 'inner', 'left', 'outer', 'semi', 'anti', 'cross'.
+- The join is super fast, as demonstrated in the Motivation section above. 
+
+
+
+
+```{python}
+df.join_asof(df2, left_on="date", right_on='date2', by="integer", strategy="backward", tolerance='1w')
+```
+
+Things to note:
+
+- Yes! `merge_asof()` is also available.
+- The `strategy=` argument may take the following values: 'backward', 'forward'.
+- The `tolerance=` argument may take the following values: '1w', '1d', '1h', '1m', '1s', '1ms', '1us', '1ns'.
+
+
+
+
 
 
 
@@ -1785,31 +1848,84 @@ df.extend()
 
 ## Reshaping
 
-
 ```{python}
 df.transpose()
 ```
 
+### Wide to Long
+
+
+
 ```{python}
-df.melt()
+# The following example is adapted from Pandas documentation: https://pandas.pydata.org/docs/reference/api/pandas.wide_to_long.html
+
+np.random.seed(123)
+wide = pl.DataFrame({
+    'famid': ["11", "12", "13", "2", "2", "2", "3", "3", "3"],
+    'birth': [1, 2, 3, 1, 2, 3, 1, 2, 3],
+    'ht1': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+    'ht2': [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9]})
+
+wide.head(2)
 ```
 
-As you may expect, there is also a `df.pivot()`.
+```{python}
+wide.melt(
+  id_vars=['famid', 'birth'], 
+  value_vars=['ht1', 'ht2'], 
+  variable_name='treatment', 
+  value_name='height').sample(5)
+```
+
+Break strings into rows. 
+```{python}
+wide.explode(columns=['famid']).limit(5)
+```
+
+
+
+### Long to Wide
 
 ```{python}
-df.unstack(step=1)
+# Example adapted from https://stackoverflow.com/questions/5890584/how-to-reshape-data-from-long-to-wide-format
+
+long = pl.DataFrame({
+    'id': [1, 1, 1, 2, 2, 2, 3, 3, 3],
+    'treatment': ['A', 'A', 'B', 'A', 'A', 'B', 'A', 'A', 'B'],
+    'height': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1]
+    })
+  
+long.limit(5)
+```       
+
+```{python}
+long.pivot(
+  index='id', 
+  columns='treatment',
+  values='height')
+```
+
+
+```{python}
+long.unstack(step=2) # works like a transpose, and then wrap rows. Change the `step=` to get the feeling. 
 ```
 
 
 
 ## Groupby
 
-
 ```{python}
 df2 = pl.DataFrame({
     "integer": [1, 1, 2, 2, 3, 3],
     "float": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
     "string": ["a", "b", "c", "d", "e", "f"],
+    "datetime": [
+        (datetime(2022, 1, 4)), 
+        (datetime(2022, 1, 4)), 
+        (datetime(2022, 1, 4)), 
+        (datetime(2022, 1, 9)), 
+        (datetime(2022, 1, 9)), 
+        (datetime(2022, 1, 9))],
 })
 ```
 
@@ -1828,39 +1944,213 @@ groupper.count()
 groupper.sum()
 ```
 
+Groupby a fixed time window with `df.groupby_dynamic()`:
+```{python}
+(
+  df2
+  .groupby_dynamic(index_column="datetime", every="1d")
+  .agg(pl.col("float").sum())
+)
+```
+
+If you do not want a single summary per period, rather, a window at each datapoint, use `df.groupby_rolling()`:
+```{python}
+(
+  df2
+  .groupby_rolling(index_column="datetime", period='1d')
+  .agg(pl.col("float").sum())
+)
+```
 
 
 
-df.groupby_dynamic
-df.groupby_rolling
+# Query Planning and Optimization
+
+The take-home of this section, is that polar can take advantage of half-a-century's worth of research in query planning and optimization.
+You will not have to think about the right order of operations, or the right data structures to use. 
+Rather, replace the polars dataframe with a polars lazy-dataframe, state all the operations you want, and just finish with a `collect()`.
+Polars will take care of the rest, and provide you with the tools to understand its plan. 
+
+We will not go into the details of the difference between a lazy and a non-lazy dataframe.
+Just assume a lazy frame allows everything a non-lazy frame can do, but it does not execute the operations until you call `collect()`.
+This is not entirely true, but you will get an informative error if you try to do something that is not supported.
 
 
+Get your lazy dataframe:
+```{python}
+df_lazy = df.lazy()
+```
+
+State all your operations:
+```{python}
+q = (
+  df_lazy
+  .filter(pl.col("float") > 2.0)
+  .filter(pl.col("float") > 3.0)
+  .filter(pl.col("float") > 7.0)
+  .select(["integer"])
+  .sort("integer")
+)
+```
+
+And now visualize the query. 
+```{python}
+q # same as q.show_graph(optimized=False)
+```
+
+```{python}
+q.show_graph(optimized=True)
+```
 
 
-## Query Planning and Optimization
+Things to note:
 
-df.lazy
+- You will need Graphviz installed to visualize the query plan.
+- To understand the plan, you need some terminology from [relational databases](https://www.ibm.com/docs/en/informix-servers/14.10?topic=concepts-selection-projection). Namely:
+  -  A _selection_ is a subset of rows, marked in the graph with a $$\sigma$$. 
+  - A _projection_ is a subset of columns, marked in the graph with a $$\pi$$.
+- The optimized plan removes redudancies, and orders the operations in the most efficient way.
 
-- describe_plan
-- show_graph
-- describe_optimized_plan
+
+You can now execute the plan with a `collect()`:
+```{python}
+q.collect()
+```
+
+```{python}
+q.describe_plan()
+```
+
+For early stopping you can replace `collect()` with `fetch()`: 
+```{python}
+q.fetch(2)
+```
+
 
 
 
 # I/O
 
+You will find that polars is blazing fast at reading and writing data.
+This is due to:
+
+1. Very good heuristics/rules implemented in the `read_csv` function.
+1. The use of [Apache Arrow](https://arrow.apache.org/) as an internal data structure, which maps seamlesly to the parquet file format.
+1. Parallelism, whenever possible. 
+1. Lazy scans/imports, which allows the materialization only of required data; i.e., filters and projections are executed at scan time.
+
+
 ## Import
 
-- From csv
-- From parquet
-- From multiple parquets
-- From Arrow DataSet
+### From csv
+
+Let's firs make a csv to import:
+```{python}
+df.write_csv("df.csv")
+```
+
+Import the csv into a non-lazy frame:
+```{python}
+pl.read_csv("df.csv")
+```
+
+Importing as a lazy frame:
+```{python}
+df_lazy = pl.scan_csv("df.csv")
+```
+
+Things become interesting when you manipulate the lazy frame before materializing it:
+```{python}
+q = (
+  df_lazy
+  .filter(pl.col("float") > 2.0)
+  .filter(pl.col("float") > 3.0)
+  .filter(pl.col("float") > 7.0)
+  .select(["integer"])
+  .sort("integer")
+)
+
+q.show_graph(optimized=True)
+```
+
+```{python}
+q.collect()
+```
 
 
+Things to note:
 
-Warnings:
+- From the graph we see that the filtering ($$\sigma$$) is done at scan time, and not after the materialization of the data.
+- To get the actual data, we naturally need to `collect()`.
 
-1. String caching
+
+### From parquet
+
+The parquet file format is super efficient when storing data on disk. 
+It is also very efficient to read and write.
+In particular, it include the data's schema, so that the importing function does not need to infer it.
+
+```{python}
+df.write_parquet("df.parquet")
+```
+
+The non-lazy reader:
+```{python}
+pl.read_parquet("df.parquet")
+```
+
+The lazy reader:
+
+```{python}
+pl.scan_parquet("df.parquet").collect()
+```
+
+
+### From an Arrow DataSet
+
+An Apache Arrow dataset is a collection of parquet files, with a common schema.
+It is a very efficient way to store data on disk, and to read it in parallel.
+
+Writing an Arrow dataset:
+
+```{python}
+df.to_pandas().to_parquet("df", engine="pyarrow", partition_cols=["integer"])
+
+os.listdir("df")
+```
+
+```{python}
+[os.listdir(f"df/{x}/") for x in os.listdir("df")]
+```
+
+```{python}
+import pyarrow.dataset as ds
+dset = ds.dataset("df", format="parquet")  
+pl.scan_ds(dset).collect()
+```
+
+
+Things to note:
+
+- We used pandas to write the arrow dataset. 
+- The `partition_cols` argument is used to partition the dataset on disk. Each partition is a parquet file (or another partition).
+- Reading from the web (not from the local filesystem) is slightly different. TODO: add reference. 
+
+
+__Caution__:
+
+The arrow data format uses caching for string and categorical data (i.e. pl.Series). 
+If importing multiple files, such as multiple parquet/feather files, or an arrow dataset, different files may be cached differnetly. This will cause an error when trying to concatenate the dataframes.
+To avoid this, you can disable string caching, or enforce [joint caching](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.StringCache.html) of all files. 
+The latter will look like this:
+
+```{python}
+with pl.StringCache():
+  df_import = pl.scan_ds(dset).collect()
+df_import
+```
+
+
 
 
 ## Export
@@ -1882,10 +2172,4 @@ Warnings:
 ```{python}
 list(dir(pl.Config))
 ```
-
-
-
-
-
-
 
