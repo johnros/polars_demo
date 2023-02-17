@@ -202,25 +202,25 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1.sort()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 539.75 MiB, increment: 210.87 MiB</code></pre>
+<pre><code>peak memory: 534.64 MiB, increment: 206.10 MiB</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1_pandas.sort_values()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 713.17 MiB, increment: 383.79 MiB</code></pre>
+<pre><code>peak memory: 686.79 MiB, increment: 357.87 MiB</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1[<span class="dv">10</span>]<span class="op">=</span><span class="st">'a'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 468.66 MiB, increment: 53.14 MiB</code></pre>
+<pre><code>peak memory: 496.19 MiB, increment: 81.07 MiB</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>memit letter1_pandas[<span class="dv">10</span>]<span class="op">=</span><span class="st">'a'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>peak memory: 416.72 MiB, increment: 0.00 MiB</code></pre>
+<pre><code>peak memory: 415.80 MiB, increment: 0.00 MiB</code></pre>
 </div>
 </div>
 <p>Things to notice:</p>
@@ -242,21 +242,21 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.sort().<span class="bu">filter</span>(letter1.is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>663 ms ± 2.83 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>677 ms ± 6.13 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Polars’ Eager evaluation, without query planning. Filter then sort.</p>
 <div class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.<span class="bu">filter</span>(letter1.is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])).sort()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>204 ms ± 379 µs per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>202 ms ± 1.84 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Polars’ Lazy evaluation with query planning. Recieves sort then filter; executes filter then sort.</p>
 <div class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1.alias(<span class="st">'letters'</span>).to_frame().lazy().sort(by<span class="op">=</span><span class="st">'letters'</span>).<span class="bu">filter</span>(pl.col(<span class="st">'letters'</span>).is_in([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])).collect()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>207 ms ± 14.2 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>193 ms ± 2.29 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Pandas’ eager evaluation in the wrong order: Sort then filter.</p>
@@ -269,14 +269,14 @@ Pandas eager evaluation in the right order: Filter then sort.
 ``` {.python .cell-code}
 %timeit -n 2 letter1_pandas.loc[lambda x: x.isin(['a','b','c'])].sort_values()</code></pre>
 <div class="cell-output cell-output-stdout">
-<pre><code>701 ms ± 8.33 ms per loop (mean ± std. dev. of 7 runs, 2 loops each)</code></pre>
+<pre><code>690 ms ± 14 ms per loop (mean ± std. dev. of 7 runs, 2 loops each)</code></pre>
 </div>
 <p>:::</p>
 <p>Pandas alternative syntax, just as slow.</p>
 <div class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n <span class="dv">2</span> <span class="op">-</span>r <span class="dv">2</span> letter1_pandas.loc[letter1_pandas.isin([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>])].sort_values()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>701 ms ± 2.03 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>705 ms ± 4.92 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Things to note:</p>
@@ -323,9 +323,9 @@ Pandas eager evaluation in the right order: Filter then sort.
 <span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 
-<div>                            <div id="d8e76dbd-af15-4a69-bc99-44204468bdd4" class="plotly-graph-div" style="height:525px; width:100%;"></div>            <script type="text/javascript">                require(["plotly"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("d8e76dbd-af15-4a69-bc99-44204468bdd4")) {                    Plotly.newPlot(                        "d8e76dbd-af15-4a69-bc99-44204468bdd4",                        [{"hovertemplate":"variable=numpy<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"numpy","line":{"color":"#636efa","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"numpy","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.06512975692749023,0.0009052753448486328,0.002120494842529297,0.0030426979064941406,0.002443075180053711,0.003113985061645508,0.0038902759552001953,0.00454258918762207,0.005430698394775391,0.005604743957519531,0.006470203399658203,0.0067517757415771484,0.007363557815551758,0.00924229621887207,0.008452177047729492],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=polars<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"polars","line":{"color":"#EF553B","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"polars","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0018591880798339844,0.0008313655853271484,0.003695964813232422,0.0023376941680908203,0.0016231536865234375,0.001972198486328125,0.0022788047790527344,0.002614259719848633,0.0032050609588623047,0.0032668113708496094,0.0036427974700927734,0.0039021968841552734,0.004114389419555664,0.004322052001953125,0.004746437072753906],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=pandas<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"pandas","line":{"color":"#00cc96","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"pandas","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.008504152297973633,0.0358273983001709,0.0597536563873291,0.04956197738647461,0.05138850212097168,0.05549931526184082,0.06460690498352051,0.05754423141479492,0.0724802017211914,0.06702589988708496,0.07359170913696289,0.06576657295227051,0.07277774810791016,0.07707977294921875,0.07741951942443848],"yaxis":"y","type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmapgl":[{"type":"heatmapgl","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Number of Columns"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Runtime"}},"legend":{"title":{"text":"variable"},"tracegroupgap":0},"margin":{"t":60}},                        {"responsive": true}                    ).then(function(){
+<div>                            <div id="b859c192-e02b-4a94-bb5f-122b72c5160d" class="plotly-graph-div" style="height:525px; width:100%;"></div>            <script type="text/javascript">                require(["plotly"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("b859c192-e02b-4a94-bb5f-122b72c5160d")) {                    Plotly.newPlot(                        "b859c192-e02b-4a94-bb5f-122b72c5160d",                        [{"hovertemplate":"variable=numpy<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"numpy","line":{"color":"#636efa","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"numpy","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0005033016204833984,0.0010142326354980469,0.0013589859008789062,0.002045154571533203,0.0024938583374023438,0.003159046173095703,0.004179239273071289,0.004419803619384766,0.005030393600463867,0.007653713226318359,0.006181001663208008,0.007253885269165039,0.00780797004699707,0.0077707767486572266,0.009035110473632812],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=polars<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"polars","line":{"color":"#EF553B","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"polars","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0005424022674560547,0.0008244514465332031,0.0010776519775390625,0.0013623237609863281,0.001644134521484375,0.0019927024841308594,0.0022585391998291016,0.002942323684692383,0.0030846595764160156,0.003760814666748047,0.0036258697509765625,0.004637479782104492,0.0045185089111328125,0.004385709762573242,0.0046100616455078125],"yaxis":"y","type":"scatter"},{"hovertemplate":"variable=pandas<br>Number of Columns=%{x}<br>Runtime=%{y}<extra></extra>","legendgroup":"pandas","line":{"color":"#00cc96","dash":"solid"},"marker":{"symbol":"circle"},"mode":"lines","name":"pandas","orientation":"v","showlegend":true,"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],"xaxis":"x","y":[0.0022077560424804688,0.03707170486450195,0.04072713851928711,0.04603719711303711,0.051178693771362305,0.05329704284667969,0.060283660888671875,0.06391024589538574,0.06391716003417969,0.07008647918701172,0.07039117813110352,0.06809782981872559,0.07459115982055664,0.07709002494812012,0.07718467712402344],"yaxis":"y","type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmapgl":[{"type":"heatmapgl","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Number of Columns"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Runtime"}},"legend":{"title":{"text":"variable"},"tracegroupgap":0},"margin":{"t":60}},                        {"responsive": true}                    ).then(function(){
                             
-var gd = document.getElementById('d8e76dbd-af15-4a69-bc99-44204468bdd4');
+var gd = document.getElementById('b859c192-e02b-4a94-bb5f-122b72c5160d');
 var x = new MutationObserver(function (mutations, observer) {{
         var display = window.getComputedStyle(gd).display;
         if (!display || display === 'none') {{
@@ -372,14 +372,14 @@ if (outputEl) {{
 <div class="cell" data-execution_count="18">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_pandas <span class="op">=</span> pd.read_csv(<span class="st">'data/data.csv'</span>, header <span class="op">=</span> <span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>19.1 s ± 97 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>19.1 s ± 247 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Import with polars.</p>
 <div class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_polars <span class="op">=</span> pl.read_csv(<span class="st">'data/data.csv'</span>, has_header <span class="op">=</span> <span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>3.25 s ± 451 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>2.87 s ± 104 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Moving to parquet:</p>
@@ -391,13 +391,13 @@ if (outputEl) {{
 <div class="cell" data-execution_count="21">
 <div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_pandas <span class="op">=</span> pd.read_parquet(<span class="st">'data/data.parquet'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>15.7 ms ± 2.08 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>18.5 ms ± 7.71 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="22">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 data_polars <span class="op">=</span> pl.read_parquet(<span class="st">'data/data.parquet'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>9.2 ms ± 509 µs per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>8.83 ms ± 994 µs per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Things to note:</p>
@@ -435,7 +435,7 @@ if (outputEl) {{
 <span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 polars_joined <span class="op">=</span> data_left_polars.join(data_right_polars, on <span class="op">=</span> <span class="st">'column_0'</span>, how <span class="op">=</span> <span class="st">'inner'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>249 ms ± 35.9 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>234 ms ± 35.1 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <p>Pandas join:</p>
@@ -445,7 +445,7 @@ if (outputEl) {{
 <span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 pandas_joined <span class="op">=</span> data_left_pandas.merge(data_right_pandas, on <span class="op">=</span> <span class="dv">0</span>, how <span class="op">=</span> <span class="st">'inner'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>747 ms ± 73.8 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>833 ms ± 73.9 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 </section>
@@ -1669,7 +1669,7 @@ i64
 <tbody>
 <tr>
 <td>
-3
+1
 </td>
 </tr>
 <tr>
@@ -2086,7 +2086,7 @@ u32
 </tr>
 <tr>
 <td>
-1
+3
 </td>
 <td>
 1
@@ -2094,7 +2094,7 @@ u32
 </tr>
 <tr>
 <td>
-3
+1
 </td>
 <td>
 1
@@ -3360,13 +3360,14 @@ i64
 <span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 s1<span class="op">+</span><span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>178 µs ± 47.4 µs per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>The slowest run took 9.63 times longer than the fastest. This could mean that an intermediate result is being cached.
+731 µs ± 594 µs per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="85">
 <div class="sourceCode cell-code" id="cb117"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 s1.<span class="bu">apply</span>(<span class="kw">lambda</span> x: x <span class="op">+</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>17.9 ms ± 1.1 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>19.4 ms ± 2.17 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 </section>
@@ -5979,7 +5980,7 @@ Name: a, dtype: int64</code></pre>
 <div class="cell" data-execution_count="138">
 <div class="sourceCode cell-code" id="cb186"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb186-1"><a href="#cb186-1" aria-hidden="true" tabindex="-1"></a>s.to_arrow()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="133">
-<pre><code>&lt;pyarrow.lib.Int64Array object at 0x7fa44037a500&gt;
+<pre><code>&lt;pyarrow.lib.Int64Array object at 0x7f47d83a61a0&gt;
 [
   1,
   2,
@@ -10977,6 +10978,25 @@ str
 </div>
 </div>
 </section>
+<section id="convert-to-other-python-objects" class="level2">
+<h2 class="anchored" data-anchor-id="convert-to-other-python-objects">Convert to Other Python Objects</h2>
+<p>TODO</p>
+<section id="to-pandas" class="level3">
+<h3 class="anchored" data-anchor-id="to-pandas">To Pandas</h3>
+</section>
+<section id="to-numpy" class="level3">
+<h3 class="anchored" data-anchor-id="to-numpy">To Numpy</h3>
+</section>
+<section id="to-python-list" class="level3">
+<h3 class="anchored" data-anchor-id="to-python-list">To Python List</h3>
+</section>
+<section id="to-python-dict" class="level3">
+<h3 class="anchored" data-anchor-id="to-python-dict">To Python Dict</h3>
+</section>
+<section id="to-python-tuple" class="level3">
+<h3 class="anchored" data-anchor-id="to-python-tuple">To Python Tuple</h3>
+</section>
+</section>
 <section id="dataframe-in-memory" class="level2">
 <h2 class="anchored" data-anchor-id="dataframe-in-memory">Dataframe in Memory</h2>
 <div class="cell" data-execution_count="216">
@@ -12803,16 +12823,16 @@ str
 <tbody>
 <tr>
 <td>
-1
+2
 </td>
 <td>
-2022-01-01 00:00:00
+2022-01-02 00:00:00
 </td>
 <td>
-4.0
+5.0
 </td>
 <td>
-"a"
+"b"
 </td>
 </tr>
 </tbody>
@@ -14907,13 +14927,13 @@ f64
 <div class="sourceCode cell-code" id="cb342"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb342-1"><a href="#cb342-1" aria-hidden="true" tabindex="-1"></a>df_big <span class="op">=</span> pl.DataFrame(np.random.randn(<span class="dv">1000000</span>, <span class="dv">2</span>), columns<span class="op">=</span>[<span class="st">"a"</span>, <span class="st">"b"</span>])</span>
 <span id="cb342-2"><a href="#cb342-2" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 df_big.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>4.72 ms ± 936 ns per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>4.88 ms ± 220 µs per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="268">
 <div class="sourceCode cell-code" id="cb344"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb344-1"><a href="#cb344-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit <span class="op">-</span>n2 <span class="op">-</span>r2 df_big.<span class="bu">apply</span>(<span class="kw">lambda</span> x: x[<span class="dv">0</span>] <span class="op">+</span> x[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>351 ms ± 1.97 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
+<pre><code>336 ms ± 6.37 ms per loop (mean ± std. dev. of 2 runs, 2 loops each)</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="269">
@@ -16639,21 +16659,7 @@ f64
 <tbody>
 <tr>
 <td>
-"3"
-</td>
-<td>
-1
-</td>
-<td>
-"ht1"
-</td>
-<td>
-2.2
-</td>
-</tr>
-<tr>
-<td>
-"2"
+"13"
 </td>
 <td>
 3
@@ -16662,21 +16668,7 @@ f64
 "ht2"
 </td>
 <td>
-2.4
-</td>
-</tr>
-<tr>
-<td>
-"13"
-</td>
-<td>
-3
-</td>
-<td>
-"ht1"
-</td>
-<td>
-2.2
+2.9
 </td>
 </tr>
 <tr>
@@ -16698,13 +16690,41 @@ f64
 "2"
 </td>
 <td>
-2
+3
 </td>
 <td>
 "ht1"
 </td>
 <td>
-1.8
+1.9
+</td>
+</tr>
+<tr>
+<td>
+"2"
+</td>
+<td>
+1
+</td>
+<td>
+"ht1"
+</td>
+<td>
+2.0
+</td>
+</tr>
+<tr>
+<td>
+"3"
+</td>
+<td>
+2
+</td>
+<td>
+"ht2"
+</td>
+<td>
+3.4
 </td>
 </tr>
 </tbody>
@@ -17429,7 +17449,7 @@ u32
 <tbody>
 <tr>
 <td>
-1
+2
 </td>
 <td>
 2
@@ -17437,7 +17457,7 @@ u32
 </tr>
 <tr>
 <td>
-2
+1
 </td>
 <td>
 2
@@ -18038,8 +18058,8 @@ i64
 </ol>
 <section id="import" class="level2">
 <h2 class="anchored" data-anchor-id="import">Import</h2>
-<section id="from-csv" class="level3">
-<h3 class="anchored" data-anchor-id="from-csv">From csv</h3>
+<section id="from-a-single-file" class="level3">
+<h3 class="anchored" data-anchor-id="from-a-single-file">From a Single File</h3>
 <p>Let’s firs make a csv to import:</p>
 <div class="cell" data-execution_count="300">
 <div class="sourceCode cell-code" id="cb380"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb380-1"><a href="#cb380-1" aria-hidden="true" tabindex="-1"></a>df.write_csv(<span class="st">"df.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -18290,173 +18310,48 @@ i64
 <li>From the graph we see that the filtering (<span class="math display">\[\sigma\]</span>) is done at scan time, and not after the materialization of the data.</li>
 <li>To get the actual data, we naturally need to <code>collect()</code>.</li>
 </ul>
+<p>Cleary, .csv is not the only format that can be read. It is possibly the least recommended. Other file types can be found <a href="https://pola-rs.github.io/polars/py-polars/html/reference/io.html">here</a> and include: - Excel. - Arrow IPC: A binary format for storing columnar data. - Feather (V2): A portable columnar file format that is optimized for storing data in a fast and efficient manner, utilizing the Arrow IPC format internally. - Parquet (non-partitioned): A tabular file format (not columnar) that is optimized for long-term storage, more compressed than Feather. - JSON: Short for JavaScript Object Notation, a textual data-interchange format. - Avro: A binary row-based format.</p>
+<p>Each of the above formats has a non-lazy reader using <code>pl.read_*</code> and a lazy reader using <code>pl.scan_*</code>.</p>
+<p>Not suported formats: - Feather (V1). - HDF5: Currently <a href="https://github.com/pola-rs/polars/issues/3520">not supported</a>.</p>
 </section>
-<section id="from-parquet" class="level3">
-<h3 class="anchored" data-anchor-id="from-parquet">From parquet</h3>
-<p>The parquet file format is super efficient when storing data on disk. It is also very efficient to read and write. In particular, it include the data’s schema, so that the importing function does not need to infer it.</p>
+<section id="from-multiple-files" class="level3">
+<h3 class="anchored" data-anchor-id="from-multiple-files">From Multiple Files</h3>
+<ul>
+<li>Parquet (partitioned): A collection of files with a common schema, partitioned as folders on disk.</li>
+<li>Delta Lake: Extends the Parquet file format.</li>
+<li>Arrow Dataset: A collection of files (csv, parquet, feather, etc) with a common schema.</li>
+</ul>
+<p>TODO: stopped here.</p>
+<section id="apache-arrow-dataset" class="level4">
+<h4 class="anchored" data-anchor-id="apache-arrow-dataset">Apache Arrow Dataset</h4>
+<p>An Apache Arrow dataset is a collection of parquet files, with a common schema. It is a very efficient way to store data on disk, and to read it in parallel.</p>
+<p>Writing an Arrow dataset:</p>
 <div class="cell" data-execution_count="305">
-<div class="sourceCode cell-code" id="cb385"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb385-1"><a href="#cb385-1" aria-hidden="true" tabindex="-1"></a>df.write_parquet(<span class="st">"df.parquet"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb385"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb385-1"><a href="#cb385-1" aria-hidden="true" tabindex="-1"></a>df.to_pandas().to_parquet(<span class="st">"df"</span>, engine<span class="op">=</span><span class="st">"pyarrow"</span>, partition_cols<span class="op">=</span>[<span class="st">"integer"</span>])</span>
+<span id="cb385-2"><a href="#cb385-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb385-3"><a href="#cb385-3" aria-hidden="true" tabindex="-1"></a>os.listdir(<span class="st">"df"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="299">
+<pre><code>['integer=3', 'integer=1', 'integer=2']</code></pre>
 </div>
-<p>The non-lazy reader:</p>
+</div>
 <div class="cell" data-execution_count="306">
-<div class="sourceCode cell-code" id="cb386"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb386-1"><a href="#cb386-1" aria-hidden="true" tabindex="-1"></a>pl.read_parquet(<span class="st">"df.parquet"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb387"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb387-1"><a href="#cb387-1" aria-hidden="true" tabindex="-1"></a>[os.listdir(<span class="ss">f"df/</span><span class="sc">{</span>x<span class="sc">}</span><span class="ss">/"</span>) <span class="cf">for</span> x <span class="kw">in</span> os.listdir(<span class="st">"df"</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="300">
-
-<div>
-<style scoped="">
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-
-    .dataframe td {
-        white-space: pre;
-    }
-
-    .dataframe td {
-        padding-top: 0;
-    }
-
-    .dataframe td {
-        padding-bottom: 0;
-    }
-
-    .dataframe td {
-        line-height: 95%;
-    }
-</style>
-<small>shape: (6, 4)</small><table class="dataframe table table-sm table-striped">
-
-<thead>
-<tr>
-<th>
-integer
-</th>
-<th>
-date
-</th>
-<th>
-float
-</th>
-<th>
-string
-</th>
-</tr>
-<tr>
-<td>
-i64
-</td>
-<td>
-datetime[μs]
-</td>
-<td>
-f64
-</td>
-<td>
-str
-</td>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-1
-</td>
-<td>
-2022-01-01 00:00:00
-</td>
-<td>
-4.0
-</td>
-<td>
-"a"
-</td>
-</tr>
-<tr>
-<td>
-2
-</td>
-<td>
-2022-01-02 00:00:00
-</td>
-<td>
-5.0
-</td>
-<td>
-"b"
-</td>
-</tr>
-<tr>
-<td>
-3
-</td>
-<td>
-2022-01-03 00:00:00
-</td>
-<td>
-6.0
-</td>
-<td>
-"c"
-</td>
-</tr>
-<tr>
-<td>
-1
-</td>
-<td>
-2022-01-04 00:00:00
-</td>
-<td>
-7.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-2
-</td>
-<td>
-2022-01-05 00:00:00
-</td>
-<td>
-8.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-3
-</td>
-<td>
-2022-01-06 00:00:00
-</td>
-<td>
-9.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-</tbody>
-</table>
+<pre><code>[['41306cbdcc7342f6bac989563486e60c-0.parquet',
+  'dd1d501d1c594e1684a863ddf32556ef-0.parquet',
+  '9299f8f27d51472dbfd8b51cb038d61d-0.parquet'],
+ ['41306cbdcc7342f6bac989563486e60c-0.parquet',
+  'dd1d501d1c594e1684a863ddf32556ef-0.parquet',
+  '9299f8f27d51472dbfd8b51cb038d61d-0.parquet'],
+ ['41306cbdcc7342f6bac989563486e60c-0.parquet',
+  'dd1d501d1c594e1684a863ddf32556ef-0.parquet',
+  '9299f8f27d51472dbfd8b51cb038d61d-0.parquet']]</code></pre>
 </div>
 </div>
-</div>
-<p>The lazy reader:</p>
 <div class="cell" data-execution_count="307">
-<div class="sourceCode cell-code" id="cb387"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb387-1"><a href="#cb387-1" aria-hidden="true" tabindex="-1"></a>pl.scan_parquet(<span class="st">"df.parquet"</span>).collect()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb389"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb389-1"><a href="#cb389-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow.dataset <span class="im">as</span> ds</span>
+<span id="cb389-2"><a href="#cb389-2" aria-hidden="true" tabindex="-1"></a>dset <span class="op">=</span> ds.dataset(<span class="st">"df"</span>, <span class="bu">format</span><span class="op">=</span><span class="st">"parquet"</span>)  </span>
+<span id="cb389-3"><a href="#cb389-3" aria-hidden="true" tabindex="-1"></a>pl.scan_ds(dset).collect()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="301">
 
 <div>
@@ -18489,13 +18384,10 @@ str
         line-height: 95%;
     }
 </style>
-<small>shape: (6, 4)</small><table class="dataframe table table-sm table-striped">
+<small>shape: (21, 3)</small><table class="dataframe table table-sm table-striped">
 
 <thead>
 <tr>
-<th>
-integer
-</th>
 <th>
 date
 </th>
@@ -18507,9 +18399,6 @@ string
 </th>
 </tr>
 <tr>
-<td>
-i64
-</td>
 <td>
 datetime[μs]
 </td>
@@ -18524,8 +18413,27 @@ str
 <tbody>
 <tr>
 <td>
-1
+2022-01-01 00:00:00
 </td>
+<td>
+4.0
+</td>
+<td>
+"a"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-04 00:00:00
+</td>
+<td>
+7.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
 <td>
 2022-01-01 00:00:00
 </td>
@@ -18538,8 +18446,49 @@ str
 </tr>
 <tr>
 <td>
-2
+2022-01-04 00:00:00
 </td>
+<td>
+7.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-04 00:00:00
+</td>
+<td>
+7.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-01 00:00:00
+</td>
+<td>
+4.0
+</td>
+<td>
+"a"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-04 00:00:00
+</td>
+<td>
+7.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
 <td>
 2022-01-02 00:00:00
 </td>
@@ -18552,8 +18501,71 @@ str
 </tr>
 <tr>
 <td>
-3
+2022-01-05 00:00:00
 </td>
+<td>
+8.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-02 00:00:00
+</td>
+<td>
+5.0
+</td>
+<td>
+"b"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-05 00:00:00
+</td>
+<td>
+8.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-05 00:00:00
+</td>
+<td>
+8.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-02 00:00:00
+</td>
+<td>
+5.0
+</td>
+<td>
+"b"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-05 00:00:00
+</td>
+<td>
+8.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
 <td>
 2022-01-03 00:00:00
 </td>
@@ -18566,243 +18578,10 @@ str
 </tr>
 <tr>
 <td>
-1
-</td>
-<td>
-2022-01-04 00:00:00
-</td>
-<td>
-7.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-2
-</td>
-<td>
-2022-01-05 00:00:00
-</td>
-<td>
-8.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-3
-</td>
-<td>
 2022-01-06 00:00:00
 </td>
 <td>
 9.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-</section>
-<section id="from-an-arrow-dataset" class="level3">
-<h3 class="anchored" data-anchor-id="from-an-arrow-dataset">From an Arrow DataSet</h3>
-<p>An Apache Arrow dataset is a collection of parquet files, with a common schema. It is a very efficient way to store data on disk, and to read it in parallel.</p>
-<p>Writing an Arrow dataset:</p>
-<div class="cell" data-execution_count="308">
-<div class="sourceCode cell-code" id="cb388"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb388-1"><a href="#cb388-1" aria-hidden="true" tabindex="-1"></a>df.to_pandas().to_parquet(<span class="st">"df"</span>, engine<span class="op">=</span><span class="st">"pyarrow"</span>, partition_cols<span class="op">=</span>[<span class="st">"integer"</span>])</span>
-<span id="cb388-2"><a href="#cb388-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb388-3"><a href="#cb388-3" aria-hidden="true" tabindex="-1"></a>os.listdir(<span class="st">"df"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="302">
-<pre><code>['integer=3', 'integer=1', 'integer=2']</code></pre>
-</div>
-</div>
-<div class="cell" data-execution_count="309">
-<div class="sourceCode cell-code" id="cb390"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb390-1"><a href="#cb390-1" aria-hidden="true" tabindex="-1"></a>[os.listdir(<span class="ss">f"df/</span><span class="sc">{</span>x<span class="sc">}</span><span class="ss">/"</span>) <span class="cf">for</span> x <span class="kw">in</span> os.listdir(<span class="st">"df"</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="303">
-<pre><code>[['dd1d501d1c594e1684a863ddf32556ef-0.parquet',
-  '9299f8f27d51472dbfd8b51cb038d61d-0.parquet'],
- ['dd1d501d1c594e1684a863ddf32556ef-0.parquet',
-  '9299f8f27d51472dbfd8b51cb038d61d-0.parquet'],
- ['dd1d501d1c594e1684a863ddf32556ef-0.parquet',
-  '9299f8f27d51472dbfd8b51cb038d61d-0.parquet']]</code></pre>
-</div>
-</div>
-<div class="cell" data-execution_count="310">
-<div class="sourceCode cell-code" id="cb392"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb392-1"><a href="#cb392-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow.dataset <span class="im">as</span> ds</span>
-<span id="cb392-2"><a href="#cb392-2" aria-hidden="true" tabindex="-1"></a>dset <span class="op">=</span> ds.dataset(<span class="st">"df"</span>, <span class="bu">format</span><span class="op">=</span><span class="st">"parquet"</span>)  </span>
-<span id="cb392-3"><a href="#cb392-3" aria-hidden="true" tabindex="-1"></a>pl.scan_ds(dset).collect()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="304">
-
-<div>
-<style scoped="">
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-
-    .dataframe td {
-        white-space: pre;
-    }
-
-    .dataframe td {
-        padding-top: 0;
-    }
-
-    .dataframe td {
-        padding-bottom: 0;
-    }
-
-    .dataframe td {
-        line-height: 95%;
-    }
-</style>
-<small>shape: (15, 3)</small><table class="dataframe table table-sm table-striped">
-
-<thead>
-<tr>
-<th>
-date
-</th>
-<th>
-float
-</th>
-<th>
-string
-</th>
-</tr>
-<tr>
-<td>
-datetime[μs]
-</td>
-<td>
-f64
-</td>
-<td>
-str
-</td>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-2022-01-01 00:00:00
-</td>
-<td>
-4.0
-</td>
-<td>
-"a"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-04 00:00:00
-</td>
-<td>
-7.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-04 00:00:00
-</td>
-<td>
-7.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-01 00:00:00
-</td>
-<td>
-4.0
-</td>
-<td>
-"a"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-04 00:00:00
-</td>
-<td>
-7.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-02 00:00:00
-</td>
-<td>
-5.0
-</td>
-<td>
-"b"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-05 00:00:00
-</td>
-<td>
-8.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-05 00:00:00
-</td>
-<td>
-8.0
-</td>
-<td>
-"d"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-02 00:00:00
-</td>
-<td>
-5.0
-</td>
-<td>
-"b"
-</td>
-</tr>
-<tr>
-<td>
-2022-01-05 00:00:00
-</td>
-<td>
-8.0
 </td>
 <td>
 "d"
@@ -18876,11 +18655,11 @@ str
 </ul>
 <p><strong>Caution</strong>:</p>
 <p>The arrow data format uses caching for string and categorical data (i.e.&nbsp;pl.Series). If importing multiple files, such as multiple parquet/feather files, or an arrow dataset, different files may be cached differnetly. This will cause an error when trying to concatenate the dataframes. To avoid this, you can disable string caching, or enforce <a href="https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.StringCache.html">joint caching</a> of all files. The latter will look like this:</p>
-<div class="cell" data-execution_count="311">
-<div class="sourceCode cell-code" id="cb393"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb393-1"><a href="#cb393-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> pl.StringCache():</span>
-<span id="cb393-2"><a href="#cb393-2" aria-hidden="true" tabindex="-1"></a>  df_import <span class="op">=</span> pl.scan_ds(dset).collect()</span>
-<span id="cb393-3"><a href="#cb393-3" aria-hidden="true" tabindex="-1"></a>df_import</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="305">
+<div class="cell" data-execution_count="308">
+<div class="sourceCode cell-code" id="cb390"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb390-1"><a href="#cb390-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> pl.StringCache():</span>
+<span id="cb390-2"><a href="#cb390-2" aria-hidden="true" tabindex="-1"></a>  df_import <span class="op">=</span> pl.scan_ds(dset).collect()</span>
+<span id="cb390-3"><a href="#cb390-3" aria-hidden="true" tabindex="-1"></a>df_import</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="302">
 
 <div>
 <style scoped="">
@@ -18912,7 +18691,7 @@ str
         line-height: 95%;
     }
 </style>
-<small>shape: (15, 3)</small><table class="dataframe table table-sm table-striped">
+<small>shape: (21, 3)</small><table class="dataframe table table-sm table-striped">
 
 <thead>
 <tr>
@@ -18963,6 +18742,28 @@ str
 </tr>
 <tr>
 <td>
+2022-01-01 00:00:00
+</td>
+<td>
+4.0
+</td>
+<td>
+"a"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-04 00:00:00
+</td>
+<td>
+7.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
 2022-01-04 00:00:00
 </td>
 <td>
@@ -19018,6 +18819,28 @@ str
 </tr>
 <tr>
 <td>
+2022-01-02 00:00:00
+</td>
+<td>
+5.0
+</td>
+<td>
+"b"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-05 00:00:00
+</td>
+<td>
+8.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
 2022-01-05 00:00:00
 </td>
 <td>
@@ -19044,6 +18867,28 @@ str
 </td>
 <td>
 8.0
+</td>
+<td>
+"d"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-03 00:00:00
+</td>
+<td>
+6.0
+</td>
+<td>
+"c"
+</td>
+</tr>
+<tr>
+<td>
+2022-01-06 00:00:00
+</td>
+<td>
+9.0
 </td>
 <td>
 "d"
@@ -19111,8 +18956,43 @@ str
 </div>
 </section>
 </section>
+<section id="reading-from-a-database" class="level3">
+<h3 class="anchored" data-anchor-id="reading-from-a-database">Reading from a Database</h3>
+<p>TODO: SQL, Delta Lake.</p>
+</section>
+</section>
 <section id="export-1" class="level2">
 <h2 class="anchored" data-anchor-id="export-1">Export</h2>
+<section id="to-csv" class="level3">
+<h3 class="anchored" data-anchor-id="to-csv">To CSV</h3>
+</section>
+<section id="to-a-single-parquet" class="level3">
+<h3 class="anchored" data-anchor-id="to-a-single-parquet">To a Single Parquet</h3>
+</section>
+<section id="to-arrow-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="to-arrow-dataset">To Arrow Dataset</h3>
+</section>
+<section id="to-a-partitioned-parquet" class="level3">
+<h3 class="anchored" data-anchor-id="to-a-partitioned-parquet">To a Partitioned Parquet</h3>
+</section>
+<section id="to-feather" class="level3">
+<h3 class="anchored" data-anchor-id="to-feather">To Feather</h3>
+</section>
+<section id="to-json" class="level3">
+<h3 class="anchored" data-anchor-id="to-json">To JSON</h3>
+</section>
+<section id="to-html" class="level3">
+<h3 class="anchored" data-anchor-id="to-html">To HTML</h3>
+</section>
+<section id="to-excel" class="level3">
+<h3 class="anchored" data-anchor-id="to-excel">To Excel</h3>
+</section>
+<section id="to-sql" class="level3">
+<h3 class="anchored" data-anchor-id="to-sql">To SQL</h3>
+</section>
+<section id="to-a-database" class="level3">
+<h3 class="anchored" data-anchor-id="to-a-database">To a Database</h3>
+</section>
 </section>
 </section>
 <section id="plotting" class="level1">
@@ -19129,9 +19009,9 @@ str
 </section>
 <section id="config" class="level1">
 <h1>Config</h1>
-<div class="cell" data-execution_count="312">
-<div class="sourceCode cell-code" id="cb394"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb394-1"><a href="#cb394-1" aria-hidden="true" tabindex="-1"></a><span class="bu">list</span>(<span class="bu">dir</span>(pl.Config))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="306">
+<div class="cell" data-execution_count="309">
+<div class="sourceCode cell-code" id="cb391"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb391-1"><a href="#cb391-1" aria-hidden="true" tabindex="-1"></a><span class="bu">list</span>(<span class="bu">dir</span>(pl.Config))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="303">
 <pre><code>['__annotations__',
  '__class__',
  '__delattr__',
