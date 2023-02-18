@@ -13,6 +13,7 @@ html:
     data: 02-01-2023
     toc: true
     number-sections: true
+    embed-resources: true
 ---
 
 ```{python}
@@ -24,7 +25,14 @@ import plotly.express as px
 import string
 import random
 import os
+%matplotlib inline 
+import matplotlib.pyplot as plt
 from datetime import datetime
+
+# Following two lines only required to view plotly when rendering from VScode. 
+import plotly.io as pio
+pio.renderers.default = "plotly_mimetype+notebook_connected"
+
 ```
 
 
@@ -33,13 +41,10 @@ from datetime import datetime
 Each of the following, alone(!), is amazing.
 
 1. Small memory footpring
-  - Native dtypes: missing, strings.
-  - Arrow format in memory.
-
+    - Native dtypes: missing, strings.
+    - Arrow format in memory.
 1. Lazy evaluation allows query Planning.
-
 1. Out of the box parallelism: Fast and informative mesages for debugging.
-
 1. Strict typing: This means the dtype of output is defined by the operation and not bu the input. This is both safers, and allows static analysis.
 
 
@@ -202,12 +207,13 @@ scaling_of_time = {
 
 ```{python}
 data = pd.DataFrame(scaling_of_time).T
-px.line(
+fig = px.line(
   data, 
   labels=dict(
     index="Number of Columns", 
     value="Runtime")
 )
+fig.show()
 ```
 
 
@@ -260,6 +266,12 @@ data_pandas.to_parquet('data/data.parquet', index = False)
 ```{python}
 %timeit -n2 -r2 data_polars = pl.read_parquet('data/data.parquet')
 ```
+
+
+
+TODO: add feather.
+
+
 
 
 Things to note:
@@ -456,7 +468,7 @@ s.filter(pl.Series("a", [True, False, True])) # works
 
 Will not work:
 ```{python}
-#| eval: false
+#| eval: true
 
 s[[True, False, True]]
 ```
@@ -475,7 +487,7 @@ s.head(2)
 s.limit(2)
 ```
 
-Negative indexing is not supported:
+Negative indexing is not supported [TODO: verify]:
 ```{python}
 #| eval: false
 
@@ -1047,6 +1059,9 @@ st.str.to_lowercase()
 st.str.zfill(5)
 ```
 
+```{python}
+st.str.slice(offset=0, length=2)
+```
 
 
 
@@ -1384,6 +1399,18 @@ Later, we will see it may also be done with an `alias()` statement withing a `wi
 df.rename({'integer': 'integer2'})
 ```
 
+## Convert to Other Python Objects
+TODO
+
+### To Pandas
+
+### To Numpy
+
+### To Python List
+
+### To Python Dict
+
+### To Python Tuple
 
 
 
@@ -1964,6 +1991,10 @@ If you do not want a single summary per period, rather, a window at each datapoi
 
 
 
+
+
+
+
 # Query Planning and Optimization
 
 The take-home of this section, is that polar can take advantage of half-a-century's worth of research in query planning and optimization.
@@ -2042,7 +2073,7 @@ This is due to:
 
 ## Import
 
-### From csv
+### From a Single File
 
 Let's firs make a csv to import:
 ```{python}
@@ -2084,29 +2115,35 @@ Things to note:
 - To get the actual data, we naturally need to `collect()`.
 
 
-### From parquet
+Cleary, .csv is not the only format that can be read. It is possibly the least recommended. 
+Other file types can be found [here](https://pola-rs.github.io/polars/py-polars/html/reference/io.html) and include: 
+- Excel. 
+- Arrow IPC: A binary format for storing columnar data. 
+- Feather (V2): A portable columnar file format that is optimized for storing data in a fast and efficient manner, utilizing the Arrow IPC format internally. 
+- Parquet (non-partitioned): A tabular file format (not columnar) that is optimized for long-term storage, more compressed than Feather. 
+- JSON: Short for JavaScript Object Notation, a textual data-interchange format.
+- Avro: A binary row-based format. 
 
-The parquet file format is super efficient when storing data on disk. 
-It is also very efficient to read and write.
-In particular, it include the data's schema, so that the importing function does not need to infer it.
+Each of the above formats has a non-lazy reader using `pl.read_*` and a lazy reader using `pl.scan_*`.
 
-```{python}
-df.write_parquet("df.parquet")
-```
-
-The non-lazy reader:
-```{python}
-pl.read_parquet("df.parquet")
-```
-
-The lazy reader:
-
-```{python}
-pl.scan_parquet("df.parquet").collect()
-```
+Not suported formats:
+- Feather (V1). 
+- HDF5: Currently [not supported](https://github.com/pola-rs/polars/issues/3520).
 
 
-### From an Arrow DataSet
+
+### From Multiple Files
+
+- Parquet (partitioned): A collection of files with a common schema, partitioned as folders on disk.
+- Delta Lake: Extends the Parquet file format. 
+- Arrow Dataset: A collection of files (csv, parquet, feather, etc) with a common schema.
+
+
+#### Partitioned Parquet
+
+
+
+#### Apache Arrow Dataset
 
 An Apache Arrow dataset is a collection of parquet files, with a common schema.
 It is a very efficient way to store data on disk, and to read it in parallel.
@@ -2147,24 +2184,197 @@ The latter will look like this:
 ```{python}
 with pl.StringCache():
   df_import = pl.scan_ds(dset).collect()
-df_import
+df_import.head(3)
 ```
 
+
+#### Multiple CSVs
+
+TODO: `pl.read_csv_batched()`
+
+
+
+### Reading from a Database
+TODO: SQL, Delta Lake.
 
 
 
 ## Export
+
+TODO
+
+
+
+
 
 
 
 
 # Plotting
 
+To get an intuition of what you may expect in this chapter you should know the following.
+There are approaches to plotting in python:
+
+1. The object oriented, where a dataframe has a plotting method. The method may use a single, or even multiple backends. Such is the pandas dataframe, which may use a matplotlib, plotly, or bokeh backend.
+2. The functional method, where a plotting function takes a dataframe as an argument. Such are the matplotlib, seaborn, and plotly functions, which may take pandas dataframes as inputs. 
+
+Plotting support in polars thus boils down to the folowing questions:
+(1) Do polars dataframes have a plotting method? With which backend?
+(2) Can plotting functions take polars dataframes as inputs?
+
+The answer to the first is negative. 
+Polars dataframes do not have a plotting method, and it seems they are not planned to have one (TODO: add reference).
+The answer to the second is "almost yes" 
+Any plotting function that can take numpy 1D arrays as inputs, can take a polars series after a zero copy conversion with `pl.Series.to_numpy()`.
+Some plotting functions will not even require the conversion to numpy (and will handle it internally).
+
+Polars frames may cause trouble. You may expect to use a `plot(df, x='col1', y='col2')` syntax; it may work if `df` is a pandas dataframe, but not with polars.
+Support of this syntax does not depend on polars developers, rather, on the plotting function developpers. 
+I suspect that the plotly and bokeh teams will eventually supprts polars. I do not know about the seaborm, or matplotlib teams.
+
+
+
+## Plotly Functions
+
+The `iris` dataset is provided by plotly as a pandas frame. 
+We convert it to a polars frame.
+```{python}
+iris = pl.DataFrame(px.data.iris())
+iris.head()
+```
+
+Plotly's `scatter()` can take x and y as str, int or Series or array-like. The following will naturally work:
+```{python}
+fig = px.scatter(
+    x=iris["sepal_width"].to_list(), 
+    y=iris["sepal_length"].to_list())
+fig.show()
+```
+
+But wait! Maybe a polars series is "array-like" and can be used as input? 
+Yes it can!
+
+```{python}
+fig = px.scatter(
+    x=iris["sepal_width"], 
+    y=iris["sepal_length"])
+fig.show()
+```
+
+Can a polars frame be used as input?
+No it can not. The following will not work:
+```{python}
+#| eval: false
+#| 
+fig = px.scatter(data_frame=iris,
+    x="sepal_width",
+    y="sepal_length")
+fig.show()
+```
+
+
+
+## Matplotlib Functions
+
+The above discussion applies to matplotlib functions as well; with the exception that matplotlib functions already support polars frames as input.
+
+Inputing polars series:
+```{python}
+fig, ax = plt.subplots()
+ax.scatter(
+    x=iris["sepal_width"], 
+    y=iris["sepal_length"])
+```
+
+
+Inputing polars frames:
+```{python}
+fig, ax = plt.subplots()
+ax.scatter(
+    data=iris,
+    x="sepal_width",
+    y="sepal_length")
+```
+
+
+
+
 # Polars and ML
 
-# Strings
+"How do to machine learning with polars?" is not a well defined question. 
+ML can be done with many libraries, and the answer depends on the library you are using.
+One possibility is converting polars dataframes to a numpy arrays. This is very easy with `pl.Float64` and `pl.Int64` series which convert trivially. 
+Converting `pl.Utf8` and `pl.Categorical` dtypes is a bit more involved, but still possible. For instance, by using `polars.DataFrame.to_dummies()`, `polars.get_dummies()`, or `polars.Series.to_dummies()`.
 
-# Datatimes
+
+## Polars and Patsy
+
+Patsy is a python library for describing statistical models (especially linear models and generalized linear models) and building design matrices.
+
+```{python}
+import patsy as pt
+
+#make a dataframe
+data = pd.DataFrame(
+    np.random.randn(100, 3), 
+    columns=["y", "x1", "x2"])
+```
+
+Use patsy to make a design matrix $$X$$, and a target vector $$y$$ from a pandas dataframe.
+```{python}
+formula = 'y ~ x1 + x2'
+y, X = pt.dmatrices(formula, data)
+
+X[:3]
+```
+
+```{python}
+y[:3]
+```
+
+Does the same work with polars? Yes!
+```{python}
+data_polars= pl.DataFrame(data)
+X, y = pt.dmatrices(formula, data_polars)
+X[:3]
+```
+
+
+
+
+
+## Effect Coding and Contrasts
+
+There are [many ways](https://stats.oarc.ucla.edu/spss/faq/coding-systems-for-categorical-variables-in-regression-analysis/) to encode categorical variables.
+For predictions, dummy coding is enough. 
+If you want to discuss and infer on effect sizes, you may want to use other coding schemes.
+
+One way to go about is to use the [category_encoders](http://contrib.scikit-learn.org/category_encoders/) library.
+
+We start by making some categorical data.
+```{python}
+import string
+import random
+cat = pl.Series(
+    name="cat",
+    values=random.choices(
+        population=string.ascii_letters[:5], 
+        k=data_polars.height)
+    ).to_frame()
+data_polars = data_polars.hstack(cat)
+data_polars.head()
+```
+
+The category encoders currently expects pandas dataframes as input, and does not support polars dataframes.
+```{python}
+import category_encoders as ce
+encoder = ce.HelmertEncoder()
+encoder.fit(data_polars.to_pandas())
+```
+
+
+			
+
 
 
 # Config
