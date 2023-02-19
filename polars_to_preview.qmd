@@ -25,6 +25,7 @@ import plotly.express as px
 import string
 import random
 import os
+import sys
 %matplotlib inline 
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -105,7 +106,7 @@ Let's compare the memory footprint of computations.
 Things to notice:
 
 - Operating on existing data consumes less memory in polars than in pandas.
-- Changing the data consumes more memory in polars than in pandas. Why is that?
+- Changing the data consumes more memory in polars than in pandas. I suspect this has to do with the fact that the arrow memory schema used by polars [is optimized](https://pola-rs.github.io/polars-book/user-guide/performance/strings.html). Changing the data, may thus require re-allocation and optimization. 
 
 
 ### Operating From Disk to Disk
@@ -322,6 +323,69 @@ data_right_pandas = pd.DataFrame(data_right)
 
 %timeit -n2 -r2 pandas_joined = data_left_pandas.merge(data_right_pandas, on = 0, how = 'inner')
 ```
+
+
+
+## The NYC Taxi Dataset
+
+
+```{python}
+path = 'data/NYC' # Data from https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
+file_names = os.listdir(path)
+```
+
+Pandas
+```{python}
+%%time 
+taxi_pandas = pd.read_parquet(path)
+
+query = '''
+    passenger_count > 0 and 
+    passenger_count < 5 and  
+    trip_distance > 0 and 
+    trip_distance < 10 and 
+    fare_amount > 0 and 
+    fare_amount < 100 and 
+    tip_amount > 0 and 
+    tip_amount < 20 and 
+    total_amount > 0 and 
+    total_amount < 100
+    '''.replace('\n', '')
+taxi_pandas.query(query).groupby('passenger_count').agg({'tip_amount':'mean'})
+```
+
+
+Polars
+```{python}
+%%time 
+(
+    pl.scan_parquet(f'{path}/*.parquet')
+    .filter(
+        (pl.col('passenger_count') > 0) &
+        (pl.col('passenger_count') < 5) &
+        (pl.col('trip_distance') > 0) &
+        (pl.col('trip_distance') < 10) &
+        (pl.col('fare_amount') > 0) &
+        (pl.col('fare_amount') < 100) &
+        (pl.col('tip_amount') > 0) &
+        (pl.col('tip_amount') < 20) &
+        (pl.col('total_amount') > 0) &
+        (pl.col('total_amount') < 100)
+    )
+    .groupby('passenger_count')
+    .agg([pl.mean('tip_amount')])
+    .collect()
+    )
+```
+
+Things to note:
+
+- Polars is much faster.
+- I only have 2 parquet files. When I run the same with more files, pandas will crash my python kernel. 
+- You will soon fall in love with the polars query syntax.
+
+
+
 
 
 
@@ -1867,7 +1931,9 @@ Things to note:
 
 
 
+### Concatenation
 
+TODO: pl.concat
 
 
 
@@ -2133,6 +2199,7 @@ Not suported formats:
 
 
 ### From Multiple Files
+TODO: https://pola-rs.github.io/polars-book/user-guide/multiple_files/intro.html
 
 - Parquet (partitioned): A collection of files with a common schema, partitioned as folders on disk.
 - Delta Lake: Extends the Parquet file format. 
