@@ -38,7 +38,8 @@ pio.renderers.default = "plotly_mimetype+notebook_connected"
 
 
 
-# Motivation
+# Motivation {#sec-motivation}
+
 Each of the following, alone(!), is amazing.
 
 1. Small memory footpring
@@ -326,7 +327,7 @@ data_right_pandas = pd.DataFrame(data_right)
 
 
 
-## The NYC Taxi Dataset
+## The NYC Taxi Dataset {#sec-nyc_taxi}
 
 
 ```{python}
@@ -358,7 +359,7 @@ taxi_pandas.query(query).groupby('passenger_count').agg({'tip_amount':'mean'})
 Polars
 ```{python}
 %%time 
-(
+q = (
     pl.scan_parquet(f'{path}/*.parquet')
     .filter(
         (pl.col('passenger_count') > 0) &
@@ -374,15 +375,22 @@ Polars
     )
     .groupby('passenger_count')
     .agg([pl.mean('tip_amount')])
-    .collect()
     )
+q.collect()
 ```
+
+```{python}
+q.show_graph()
+```
+
 
 Things to note:
 
 - Polars is much faster.
 - I only have 2 parquet files. When I run the same with more files, pandas will crash my python kernel. 
 - You will soon fall in love with the polars query syntax.
+- From the query graph I see import is done in parallel, and filtering done at scanning time!
+- Warning: The `pl.scan_paquet()` function will not work with a glob if files are in a remote data lake (e.g. S3). More on that later...
 
 
 
@@ -391,7 +399,7 @@ Things to note:
 
 ## Moving Forward...
 
-If this motivational seection has convinced you to try polars instead of pandas, here is a  more structured intro. 
+If this motivational section has convinced you to try polars instead of pandas, here is a  more structured intro. 
 
 
 
@@ -680,7 +688,15 @@ f.floor()
 s.is_in(pl.Series([1, 10]))
 ```
 
-__Caution__: `is_in()` in polars has an underscore, unlike `isin()` in pandas.
+```{python}
+s.is_in([1, 10])
+```
+
+
+Things to note: 
+
+- `is_in()` in polars has an underscore, unlike `isin()` in pandas.
+- 
 
 
 
@@ -1856,7 +1872,7 @@ df.reverse()
 
 
 
-## Joins
+## Joins {#sec-joins}
 
 High level: 
 
@@ -1914,13 +1930,19 @@ Things to note:
 - Repeating column names have been suffixed with "_right".
 - Unlike pandas, there are no indices. The `on`/`left_on`/`right_on` argument is always required.
 - `how=` may take the following values: 'inner', 'left', 'outer', 'semi', 'anti', 'cross'.
-- The join is super fast, as demonstrated in the Motivation section above. 
+- The join is super fast, as demonstrated in the @sec-motivation Section above. 
 
 
 
 
 ```{python}
-df.join_asof(df2, left_on="date", right_on='date2', by="integer", strategy="backward", tolerance='1w')
+df.join_asof(
+    df2, 
+    left_on="date", 
+    right_on='date', 
+    by="integer", 
+    strategy="backward", 
+    tolerance='1w')
 ```
 
 Things to note:
@@ -2198,19 +2220,104 @@ Not suported formats:
 
 
 
-### From Multiple Files
+### From Multiple Files in The Filesystem
+
+Most of today's datasets will span more than a single file on disk.
+Polar supports reading from multiple files, and will automatically merge them into a single dataframe.
+There are, however, many file formats, and each has its own way of partitioning the data.
+Multi-file storage supported by polars (at the time of writing):
+
+1. Parquet (partitioned): A collection of files with a common schema, partitioned as folders on disk.
+1. Delta Lake: Extends the Parquet file format. 
+1. Arrow Dataset: A collection of files (csv, parquet, feather, etc) with a common schema.
+
+
 TODO: https://pola-rs.github.io/polars-book/user-guide/multiple_files/intro.html
 
-- Parquet (partitioned): A collection of files with a common schema, partitioned as folders on disk.
-- Delta Lake: Extends the Parquet file format. 
-- Arrow Dataset: A collection of files (csv, parquet, feather, etc) with a common schema.
+
+
+#### Arbitrary Collection of Files
+
+Without any format-specific utilities, you can always read from some arbitrary collection of files and concatenate the result. 
+
+```{python}
+path = 'data/NYC' # Data from https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
+file_names = os.listdir(path)
+file_names
+```
+
+
+```{python}
+df_lazy_list = []
+for file in file_names:
+    df_lazy_list.append(
+        pl.scan_parquet(f'{path}/{file}')
+        )
+````
+
+With a list of lazy frames you can proceed by concatenating into a single lazy frame using `pl.concat()`, or collecting them into a list of eager frames using `pl.collect_all()`.
+Which one to use depends on your use case.
+
+Things to note:
+
+- The arrow data format uses caching for string and categorical data (i.e. pl.Series). 
+If importing multiple files, such as multiple parquet/feather files, or an arrow dataset, different files may be cached differnetly. This will cause an error when trying to concatenate the dataframes.
+To avoid this, you can disable string caching, or enforce [joint caching](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.StringCache.html) of all files. 
+The latter will look like this:
+- As discussed in the @sec-joins Section above. 
+
+
+Here is an example of a full import:
+
+```{python}
+#| label: multiple_files
+
+with pl.StringCache(): # Enforce joint caching of all files
+  df_lazy_list = []
+  for file in file_names:
+    lazy_frame = (
+        pl.scan_parquet(f'{path}/{file}') # read a lazy frame
+        .with_columns(
+            pl.col(pl.Datetime('ns')).dt.cast_time_unit('ms')
+            ) # ensure joinable time units
+    )
+    df_lazy_list.append(lazy_frame)
+
+q= (
+    pl.concat(df_lazy_list) # concat into into a single lazy frame
+    .filter(pl.col('passenger_count') < 3)
+    .groupby('passenger_count')
+    .agg([pl.mean('tip_amount')])
+)
+q.collect() # execute query
+```
 
 
 #### Partitioned Parquet
 
 
+The code snipped above (@multiple_files) is fully generalizable wrt the files you import and what you do to them. 
+Most often, you don't need such generality.
+For instance, when importing multiple parquet files form the local file system, the `pl.read_parquet()` function will allow you to use globs. 
+The above may thus read:
+
+```{python}
+with pl.StringCache(): # Enforce joint caching of all files
+  lazy_frame = pl.scan_parquet(f'{path}/*.parquet')
+  
+q= (
+    lazy_frame # concat into into a single lazy frame
+    .filter(pl.col('passenger_count') < 3)
+    .groupby('passenger_count')
+    .agg([pl.mean('tip_amount')])
+)
+q.collect() # execute query
+```
+
+
 
 #### Apache Arrow Dataset
+TODO
 
 An Apache Arrow dataset is a collection of parquet files, with a common schema.
 It is a very efficient way to store data on disk, and to read it in parallel.
@@ -2218,19 +2325,34 @@ It is a very efficient way to store data on disk, and to read it in parallel.
 Writing an Arrow dataset:
 
 ```{python}
-df.to_pandas().to_parquet("df", engine="pyarrow", partition_cols=["integer"])
+#| echo: false
 
-os.listdir("df")
+# clean "df" if exists
+import shutil
+if os.path.exists("df"):
+    shutil.rmtree("df")
+```
+
+
+```{python}
+# Write df as an arrow dataset:
+df.to_pandas().to_parquet(
+    "df", 
+    engine="pyarrow", 
+    partition_cols=["integer"])
+
+os.listdir("df") # inspect folder on disk
 ```
 
 ```{python}
+# inspect partitions
 [os.listdir(f"df/{x}/") for x in os.listdir("df")]
 ```
 
 ```{python}
 import pyarrow.dataset as ds
-dset = ds.dataset("df", format="parquet")  
-pl.scan_ds(dset).collect()
+dset = ds.dataset("df", format="parquet")  # define folder as dataset
+pl.scan_ds(dset).collect() # import
 ```
 
 
@@ -2241,18 +2363,7 @@ Things to note:
 - Reading from the web (not from the local filesystem) is slightly different. TODO: add reference. 
 
 
-__Caution__:
 
-The arrow data format uses caching for string and categorical data (i.e. pl.Series). 
-If importing multiple files, such as multiple parquet/feather files, or an arrow dataset, different files may be cached differnetly. This will cause an error when trying to concatenate the dataframes.
-To avoid this, you can disable string caching, or enforce [joint caching](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.StringCache.html) of all files. 
-The latter will look like this:
-
-```{python}
-with pl.StringCache():
-  df_import = pl.scan_ds(dset).collect()
-df_import.head(3)
-```
 
 
 #### Multiple CSVs
@@ -2261,8 +2372,22 @@ TODO: `pl.read_csv_batched()`
 
 
 
+
+
+### From Multiple Files on a Remote Datalake
+
+If you are coming from Pandas, reading from a remote datalake (say S3), and a local filesystem may feel the same. 
+This is because the authors of pandas went to great lengths to make the API feel the same.
+At the time of writing, polars does not have such a feature.
+Your options are:
+
+1. Read one file at a time, and concatenate the results, or use the `pl.scan_parquet()` as in @multiple_files.
+1. Use third party functionality that can link to multiple remote files. Luckily, the pyarrow library gives you this functionality. See [here](https://pola-rs.github.io/polars-book/user-guide/howcani/io/aws.html) for an example.
+
+
+
 ### Reading from a Database
-TODO: SQL, Delta Lake.
+See [here](https://pola-rs.github.io/polars-book/user-guide/howcani/io/read_db.html).
 
 
 
