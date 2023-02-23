@@ -1,3 +1,15 @@
 {
-    "editor.detectIndentation": false
+    "editor.detectIndentation": false,
+    "spellright.language": [
+        "en-US-10-1."
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext",
+        "quarto"
+    ],
+    "cSpell.words": [
+        "dtype"
+    ]
 }
