@@ -7,11 +7,11 @@ execute:
   cache: true
 jupyter: python3
 html:
-    code-tools: true
+    code-tools: false
     fold-code: false
     author: Jonathan D. Rosenblatt
-    data: 02-01-2023
-    toc: false
+    data: 02-23-2023
+    toc: true
     number-sections: true
     embed-resources: true
 ---
@@ -1707,6 +1707,12 @@ df.select(["integer", "float"])
 # or df[['integer', 'float']]
 ```
 
+As of polars>15.*.*, you don't have to pass a list:
+```{python}
+df.select("integer", "float")
+```
+
+
 Column slicing by label
 ```{python}
 df[:,"integer":"float"]
@@ -1850,16 +1856,18 @@ df_with_nulls.interpolate()
 
 
 ```{python}
-df.with_columns([
+df.with_columns(
+    pl.col("integer") * 2,
     pl.col("integer").alias("integer2"),
-    pl.col("integer") * 2
-])
+    integer3 = pl.col("integer") * 3
+)
 ```
 
 Things to note:
 
-- The column `integer` is copied, by renaming it to `integer2`.
 - The columns `integer` is multiplied by 2 in place, because no `alias` is used. 
+- The column `integer` is copied, by renaming it to `integer2`.
+- As of polars version >15.*.* (I think), you can use `=` to assign. That is how `integer3` is created.
 - You cannot use `[` to assign! This would not have worked `df['integer3'] = df['integer'] * 2`
 
 
@@ -1867,15 +1875,15 @@ Things to note:
 
 If a selection returns multiple columns, all will be transformed:
 ```{python}
-df.with_columns([
+df.with_columns(
     pl.col([pl.Int64,pl.Float64])*2
-])
+)
 ```
 
 ```{python}
-df.with_columns([
+df.with_columns(
     pl.all()*2
-])
+)
 ```
 
 Apply your own labda function. 
@@ -2187,7 +2195,7 @@ df.with_column(
 What if you want to access a column from frame `df`, when processing frame `df2`?
 This is what `df.with_context()` will do.
 
-
+TODO: add example
 
 
 
@@ -2234,8 +2242,8 @@ Things to note:
 
 - You will need Graphviz installed to visualize the query plan.
 - To understand the plan, you need some terminology from [relational databases](https://www.ibm.com/docs/en/informix-servers/14.10?topic=concepts-selection-projection). Namely:
-  -  A _selection_ is a subset of rows, marked in the graph with a $$\sigma$$. 
-  - A _projection_ is a subset of columns, marked in the graph with a $$\pi$$.
+  -  A _selection_ is a subset of rows, marked in the graph with a $\sigma$. 
+  - A _projection_ is a subset of columns, marked in the graph with a $\pi$.
 - The optimized plan removes redudancies, and orders the operations in the most efficient way.
 
 
@@ -2286,6 +2294,46 @@ You can profile the execution of a query with `df.profile()`:
 )
 ```
 
+
+
+## Exporting a Query
+
+You can export your query, as a JSON file.
+
+```{python}
+q.write_json("query.json") # export
+```
+
+This is how the query will look on disk:
+```{python}
+import json
+json.loads(open("query.json").read())# inspect
+```
+
+You can now load it and run it.
+```{python}
+pl.LazyFrame.read_json("query.json").collect() 
+```
+
+
+
+## SQL Flavor
+
+If you are a hardcore SQL user, you may want to use the SQL flavor of polars.
+
+```{python}
+sql.register("lazy_frame", lazy_frame) # register the lazy frame as a table
+
+    .filter(pl.col('passenger_count') < 3)
+    .groupby('passenger_count')
+    .agg([pl.mean('tip_amount')])
+
+sql.query("""
+    SELECT * FROM lazy_frame 
+    WHERE passenger_count > 3
+    
+    """) # query the table
+```
 
 
 
@@ -2348,6 +2396,7 @@ Things to note:
 
 Cleary, .csv is not the only format that can be read. It is possibly the least recommended. 
 Other file types can be found [here](https://pola-rs.github.io/polars/py-polars/html/reference/io.html) and include: 
+
 - Excel. 
 - Arrow IPC: A binary format for storing columnar data. 
 - Feather (V2): A portable columnar file format that is optimized for storing data in a fast and efficient manner, utilizing the Arrow IPC format internally. 
@@ -2366,13 +2415,13 @@ Not suported formats:
 ### From Multiple Files in The Filesystem
 
 Most of today's datasets will span more than a single file on disk.
-Polar supports reading from multiple files, and will automatically merge them into a single dataframe.
+Polar supports reading from multiple files in your file system (as opposed to a remote datalake such as S3), and will automatically merge them into a single dataframe.
 There are, however, many file formats, and each has its own way of partitioning the data.
 Multi-file storage supported by polars (at the time of writing):
 
 1. Parquet (partitioned): A collection of files with a common schema, partitioned as folders on disk.
-1. Delta Lake: Extends the Parquet file format. 
-1. Arrow Dataset: A collection of files (csv, parquet, feather, etc) with a common schema.
+1. [Delta-Lake](https://www.databricks.com/wp-content/uploads/2020/08/p975-armbrust.pdf): If your data is saves as many parquet files on S3, a failed copy operation may "break" the data. Systems that protect data from such failures (failed copy is only an example) are called "transactional systems", and the garantees they provide are called ["ACID"](https://www.databricks.com/glossary/acid-transactions). A Delta-Lake, is a piece of open source software, that manages your queries to give your data-lake the ACID properties.
+1. [Arrow Dataset](https://arrow.apache.org/docs/python/dataset.html): A collection of files (csv, parquet, feather, etc) with a common schema.
 
 
 TODO: https://pola-rs.github.io/polars-book/user-guide/multiple_files/intro.html
