@@ -4,3 +4,5 @@ polars_to_preview_files/*
 data
 **/libs
 df*
+sink.parquet
+query.json
