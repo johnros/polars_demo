@@ -32,7 +32,8 @@ from datetime import datetime
 
 # Following two lines only required to view plotly when rendering from VScode. 
 import plotly.io as pio
-pio.renderers.default = "plotly_mimetype+notebook_connected"
+# pio.renderers.default = "plotly_mimetype+notebook_connected+notebook"
+pio.renderers.default = "plotly_mimetype+notebook"
 
 ```
 
@@ -1528,15 +1529,30 @@ df.rename({'integer': 'integer2'})
 ```
 
 ## Convert to Other Python Objects
-TODO
+
 
 ### To Pandas
 
+```{python}
+df.to_pandas()
+```
 ### To Numpy
+
+```{python}
+df.to_numpy()
+```
 
 ### To Python List
 
+```{python}
+df.
+```
+
 ### To Python Dict
+
+```{python}
+df.to_dict()
+```
 
 ### To Python Tuple
 
@@ -1882,7 +1898,7 @@ df.with_columns(
 
 ```{python}
 df.with_columns(
-    pl.all()*2
+    pl.all().cast(pl.Utf8)
 )
 ```
 
@@ -2195,8 +2211,26 @@ df.with_column(
 What if you want to access a column from frame `df`, when processing frame `df2`?
 This is what `df.with_context()` will do.
 
-TODO: add example
+```{python}
+q = (
+    df.lazy()
+    .with_context( # add colums of df2 to the search space
+        df2.select(pl.all().suffix("_2")).lazy()
+        )
+    .select(
+        (pl.col("float") + pl.col("float_2")).alias('sum') # sum from the two frames
+        )
+    )
 
+q.collect()
+```
+
+
+Things to note:
+
+- `with_context()` is a lazy operation.
+- `with_context()` will not copy the data, but rather, add a reference to the data.
+- Try it yourself: Can you use multiple `with_context()`?
 
 
 # Query Planning and Optimization {#sec-query-planning}
@@ -2324,14 +2358,10 @@ If you are a hardcore SQL user, you may want to use the SQL flavor of polars.
 ```{python}
 sql.register("lazy_frame", lazy_frame) # register the lazy frame as a table
 
-    .filter(pl.col('passenger_count') < 3)
-    .groupby('passenger_count')
-    .agg([pl.mean('tip_amount')])
-
 sql.query("""
-    SELECT * FROM lazy_frame 
-    WHERE passenger_count > 3
-    
+    SELECT passenger_count, AVG(tip_amount) FROM lazy_frame 
+    WHERE passenger_count < 3
+    GROUP BY passenger_count
     """) # query the table
 ```
 
@@ -2428,7 +2458,7 @@ TODO: https://pola-rs.github.io/polars-book/user-guide/multiple_files/intro.html
 
 
 
-#### Arbitrary Collection of Files
+#### Arbitrary Collection of Files {#sec- multiple_files}
 
 Without any format-specific utilities, you can always read from some arbitrary collection of files and concatenate the result. 
 
@@ -2462,7 +2492,6 @@ The latter will look like this:
 Here is an example of a full import:
 
 ```{python}
-#| label: multiple_files
 
 with pl.StringCache(): # Enforce joint caching of all files
   df_lazy_list = []
@@ -2488,7 +2517,7 @@ q.collect() # execute query
 #### Partitioned Parquet
 
 
-The code snipped above (@multiple_files) is fully generalizable wrt the files you import and what you do to them. 
+The code snipped above (@sec- multiple_files) is fully generalizable wrt the files you import and what you do to them. 
 Most often, you don't need such generality.
 For instance, when importing multiple parquet files form the local file system, the `pl.read_parquet()` function will allow you to use globs. 
 The above may thus read:
@@ -2509,7 +2538,6 @@ q.collect() # execute query
 
 
 #### Apache Arrow Dataset
-TODO
 
 An Apache Arrow dataset is a collection of parquet files, with a common schema.
 It is a very efficient way to store data on disk, and to read it in parallel.
@@ -2570,10 +2598,11 @@ TODO: `pl.read_csv_batched()`
 
 If you are coming from Pandas, reading from a remote datalake (say S3), and a local filesystem may feel the same. 
 This is because the authors of pandas went to great lengths to make the API feel the same.
-At the time of writing, polars does not have such a feature.
-Your options are:
+At the time of writing, if you give polars a remote glob, it will only read the first file ([ref](https://github.com/pola-rs/polars/issues/5863)). I expect this to change in the near future.
 
-1. Read one file at a time, and concatenate the results, or use the `pl.scan_parquet()` as in @multiple_files.
+Your current options for reading multiple files stored remotely are:
+
+1. Read one file at a time, and concatenate the results, or use the `pl.scan_parquet()` as in @sec- multiple_files.
 1. Use third party functionality that can link to multiple remote files. Luckily, the pyarrow library gives you this functionality. See [here](https://pola-rs.github.io/polars-book/user-guide/howcani/io/aws.html) for an example.
 
 
