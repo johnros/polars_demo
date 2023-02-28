@@ -42,7 +42,7 @@ pio.renderers.default = "plotly_mimetype+notebook"
 
 Inspecting polars version
 ```{python}
-%pip show polars
+# %pip show polars # check you polars version
 ```
 
 
@@ -397,14 +397,14 @@ taxi_pandas = pd.read_parquet(path)
 query = '''
     passenger_count > 0 and 
     passenger_count < 5 and  
-    trip_distance > 0 and 
-    trip_distance < 10 and 
-    fare_amount > 0 and 
-    fare_amount < 100 and 
-    tip_amount > 0 and 
-    tip_amount < 20 and 
-    total_amount > 0 and 
-    total_amount < 100
+    trip_distance >= 0 and 
+    trip_distance <= 10 and 
+    fare_amount >= 0 and 
+    fare_amount <= 100 and 
+    tip_amount >= 0 and 
+    tip_amount <= 20 and 
+    total_amount >= 0 and 
+    total_amount <= 100
     '''.replace('\n', '')
 taxi_pandas.query(query).groupby('passenger_count').agg({'tip_amount':'mean'})
 ```
@@ -438,14 +438,14 @@ q = (
     .filter(
         (pl.col('passenger_count') > 0) &
         (pl.col('passenger_count') < 5) &
-        (pl.col('trip_distance') > 0) &
-        (pl.col('trip_distance') < 10) &
-        (pl.col('fare_amount') > 0) &
-        (pl.col('fare_amount') < 100) &
-        (pl.col('tip_amount') > 0) &
-        (pl.col('tip_amount') < 20) &
-        (pl.col('total_amount') > 0) &
-        (pl.col('total_amount') < 100)
+        (pl.col('trip_distance') >= 0) &
+        (pl.col('trip_distance') <= 10) &
+        (pl.col('fare_amount') >= 0) &
+        (pl.col('fare_amount') <= 100) &
+        (pl.col('tip_amount') >= 0) &
+        (pl.col('tip_amount') <= 20) &
+        (pl.col('total_amount') >= 0) &
+        (pl.col('total_amount') <= 100)
     )
     .groupby('passenger_count')
     .agg([pl.mean('tip_amount')])
