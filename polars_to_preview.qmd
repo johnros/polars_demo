@@ -37,7 +37,12 @@ from datetime import datetime
 import plotly.io as pio
 # pio.renderers.default = "plotly_mimetype+notebook_connected+notebook"
 pio.renderers.default = "plotly_mimetype+notebook"
+```
 
+
+Inspecting polars version
+```{python}
+%pip show polars
 ```
 
 
@@ -603,27 +608,22 @@ s.chunk_lengths() # what is the length of each memory chunk?
 s[0] # same as s.__getitem__(0)
 ```
 
-Filtering with a Polars (Boolean) series will work:
-```{python}
-s[pl.Series("a", [True, False, True])]
-```
 
-Filtering with a pandas (Boolean) series will not work (why should it?)
-```{python}
-s[pd.Series([True, False, True])]
-```
-
-Filtering with a numpy (Boolean) array will work (but I can't see why you would want to):
-```{python}
-s[np.array([True, False, True])]
-```
-
-Filtering with a Boolean list will not work:
+Filtering with `[` and Booleans will not work:
 ```{python}
 s[[True, False, True]]
 ```
 
-BUT, for an easy transition to work with lazy dataframes and query planning (@sec-query-planning), you may want to prefer the `filter` method, which can actually take a polars series, or list of booleans (but not a pandas series or numpy array):
+Filtering with a Polars Boolean series, worked in previous versions of polars (<=15). Currently (16) does not.
+```{python}
+s[pl.Series("a", [True, False, True])]
+```
+
+
+Filtering with a pandas (Boolean) series will not work (why should it?), nor with a numpy array.
+
+
+For an easy transition to work with lazy dataframes and query planning (@sec-query-planning), you may want to prefer the `filter` method, which can actually take a polars series, or list of booleans (but not a pandas series or numpy array):
 ```{python}
 s.filter(pl.Series("a", [True, False, True])) # works
 ```
@@ -2052,9 +2052,10 @@ df.reverse()
 
 High level: 
 
-- `df.hstack()` for horizontal concatenation; like pandas `pd.concat([],axis=1)` or R's cbind.
-- `df.vstack()` for vertical concatenation; like pandas `pd.concat([],axis=0)` or R's rbind.
-- `pl.concat()`, which is similar to the previous to, but with memory re-chunking.
+- `df.hstack()` for horizontal concatenation; like pandas `pd.concat([],axis=1)` or R's `cbind`.
+- `df.vstack()` for vertical concatenation; like pandas `pd.concat([],axis=0)` or R's `rbind`.
+- `df.merge_sorted()` for vertical stacking, with sorting.
+- `pl.concat()`, which is similar to the previous two, but with memory re-chunking. `pl.concat()` also allows diagonal concatenation, if columns are not shared.
 - `df.extend()` for vertical concatenation, but with memory re-chunking. Similar to `df.vstack().rechunk()`.
 - `df.join()` for joins; like pandas `pd.merge()` or `df.join()`.
 
@@ -2139,7 +2140,7 @@ Things to note:
 - Repeating column names have been suffixed with "_right".
 - Unlike pandas, there are no indices. The `on`/`left_on`/`right_on` argument is always required.
 - `how=` may take the following values: 'inner', 'left', 'outer', 'semi', 'anti', 'cross'.
-- The join is super fast, as demonstrated in the @sec-motivation Section above. 
+- The join is super fast, as demonstrated in @sec-motivation above. 
 
 
 ### join_asof
@@ -2168,6 +2169,15 @@ Things to note:
 
 
 ## Reshaping
+
+High level:
+
+- `df.transpose()` as the name suggests.
+- `df.melt()` for wide to long.
+- `df.pivot()` for long to wide.
+- `df.explode()` for breaking strings into rows. 
+- `df.unstack()` 
+
 
 ```{python}
 df.transpose()
@@ -2221,8 +2231,8 @@ long.limit(5)
 
 ```{python}
 long.pivot(
-  index='id', 
-  columns='treatment',
+  index='id', # index in the wide format
+  columns='treatment', # defines columns in the wide format
   values='height')
 ```
 
@@ -2234,6 +2244,32 @@ long.unstack(step=2) # works like a transpose, and then wrap rows. Change the `s
 
 
 ## Groupby
+
+Grouping over categories:
+
+- `df.partion_by()` will return a list of frames.
+- `df.groupby()` for grouping. Just like pandas, only parallelized, etc. The output will have the length of the number of groups.
+- `over()` will assign each row the aggregate in the group. Like pandas `groupby.transform`. The output will have the same length as the input.
+
+Grouping over time:
+
+- `df.grouby_rolling()` for rolling window grouping, a.k.a. a sliding window. Each row will be assigned the aggregate in the window.
+- `df.groupby_dynamic()` for dynamic grouping. Each period will be assigned the agregate in the period. The output may have more rows than the input.
+
+
+After grouping:
+
+- `df.groupby().agg()` for aggregating.
+- `df.groupby().apply()` for applying a function to each group.
+- `df.groupby().count()` for counting.
+- `df.groupby().first()` for getting the first row of each group.
+- ...
+
+See the [API reference](https://pola-rs.github.io/polars/py-polars/html/reference/dataframe/groupby.html) for the various options.
+Also see the [user guide](https://pola-rs.github.io/polars-book/user-guide/howcani/timeseries/temporal_groupby.html) for more details. 
+
+
+
 
 ```{python}
 df2 = pl.DataFrame({
@@ -2297,7 +2333,7 @@ df.with_columns(
 ).limit(5)
 ```
 
-__Careful__: `over()` should follow computing expression. The following will not fail, but return the wrong result: 
+__Careful__: `over()` should follow the aggregation. The following will not fail, but return the wrong result: 
 ```{python}
 df.with_columns(
   pl.col("float").over("string").sum().alias("sum")
@@ -2308,17 +2344,23 @@ df.with_columns(
 
 ## Processing Multiple Frames Simultanously
 
-What if you want to access a column from frame `df`, when processing frame `df2`?
-This is what `df.with_context()` will do.
+Q: What if you want to access a column from frame `df`, when processing frame `df2`?  
+A: Just join them.  
+Q: What if they are not joinable?  
+A: Use a diagonal join.
+Q: Can't I just add a search-space into the lazy query?
+A: Ahhh! Use `df.with_context()`.
 
 ```{python}
+df3 = pl.Series("blah", [100,2,3]).to_frame()
+
 q = (
     df.lazy()
     .with_context( # add colums of df2 to the search space
-        df2.select(pl.all().suffix("_2")).lazy()
+        df3.lazy()
         )
-    .select(
-        (pl.col("float") + pl.col("float_2")).alias('sum') # sum from the two frames
+    .with_columns(
+        pl.col('float').map_dict(remapping={4.0:None}, default=100).fill_null(pl.col('blah').mean()).alias('float2'),
         )
     )
 
@@ -2330,7 +2372,9 @@ Things to note:
 
 - `with_context()` is a lazy operation. This is great news, since it means both frames will benefit from query planning, etc. 
 - `with_context()` will not copy the data, but rather, add a reference to the data.
+- Why not use `pl.col('blah').mean()` within the `map_dict()`? That is indeed more reasonable. It simply did not work.
 - Try it yourself: Can you use multiple `with_context()`?
+
 
 
 # Query Planning and Optimization {#sec-query-planning}
@@ -2376,8 +2420,8 @@ Things to note:
 
 - You will need Graphviz installed to visualize the query plan.
 - To understand the plan, you need some terminology from [relational databases](https://www.ibm.com/docs/en/informix-servers/14.10?topic=concepts-selection-projection). Namely:
-  -  A _selection_ is a subset of rows, marked in the graph with a $\sigma$. 
-  - A _projection_ is a subset of columns, marked in the graph with a $\pi$.
+  -  A _selection_ is a polars' filter, i.e. subset of rows, marked in the graph with a $\sigma$. 
+  - A _projection_ is polars seletion, i.e. a subset of columns, marked in the graph with a $\pi$.
 - The optimized plan removes redudancies, and orders the operations in the most efficient way.
 
 
@@ -2390,42 +2434,47 @@ q.collect()
 q.describe_plan()
 ```
 
-For early stopping you can replace `collect()` with `fetch()`: 
+
+
+
+## Inspecting, Profiling, and Debugging a Query
+
+For early stopping (debugging?) you can replace `collect()` with `fetch()`: 
 ```{python}
 q.fetch(2)
 ```
 
 
 
-
-## Inspecting, Profiling, and Debugging a Query
-
-You can inspect the data at any point in the query. `df.inspect()` will print the output of a single node in the query graph:
+You can inspect the data at any point in the query. `df.inspect()` will print the state of a single node in the query graph: [TODO: replace with example with multiple nodes]
 
 ```{python}
-(df_lazy
-  .inspect()
-  .filter(pl.col("float") > 2.0)
-  .filter(pl.col("float") > 3.0)
-  .filter(pl.col("float") > 7.0)
-  .select(["integer"])
-  .sort("integer")
-  .collect()
-)
+q = (
+    pl.scan_parquet(f'{path}/*.parquet')
+    .filter(
+        (pl.col('passenger_count') > 0) &
+        (pl.col('passenger_count') < 5) &
+        (pl.col('trip_distance') > 0) &
+        (pl.col('trip_distance') < 10) &
+        (pl.col('fare_amount') > 0) &
+        (pl.col('fare_amount') < 100) &
+        (pl.col('tip_amount') > 0) &
+        (pl.col('tip_amount') < 20) &
+        (pl.col('total_amount') > 0) &
+        (pl.col('total_amount') < 100)
+    )
+    .inspect() # here is the inspect
+    .groupby('passenger_count')
+    .agg([pl.mean('tip_amount')])
+    )
+q.collect()
 ```
-
 
 
 You can profile the execution of a query with `df.profile()`:
 
 ```{python}
-( 
-    df_lazy
-    .groupby('string')
-    .agg(pl.col('float').sum())
-    .sort('string')
-    .profile(show_plot=True)
-)
+q.profile(show_plot=True)
 ```
 
 
@@ -2454,8 +2503,10 @@ pl.LazyFrame.read_json("query.json").collect()
 ## SQL Flavor
 
 If you are a hardcore SQL user, you may want to use the SQL flavor of polars.
+The following syntax is experimental, and may change.
 
 ```{python}
+sql = pl.SQLContext() 
 sql.register("lazy_frame", lazy_frame) # register the lazy frame as a table
 
 sql.query("""
@@ -2481,6 +2532,16 @@ This is due to:
 
 
 ## Import
+
+High level:
+
+- `pl.read_X()` will read a file into a non-lazy frame.
+- `pl.scan_X()` will read a file into a lazy frame.
+- You can use globs to import multiple files but:
+    - You may need to teak schema manually. 
+    - Filesystme operations are handeled by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/), which may open only the first file when using globs in remote filesystems (e.g. S3). This is discussed in @sec-multiple-files.
+
+
 
 ### From a Single File
 
@@ -2520,7 +2581,7 @@ q.collect()
 
 Things to note:
 
-- From the graph we see that the filtering ($$\sigma$$) is done at scan time, and not after the materialization of the data.
+- From the graph we see that the filtering ($\sigma$) is done at scan time, and not after the materialization of the data. This is crucial for processing datasets that are larger then memory.
 - To get the actual data, we naturally need to `collect()`.
 
 
@@ -2529,20 +2590,21 @@ Other file types can be found [here](https://pola-rs.github.io/polars/py-polars/
 
 - Excel. 
 - Arrow IPC: A binary format for storing columnar data. 
-- Feather (V2): A portable columnar file format that is optimized for storing data in a fast and efficient manner, utilizing the Arrow IPC format internally. 
+- Feather (V2): Multiple IPC files with a shared schema.
 - Parquet (non-partitioned): A tabular file format (not columnar) that is optimized for long-term storage, more compressed than Feather. 
-- JSON: Short for JavaScript Object Notation, a textual data-interchange format.
-- Avro: A binary row-based format. 
+- JSON: Short for JavaScript Object Notation, a textual data-interchange format (like XML).
+- Avro: A binary row-based format. Good for streaming.
 
 Each of the above formats has a non-lazy reader using `pl.read_*` and a lazy reader using `pl.scan_*`.
 
-Not suported formats:
+Currently unsuported formats:
+
 - Feather (V1). 
-- HDF5: Currently [not supported](https://github.com/pola-rs/polars/issues/3520).
+- [HDF5](https://github.com/pola-rs/polars/issues/3520).
 
 
 
-### From Multiple Files in The Filesystem
+### From Multiple Files in Your Filesystem
 
 Most of today's datasets will span more than a single file on disk.
 Polar supports reading from multiple files in your file system (as opposed to a remote datalake such as S3), and will automatically merge them into a single dataframe.
@@ -2558,9 +2620,9 @@ TODO: https://pola-rs.github.io/polars-book/user-guide/multiple_files/intro.html
 
 
 
-#### Arbitrary Collection of Files {#sec- multiple_files}
+#### Arbitrary Collection of Files {#sec-multiple-files}
 
-Without any format-specific utilities, you can always read from some arbitrary collection of files and concatenate the result. 
+You can always scan from some arbitrary collection of files and concatenate the result. 
 
 ```{python}
 path = 'data/NYC' # Data from https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
@@ -2575,21 +2637,20 @@ for file in file_names:
     df_lazy_list.append(
         pl.scan_parquet(f'{path}/{file}')
         )
-````
+```
 
 With a list of lazy frames you can proceed by concatenating into a single lazy frame using `pl.concat()`, or collecting them into a list of eager frames using `pl.collect_all()`.
-Which one to use depends on your use case.
+The best option depends on your use case.
 
 Things to note:
 
 - The arrow data format uses caching for string and categorical data (i.e. pl.Series). 
 If importing multiple files, such as multiple parquet/feather files, or an arrow dataset, different files may be cached differnetly. This will cause an error when trying to concatenate the dataframes.
 To avoid this, you can disable string caching, or enforce [joint caching](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.StringCache.html) of all files. 
-The latter will look like this:
-- As discussed in the @sec-joins Section above. 
+- Dataframes may have incompatible schema, as discussed in @sec-joins above. You may need to manually adjust the schema before concatenating.
 
 
-Here is an example of a full import:
+Here is an example that deals with both issues:
 
 ```{python}
 
@@ -2612,6 +2673,7 @@ q= (
 )
 q.collect() # execute query
 ```
+
 
 
 #### Partitioned Parquet
@@ -2639,7 +2701,9 @@ q.collect() # execute query
 
 #### Apache Arrow Dataset
 
-An Apache Arrow dataset is a collection of parquet files, with a common schema.
+TODO: The exampe below deals with partitioned parquet, and not arrow datasets. Fix.
+
+An Apache Arrow dataset is a collection of parquet files, with an index file.
 It is a very efficient way to store data on disk, and to read it in parallel.
 
 Writing an Arrow dataset:
@@ -2678,7 +2742,7 @@ pl.scan_ds(dset).collect() # import
 
 Things to note:
 
-- We used pandas to write the arrow dataset. 
+- We used pandas to write the arrow dataset. It seemed easier than the [pyarrow syntax](https://arrow.apache.org/docs/python/dataset.html#dataset). 
 - The `partition_cols` argument is used to partition the dataset on disk. Each partition is a parquet file (or another partition).
 - Reading from the web (not from the local filesystem) is slightly different. TODO: add reference. 
 
@@ -2698,7 +2762,7 @@ TODO: `pl.read_csv_batched()`
 
 If you are coming from Pandas, reading from a remote datalake (say S3), and a local filesystem may feel the same. 
 This is because the authors of pandas went to great lengths to make the API feel the same.
-At the time of writing, if you give polars a remote glob, it will only read the first file ([ref](https://github.com/pola-rs/polars/issues/5863)). I expect this to change in the near future.
+At the time of writing, if you give polars a remote glob, it will only read the first file ([ref](https://github.com/pola-rs/polars/issues/5863)). 
 
 Your current options for reading multiple files stored remotely are:
 
@@ -2706,16 +2770,19 @@ Your current options for reading multiple files stored remotely are:
 1. Use third party functionality that can link to multiple remote files. Luckily, the pyarrow library gives you this functionality. See [here](https://pola-rs.github.io/polars-book/user-guide/howcani/io/aws.html) for an example.
 
 
-See [here](https://www.rhosignal.com/posts/polars-aws-lambda/) for working in serverless environments. 
-
 
 
 ### Reading from a Database
 See [here](https://pola-rs.github.io/polars-book/user-guide/howcani/io/read_db.html).
 
 
+### Serverless
 
-## Export {#sec-disk-export}
+See [here](https://www.rhosignal.com/posts/polars-aws-lambda/) for working in serverless environments such as AWS Lambda.
+
+
+
+## Export to Disk {#sec-disk-export}
 
 Well, there is not much to say here; just look for `pl.write_*` functions.
 Alternatively, export to pandas, arrow, numpy, and use their exporters. 
@@ -2727,10 +2794,10 @@ Alternatively, export to pandas, arrow, numpy, and use their exporters.
 # Plotting
 
 To get an intuition of what you may expect in this chapter you should know the following.
-There are approaches to plotting in python:
+There are various approaches to plotting in python:
 
-1. The object oriented, where a dataframe has a plotting method. The method may use a single, or even multiple backends. Such is the pandas dataframe, which may use a matplotlib, plotly, or bokeh backend.
-2. The functional method, where a plotting function takes a dataframe as an argument. Such are the matplotlib, seaborn, and plotly functions, which may take pandas dataframes as inputs. 
+1. The object oriented, where a dataframe has a plotting method. E.g. `df.plot()`. The method may use a single, or even multiple backends. Such is the pandas dataframe, which may use a matplotlib, plotly, or bokeh backend.
+2. The functional method, where a plotting function takes a dataframe as an argument. E.g. `plot(df)`. Such are the matplotlib, seaborn, and plotly functions, which may take pandas dataframes as inputs. 
 
 Plotting support in polars thus boils down to the folowing questions:
 (1) Do polars dataframes have a plotting method? With which backend?
@@ -2738,16 +2805,18 @@ Plotting support in polars thus boils down to the folowing questions:
 
 The answer to the first is negative. 
 Polars dataframes do not have a plotting method, and it seems they are not planned to have one (TODO: add reference).
-The answer to the second is "almost yes" 
-Any plotting function that can take numpy 1D arrays as inputs, can take a polars series after a zero copy conversion with `pl.Series.to_numpy()`.
-Some plotting functions will not even require the conversion to numpy (and will handle it internally).
+The answer to the second is "almost yes".
+Any plotting function that can take an iterable such as a list, or numpy 1D arrays, will work. Either becaus polars series are iterable, or because one can convert them (to arrow or numpy being the fastest).
 
-Polars frames may cause trouble. You may expect to use a `plot(df, x='col1', y='col2')` syntax; it may work if `df` is a pandas dataframe, but not with polars.
+Passing polars frames may cause trouble. 
+You may expect to use a `plot(df, x='col1', y='col2')` syntax; it may work if `df` is a pandas dataframe, but not with polars.
 Support of this syntax does not depend on polars developers, rather, on the plotting function developpers. 
 I suspect that the plotly and bokeh teams will eventually supprts polars. I do not know about the seaborm, or matplotlib teams.
 
-__Interesting__:
-How do I know if a python function can take a polars frame as input?
+The current state of affairs:
+
+- Plotly, matplotlib, and seaborn support polars series as input.
+- Matplotlib and seaborn support polars frames as input. Plotly (5.12.0) does not.
 
 
 ## Plotly Functions
@@ -2759,7 +2828,6 @@ iris = pl.DataFrame(px.data.iris())
 iris.head()
 ```
 
-Plotly's `scatter()` can take x and y as str, int or Series or array-like. The following will naturally work:
 ```{python}
 fig = px.scatter(
     x=iris["sepal_width"].to_list(), 
@@ -2769,7 +2837,6 @@ fig.show()
 
 But wait! Maybe a polars series is "array-like" and can be used as input? 
 Yes it can!
-
 ```{python}
 fig = px.scatter(
     x=iris["sepal_width"], 
@@ -2778,7 +2845,7 @@ fig.show()
 ```
 
 Can a polars frame be used as input?
-No it can not. The following will not work:
+No it can not. The following will currently not work:
 ```{python}
 #| eval: false
 #| 
@@ -2858,7 +2925,7 @@ data_pandas = pd.DataFrame(
     columns=["y", "x1", "x2"])
 ```
 
-Use patsy to make a design matrix $$X$$, and a target vector $$y$$ from a pandas dataframe.
+Use patsy to make a design matrix $X$, and a target vector $y$ from a pandas dataframe.
 ```{python}
 formula = 'y ~ x1 + x2'
 y, X = pt.dmatrices(formula, data_pandas)
