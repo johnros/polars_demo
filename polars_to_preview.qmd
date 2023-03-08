@@ -92,25 +92,25 @@ You are probably storing your data to compute with it.
 Let's compare the memory footprint of computations. 
 
 ```{python}
-%load_ext memory_profiler
+# %load_ext memory_profiler
 ```
 
 
 ```{python}
-%memit letter1.sort()
+# %memit -r1 letter1.sort()
 ```
 
 ```{python}
-%memit letter1_pandas.sort_values()
+# %memit letter1_pandas.sort_values()
 ```
 
 
 ```{python}
-%memit letter1[10]='a'
+# %memit -r1 -n1 letter1[10]='a'
 ```
 
 ```{python}
-%memit letter1_pandas[10]='a'
+# %memit letter1_pandas[10]='a'
 ```
 
 Things to notice:
