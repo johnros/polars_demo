@@ -6,3 +6,5 @@ data
 df*
 sink.parquet
 query.json
+
+/.luarc.json
