@@ -1342,6 +1342,8 @@ http://braaannigan.github.io/software/2022/09/12/polars-groupby_dynamic.html
 
 ### Groupby Rolling
 TODO
+FIXME
+
 
 
 
