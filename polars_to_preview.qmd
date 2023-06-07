@@ -1914,6 +1914,26 @@ df.shift(1)
 df.shift_and_fill(1, 'WOW')
 ```
 
+
+### Conditional Transformation (if-else)
+
+```{python}
+df.with_columns(
+    pl.when(
+      pl.col("integer") > 2
+    )
+    .then(1)
+    .otherwise(0)
+    .alias("new_col")
+)
+```
+
+```{python}
+)
+```
+
+
+
 ## Sorting
 
 ```{python}
