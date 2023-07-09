@@ -20,6 +20,9 @@ html:
 ---
 
 ```{python}
+#| label: preliminaries
+
+
 import polars as pl
 import pandas as pd
 import numpy as np
@@ -42,6 +45,9 @@ pio.renderers.default = "plotly_mimetype+notebook"
 Inspecting polars version
 
 ```{python}
+#| label: polars-version
+
+
 # %pip show polars # check you polars version
 # %pip show pandas # check you polars version
 ```
@@ -1428,6 +1434,9 @@ General:
 A frame can be created as you would expect. From a dictionary of series, a numpy array, a pandas sdataframe, or a list of polars (or pandas) series, etc.
 
 ```{python}
+#| label: make-dataframe
+
+
 df = pl.DataFrame({
   "integer": [1, 2, 3], 
   "date": [
@@ -1743,9 +1752,37 @@ df.select(pl.col("*").exclude("integer"))
 df.select(pl.col("*").exclude(pl.Float64))
 ```
 
+::: {.callout-important}
+`pl.col()` with regex is insanely powerful!
+:::
+
 ```{python}
+#| label: pl-col-with-regex
+
+
 df.select(pl.col("^.*te.*$")) # regex matching anything with a "te"
 ```
+
+Exciting! [New API](https://pola-rs.github.io/polars/py-polars/html/reference/selectors.html) for column selection. 
+
+```{python}
+#| label: pl-column-selector
+import polars.selectors as cs
+
+df.select(cs.starts_with('i'))
+```
+
+```{python}
+#| label: pl-column-selector-set-opeartions
+
+df.select(cs.starts_with('i') | cs.starts_with('d'))
+```
+
+```{python}
+df.select(cs.starts_with('i') | cs.starts_with('d'))
+```
+
+
 
 ### Filtering Rows
 
@@ -1923,12 +1960,21 @@ df.with_columns(
       pl.col("integer") > 2
     )
     .then(1)
-    .otherwise(0)
+    .otherwise(pl.col("integer"))
     .alias("new_col")
 )
 ```
 
+Note what happens if `otherwise()` omitted:
+
 ```{python}
+df.with_columns(
+    pl.when(
+      pl.col("integer") > 2
+    )
+    .then(1)
+    # .otherwise(pl.col("integer"))
+    .alias("new_col")
 )
 ```
 
@@ -2239,6 +2285,33 @@ Things to note:
 -   `with_context()` will not copy the data, but rather, add a reference to the data.
 -   Why not use `pl.col('blah').mean()` within the `map_dict()`? That is indeed more reasonable. It simply did not work.
 -   Try it yourself: Can you use multiple `with_context()`?
+
+
+### Imputation Example
+
+```{python}
+train_lf = pl.LazyFrame(
+    {"feature_0": [-1.0, 0, 1], "feature_1": [-1.0, 0, 1]}
+)
+test_lf = pl.LazyFrame(
+    {"feature_0": [-1.0, None, 1], "feature_1": [-1.0, 0, 1]}
+)
+
+(
+  test_lf
+  .with_context(
+    train_lf
+    .select(pl.all().suffix("_train")))
+    .select(
+      pl.col("feature_0")
+      .fill_null(
+        pl.col("feature_0_train").median()
+      )
+  )
+).collect()
+
+```
+
 
 # Query Planning and Optimization {#sec-query-planning}
 
