@@ -8,3 +8,5 @@ sink.parquet
 query.json
 
 /.luarc.json
+.DS_Store
+polars_demo_files
