@@ -19,6 +19,45 @@ html:
     embed-resources: true
 ---
 
+
+
+# Background {#sec-background}
+
+
+
+
+## Ritchie Vink, Rust and Apache Arrow
+
+
+## The DataFrame Landscape
+
+Initially there were R's `data.frame`. 
+R has evolved, and it now offers `tibble`s and `data.table`s.
+Python had only `pandas` for years. 
+Then the Python ecosystem exploded, and now we have:
+
+-  [pandas](https://pandas.pydata.org/): The original Python dataframe module. Build by Wes McKinney, on top of numpy.
+-  [polars](https://www.pola.rs/): A new dataframe module, build by Ritchie Vink, on top of Rust and Apache Arrow.
+-  [datatable](https://datatable.readthedocs.io/en/latest/): An attempt to recreate R's [data.table](https://github.com/Rdatatable/data.table) API and (crazy) speed in Python. 
+-  [dask](https://www.dask.org/): A distributed computing engine for Python, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
+-  [vaex](https://vaex.io/): A high performance Python library for lazy Out-of-Core DataFrames (similar to dask, but with a different API).
+-  [modin](https://github.com/modin-project/modin): A drop-in distributed  replacement for Pandas, built on top of [Ray](https://www.ray.io/). 
+-  [DuckDB](https://duckdb.org/): An embeddable SQL OLAP database management system. These are dataframe that are stored on disk, compute on a single process, and queried with SQL or pythonic API.
+- [Daft](https://www.getdaft.io/): A distributed dataframe library built for "Complex Data" (data that doesn't usually fit in a SQL table such as images, videos, documents etc). 
+-  [Fugue](https://fugue-tutorials.readthedocs.io/): A dataframe library that allows you to write SQL-like code, and execute it on different backends (e.g. Spark, Dask, Pandas, Polars, etc).
+-  [pySpark](https://spark.apache.org/docs/latest/api/python/index.html): The Python API for Spark. Spark is a distributed computing engine, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
+-  [CUDF](https://github.com/rapidsai/cudf): A GPU accelerated dataframe library, build on top of Apache Arrow.
+
+
+
+See [here](https://pola-rs.github.io/polars-book/user-guide/misc/alternatives/) and [here](https://www.getdaft.io/projects/docs/en/latest/dataframe_comparison.html) for more details. 
+
+
+
+
+
+
+
 ```{python}
 #| label: preliminaries
 
