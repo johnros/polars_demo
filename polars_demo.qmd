@@ -507,7 +507,7 @@ If this motivational section has convinced you to try polars instead of pandas, 
 
 Before we dive in, you should be aware of the following references for further help:
 
-1.  A [github page](https://github.com/pola-rs/polars).
+1.  A [github page](https://github.com/pola-rs/polars). It is particular important to subscribe to [release updates](https://github.com/pola-rs/polars/releases). 
 2.  A [user guide](https://pola-rs.github.io/polars-book/user-guide/index.html).
 3.  A very active community on [Discord](https://discord.gg/4UfP5cfBE7).
 4.  The [API reference](https://pola-rs.github.io/polars/py-polars/html/reference/index.html).
