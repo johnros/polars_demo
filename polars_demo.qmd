@@ -1660,6 +1660,10 @@ df
 print(df)
 ```
 
+```{python}
+df.glimpse() #useful for wide frames
+```
+
 Things to note:
 
 1.  The frame may be printed with Jupter's styling, or as ASCII with a `print()` statement.
@@ -2195,6 +2199,9 @@ df.with_columns(
 
 TODO
 
+### Unset
+
+https://pola-rs.github.io/polars/py-polars/html/reference/dataframe/api/polars.DataFrame.unnest.html#polars.DataFrame.unnest
 
 
 ## Sorting
