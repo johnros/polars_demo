@@ -1,0 +1,196 @@
+---
+title: "Benchmarking"
+execute:
+  warning: true
+  error: true
+  keep-ipynb: true
+  cache: true
+jupyter: python3
+---
+
+```{python}
+import polars as pl
+import pandas as pd
+import numpy as np
+import pyarrow as pa
+import plotly.express as px
+import string
+import random
+import os
+import sys
+%matplotlib inline 
+import matplotlib.pyplot as plt
+from datetime import datetime
+import mlx.core as mx
+
+import time
+
+```
+
+
+```{python}
+
+
+# Maker an array of floats.
+A_numpy = np.random.randn(int(1e6), 10)
+
+A_numpy = A_numpy.copy()
+A_polars = pl.DataFrame(A_numpy)
+A_pandas_numpy = pd.DataFrame(A_numpy)
+A_pandas_arrow = pd.DataFrame(A_numpy, dtype="float32[pyarrow]")
+# A_arrow = pa.Table.from_pandas(A_pandas_numpy) # no sum method
+A_mlx = mx.array(A_numpy)
+
+```
+
+
+Candidates currently ommited:
+
+1. JAX
+2. PyTorch
+3. TensorFlow
+4. ?
+
+
+
+# Summing Over Columns
+
+```{python}
+%timeit -n 4 -r 2 A_numpy.sum(axis=0)
+```
+
+```{python}
+A_numpy.sum(axis=0).shape
+```
+
+```{python}
+%timeit -n 4 -r 2 A_polars.sum()
+```
+
+```{python}
+A_polars.sum().shape
+```
+
+```{python}
+%timeit -n 4 -r 2 A_mlx.sum(axis=0)
+```
+
+```{python}
+A_mlx.sum(axis=0).shape
+```
+
+
+
+## 50 Shades of Pandas
+
+Pandas with numpy backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.sum(axis=0)
+```
+
+```{python}
+A_pandas_numpy.sum(axis=0).shape
+```
+
+
+Pandas with arrow backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.sum(axis=0)
+```
+
+```{python}
+A_pandas_arrow.sum(axis=0).shape
+```
+
+Pandas with numpy backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.values.sum(axis=0)
+```
+
+```{python}
+A_pandas_numpy.values.sum(axis=0).shape
+```
+
+Pandas with arrow backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.values.sum(axis=0)
+```
+
+```{python}
+type(A_pandas_arrow.values)
+```
+
+```{python}
+A_pandas_arrow.values.sum(axis=0).shape
+```
+
+Pandas to mlx
+```{python}
+%timeit -n 4 -r 2 mx.array(A_pandas_numpy.values).sum(axis=0)
+```
+
+```{python}
+mx.array(A_pandas_numpy.values).sum(axis=0).shape
+```
+
+
+
+
+
+# Summing Over Rows
+
+```{python}
+%timeit -n 4 -r 2 A_numpy.sum(axis=1)
+```
+
+```{python}
+A_numpy.sum(axis=1).shape
+```
+
+```{python}
+%timeit -n 4 -r 2 A_polars.sum_horizontal()
+```
+
+
+```{python}
+A_polars.sum_horizontal().shape
+```
+
+```{python}
+%timeit -n 4 -r 2 A_mlx.sum(axis=1)
+```
+
+```{python}
+A_mlx.sum(axis=1).shape
+```
+
+## 50 Shades of Pandas
+
+Pandas with numpy backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.sum(axis=1)
+```
+
+
+Pandas with arrow backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.sum(axis=1)
+```
+
+Pandas with numpy backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.values.sum(axis=1)
+```
+
+Pandas with arrow backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.values.sum(axis=1)
+```
+
+
+Pandas to mlx
+```{python}
+%timeit -n 4 -r 2 mx.array(A_pandas_numpy.values).sum(axis=1)
+```
+
+
