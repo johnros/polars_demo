@@ -106,6 +106,8 @@ At this point you may want to create and activate a [venv](https://realpython.co
 #| label: preliminaries
 
 import polars as pl
+pl.Config(fmt_str_lengths=50)
+
 import pandas as pd
 import numpy as np
 import pyarrow as pa
@@ -1008,6 +1010,9 @@ s.to_arrow()
 
 
 
+
+
+
 ## Memory Representation of Series
 
 Object size in memory. 
@@ -1373,6 +1378,10 @@ s.sqrt()
 
 ## Comparisons
 
+```{python}
+s.equals(pl.Series("a", [1, 2, 3]))
+```
+
 
 ```{python}
 #| label: series-eq
@@ -1662,153 +1671,6 @@ s.shuffle(seed=1) # random permutation
 ```
 
 
-## Strings
-
-Like Pandas, accessed with the `.str` namespace.
-
-```{python}
-#| label: make-string-series
-st = pl.Series("a", ["foo", "bar", "baz"])
-```
-
-```{python}
-st.str.n_chars() # gets number of chars. In ASCII this is the same as lengths()
-```
-
-```{python}
-st.str.len_bytes() # gets number of bytes in memory
-```
-
-```{python}
-st.str.concat("-")
-```
-
-```{python}
-st.str.contains("foo|tra|bar")
-```
-
-```{python}
-st.str.count_match(pattern= 'o') # count literal matches
-```
-
-Regex is supported. 
-
-```{python}
-st.str.count_matches(pattern=r"\w") # \w is regex for alphanumeric
-```
-
-The `r` prefix in `r"<regex pattern>"` is useful for emphasizing regular expressions, but not really necessary (more about it [here](https://stackoverflow.com/questions/2241600/python-regex-r-prefix)).
-
-```{python}
-st.str.count_matches(pattern="\w") # alter syntax
-```
-
-
-```{python}
-st.str.ends_with("oo")
-```
-
-```{python}
-st.str.starts_with("fo")
-```
-
-To extract the **first** appearance of a pattern, use `extract`:
-
-```{python}
-url = pl.Series("a", [
-            "http://vote.com/ballon_dor?candidate=messi&ref=polars",
-
-            "http://vote.com/ballon_dor?candidate=jorginho&ref=polars",
-
-            "http://vote.com/ballon_dor?candidate=ronaldo&ref=polars"
-            ])
-```
-
-```{python}
-url.str.extract(r"=(\w+)", 1) # "=(\w+)" is read: match an equality, followed by any number of alphanumerics.
-```
-
-To extract **all** appearances of a pattern, use `extract_all`:
-
-```{python}
-url.str.extract_all("=(\w+)")
-```
-
-```{python}
-st.str.pad_end(8, "*")
-```
-
-```{python}
-st.str.pad_start(8, "*")
-```
-
-```{python}
-st.str.strip_chars_start('f')
-```
-
-```{python}
-st.str.strip_chars_end('r')
-```
-
-Replacing first appearance of a pattern:
-
-```{python}
-st.str.replace(r"o+", "ZZ")  
-```
-
-Replace all appearances of a pattern:
-
-```{python}
-st.str.replace_all("o", "ZZ")
-```
-
-String to list of strings. Number of splits inferred.
-
-```{python}
-st.str.split(by="o")
-```
-
-```{python}
-st.str.split(by="a", inclusive=True)
-```
-
-String to dict of strings. Number of **splits** fixed.
-
-```{python}
-st.str.split_exact("a", 2)
-```
-
-String to dict of strings. **Length of output** fixed.
-
-```{python}
-st.str.splitn("a", 4)
-```
-
-Strip white spaces.
-
-```{python}
-pl.Series(['   ohh   ','   yeah   ']).str.strip()
-```
-
-```{python}
-st.str.to_uppercase()
-```
-
-```{python}
-st.str.to_lowercase()
-```
-
-```{python}
-st.str.to_titlecase()
-```
-
-```{python}
-st.str.zfill(5)
-```
-
-```{python}
-st.str.slice(offset=0, length=2)
-```
 
 ## Date and Time
 
@@ -1821,7 +1683,8 @@ There are 4 datetime dtypes in polars:
 
 ::: {.callout-warning}
 Python has a sea of modules that support datetimes. 
-A partial list includes: [datetime module](https://docs.python.org/3/library/datetime.html), extensions in [dateutil](https://dateutil.readthedocs.io/en/stable/), [numpy](https://numpy.org/doc/stable/reference/arrays.datetime.html), [pandas](https://pandas.pydata.org/pandas-docs/version/1.1/user_guide/timeseries.html), [arrow](https://arrow.readthedocs.io/en/latest/), the deprecated [scikits.timeseries](https://pytseries.sourceforge.net/) and certainly others. Be aware of the dtype you are using, and the accompanying methods.
+A partial list includes: [datetime module](https://docs.python.org/3/library/datetime.html), extensions in [dateutil](https://dateutil.readthedocs.io/en/stable/), [numpy](https://numpy.org/doc/stable/reference/arrays.datetime.html), [pandas](https://pandas.pydata.org/pandas-docs/version/1.1/user_guide/timeseries.html), [arrow](https://arrow.readthedocs.io/en/latest/), the deprecated [scikits.timeseries](https://pytseries.sourceforge.net/) and certainly others. 
+Be aware of the dtype you are using, and the accompanying methods.
 :::
 
 
@@ -1830,33 +1693,39 @@ A partial list includes: [datetime module](https://docs.python.org/3/library/dat
 ```{python}
 from datetime import datetime, timedelta
 
-start = datetime(year= 2001, month=2, day=2)
-stop = datetime(year=2001, month=2, day=3)
-
-date = pl.datetime_range(
-  start=start, 
-  end=stop, 
-  interval='1m',
-  eager= True, # to return a series and not an expression
+date = (
+  pl.datetime_range(
+    start = datetime(
+      year= 2001, month=2, day=2, hour =2, minute=24, second=12), 
+    end = datetime(
+      year=2002, month=2, day=5, hour =5, minute=34, second=45),
+    interval='1s', 
+    eager= True, 
   )
+  .sample(10)
+)
 
 date
 ```
 
 Things to note:
 
--   How else could I have constructed this series? What other types are accepted as `low` and `high`?
+-   How else could I have constructed this series? What other types are accepted as `start` and `end`?
 -   `pl.date_range` may return a series of dtype `Date` or `Datetime`. This depens of the granularity of the inputs.
 
 ```{python}
 date.dtype
 ```
 
-Cast to different time unit. May be useful when joining datasets, and the time unit is different.
+Cast to different time unit. 
+May be useful when joining datasets, and the time unit is different.
 
 ```{python}
-date.dt.cast_time_unit(tu="ms")
+date.dt.cast_time_unit(time_unit="ms")
 ```
+
+Datetime methods are accessed with the `.dt` namespace.
+
 
 ### Extract Time Sub-Units
 
@@ -1913,12 +1782,16 @@ diffs
 diffs.dtype
 ```
 
+::: {.callout-important}
+The extrator of sub-units from a `pl.Duration` has recently changed from `.dt.X()` to `.dt.total_X()`.
+:::
+
 ```{python}
-diffs.dt.seconds()
+diffs.dt.total_seconds()
 ```
 
 ```{python}
-diffs.dt.minutes()
+diffs.dt.total_minutes()
 ```
 
 ```{python}
@@ -1926,7 +1799,7 @@ diffs.dt.days()
 ```
 
 ```{python}
-diffs.dt.hours()
+diffs.dt.total_hours()
 ```
 
 ### Date Aggregations
@@ -1941,6 +1814,7 @@ date.dt.max()
 date.dt.min()
 ```
 
+I never quite undersootd that is the "average day."
 ```{python}
 date.dt.mean()
 ```
@@ -1951,32 +1825,36 @@ date.dt.median()
 
 ### Date Transformations
 
+```{python}
+date.dt.offset_by(by="-100y")
+```
+
 Notice the syntax of `offset_by`. It is similar to R's `lubridate` package.
 
 ```{python}
 date.dt.offset_by(by="1y2m20d")
 ```
 
-Negative offset is also allowed.
-
 ```{python}
-date.dt.offset_by(by="-1y2m20d")
+date.dt.truncate("1m")
 ```
 
 ```{python}
-date.dt.round("1y")
+date.dt.round(every="1m")
 ```
 
-```{python}
-date2 = date.dt.truncate("30m") # round to period
-pd.crosstab(date,date2)
-```
 
 ### From Date to String
 
 ```{python}
+date.dt.to_string("%Y-%m-%d")
+```
+
+Or equivalently:
+```{python}
 date.dt.strftime("%Y-%m-%d")
 ```
+
 
 ### From String to Datetime
 
@@ -1990,12 +1868,18 @@ sd = pl.Series(
         "Sun Jul  8 00:34:60 2001",
     ],
 )
+sd
 ```
 
 Parse into `Date` type.
 
 ```{python}
-sd.str.strptime(datatype= pl.Date, fmt="%F", strict=False)
+sd.str.to_date(format="%F", strict=False)
+```
+
+Or equivalently:
+```{python}
+sd.str.strptime(dtype= pl.Date, format="%F", strict=False)
 ```
 
 ```{python}
@@ -2005,25 +1889,186 @@ sd.str.strptime(pl.Date, "%D", strict=False)
 Parse into `Datetime` type.
 
 ```{python}
-sd.str.strptime(pl.Datetime, "%F %T",strict=False)
+sd.str.to_datetime(format="%F %T", strict=False)
+```
+
+Or equivalently:
+```{python}
+sd.str.strptime(pl.Datetime, "%F %T", strict=False)
 ```
 
 ```{python}
 sd.str.strptime(pl.Datetime, "%a %h %d %T %Y",strict=False)
 ```
 
-Parse into `Time` type.
-
+Parse into `Time` dtype.
 ```{python}
-sd.str.strptime(pl.Time, "%a %h %d %T %Y",strict=False)
+sd.str.to_time("%a %h %d %T %Y",strict=False)
+```
+```{python}
+sd.str.strptime(pl.Time, "%a %h %d %T %Y", strict=False)
 ```
 
-## Comparing Series
+
+
+
+
+
+
+
+
+
+## Strings
+
+String methods are accessed with the `.str` namespace.
 
 ```{python}
-s.series_equal(pl.Series("a", [1, 2, 3]))
+#| label: make-string-series
+st = pl.Series("a", ["foo", "bar", "baz"])
 ```
 
+```{python}
+st.str.len_chars() # gets number of chars. In ASCII this is the same as lengths()
+```
+
+
+```{python}
+st.str.concat("-")
+```
+
+
+
+```{python}
+st.str.count_matches(pattern= 'o') # count literal matches
+```
+
+
+```{python}
+st.str.contains("foo|tra|bar") 
+```
+
+```{python}
+st.str.contains("ba[a-zA-Z]") 
+```
+
+```{python}
+st.str.contains("[a-zA-Z]{4,5}") 
+```
+
+
+```{python}
+st.str.count_matches(pattern='[a-zA-Z]')
+```
+
+
+```{python}
+st.str.ends_with("oo")
+```
+
+```{python}
+st.str.starts_with("fo")
+```
+
+To extract the **first** appearance of a pattern, use `extract`:
+
+```{python}
+url = pl.Series("a", [
+            "http://vote.com/ballon_dor?candidate=messi&ref=polars",
+
+            "http://vote.com/ballon_dor?candidate=jorginho&ref=polars",
+
+            "http://vote.com/ballon_dor?candidate=ronaldo&ref=polars"
+            ])
+```
+
+```{python}
+url.str.extract("=([a-zA-Z]+)", 1) 
+# "=([a-zA-Z]+)" is read: "match an equality, followed by any number of alphanumerics".
+```
+
+To extract **all** appearances of a pattern, use `extract_all`:
+
+```{python}
+url.str.extract_all("=(\w+)") # \w is a shorthand for [a-zA-Z0-9_], i.e., alphanumerics and underscore.
+```
+
+```{python}
+st.str.pad_end(8, "*")
+```
+
+```{python}
+st.str.pad_start(8, "*")
+```
+
+```{python}
+st.str.strip_chars_start('f')
+```
+
+```{python}
+st.str.strip_chars_end('r')
+```
+
+Replacing first appearance of a pattern:
+
+```{python}
+st.str.replace("o+", "ZZ")
+```
+
+Replace all appearances of a pattern:
+
+```{python}
+st.str.replace_all("o", "ZZ")
+```
+
+String to list of strings. Number of splits inferred.
+
+```{python}
+st.str.split(by="o")
+```
+
+```{python}
+st.str.split(by="a", inclusive=True)
+```
+
+String to dict of strings. 
+Number of **splits** fixed.
+
+```{python}
+st.str.split_exact("a", 2)
+```
+
+String to dict of strings. 
+Length of **output** fixed.
+
+```{python}
+st.str.splitn("a", 4)
+```
+
+Strip white spaces.
+
+```{python}
+pl.Series(['   ohh   ','   yeah   ']).str.strip()
+```
+
+```{python}
+st.str.to_uppercase()
+```
+
+```{python}
+st.str.to_lowercase()
+```
+
+```{python}
+st.str.to_titlecase()
+```
+
+```{python}
+st.str.zfill(5)
+```
+
+```{python}
+st.str.slice(offset=1, length=1)
+```
 
 
 
