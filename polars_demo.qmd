@@ -26,7 +26,14 @@ html:
 
 ## Ritchie Vink, Rust and Apache Arrow
 
+## Who Can Benefit?
 
+- Researcher (DS, Analyst, Statistician, etc):
+  - Working on their local machine. 
+  - Working on a cloud machine (SageMaker, EC2).
+- Production system:
+  - Running on a dedicated server. 
+  - Running on "serverless" (e.g. AWS Lambda, Google Cloud Functions).
 
 ## The DataFrame Landscape
 
@@ -35,12 +42,12 @@ R has evolved, and it now offers `tibble`s and `data.table`s.
 Python had only `pandas` for years. 
 Then the Python ecosystem exploded, and now we have:
 
--  [pandas](https://pandas.pydata.org/): The original Python dataframe module. Build by Wes McKinney, on top of numpy.
--  [polars](https://www.pola.rs/): A new dataframe module, build by Ritchie Vink, on top of Rust and Apache Arrow.
+-  [Pandas](https://pandas.pydata.org/): The original Python dataframe module. Build by Wes McKinney, on top of numpy.
+-  [Polars](https://www.pola.rs/): A new dataframe module, build by Ritchie Vink, on top of Rust and Apache Arrow.
 -  [datatable](https://datatable.readthedocs.io/en/latest/): An attempt to recreate R's [data.table](https://github.com/Rdatatable/data.table) API and (crazy) speed in Python. 
--  [dask](https://www.dask.org/): A distributed computing engine for Python, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
--  [vaex](https://vaex.io/): A high performance Python library for lazy Out-of-Core DataFrames (similar to dask, but with a different API).
--  [modin](https://github.com/modin-project/modin): A drop-in distributed  replacement for Pandas, built on top of [Ray](https://www.ray.io/). 
+-  [Dask](https://www.dask.org/): A distributed computing engine for Python, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
+-  [Vaex](https://vaex.io/): A high performance Python library for lazy Out-of-Core DataFrames (similar to dask, but with a different API).
+-  [Modin](https://github.com/modin-project/modin): A drop-in distributed  replacement for Pandas, built on top of [Ray](https://www.ray.io/). 
 -  [DuckDB](https://duckdb.org/): An embeddable SQL OLAP database management system. These are dataframe that are stored on disk, compute on a single process, and queried with SQL or pythonic API.
 - [Daft](https://www.getdaft.io/): A distributed dataframe library built for "Complex Data" (data that doesn't usually fit in a SQL table such as images, videos, documents etc). 
 -  [Fugue](https://fugue-tutorials.readthedocs.io/): A dataframe library that allows you to write SQL-like code, and execute it on different backends (e.g. Spark, Dask, Pandas, Polars, etc).
@@ -59,12 +66,12 @@ See [here](https://pola-rs.github.io/polars-book/user-guide/misc/alternatives/) 
 
 Each of the following, alone(!), is amazing.
 
-1.  Small memory footprint
-    -   Native dtypes: missing, strings.
-    -   Arrow format in memory.
-2.  Lazy evaluation allows query Planning.
-3.  Out of the box parallelism: Fast and informative messages for debugging.
-4.  Strict typing: This means the dtype of output is defined by the operation and not bu the input. This is both safer, and allows static analysis.
+1. Small memory footprint.
+1. Native dtypes: missing, strings.
+2. Lazy evaluation allows query Planning.
+3. Streaming engine: No need to load entire dataset into memory.
+4. Out of the box parallelism: Fast and informative messages for debugging.
+5. Strict typing: This means the dtype of output is defined by the operation and not bu the input. This is both safer, and allows static analysis.
 
 
 ## Setting Up the Environment
@@ -149,12 +156,13 @@ letter1_pandas = letter1.to_pandas(use_pyarrow_extension_array=True)
 letter1_pandas.memory_usage(deep=True, index=False) / 1e9
 ```
 
-The PyArrow backend certainly improved the memory footprint of Pandas. 
-
 
 ### Operating From Disk to Disk
 
-What if my data does not fit into RAM? Turns out you manifest a lazy frame into disk, instead of RAM, thus avoiding the need to load the entire dataset into memory. Alas, the function that does so, [sink_parquet()](https://pola-rs.github.io/polars/py-polars/html/reference/lazyframe/api/polars.LazyFrame.sink_parquet.html), has currently limited functionality. It is certainly worth keeping an eye on this function, as it matures.
+What if my data does not fit into RAM? 
+Turns out you manifest a lazy frame into disk, instead of RAM, thus avoiding the need to load the entire dataset into memory. 
+Alas, the function that does so, [sink_parquet()](https://pola-rs.github.io/polars/py-polars/html/reference/lazyframe/api/polars.LazyFrame.sink_parquet.html), has currently limited functionality. 
+It is certainly worth keeping an eye on this function, as it matures.
 
 ::: {.callout-note}
 Although the potential of `sink_parquet()` is amazing, I find that it currently does not support complicated queries. 
@@ -222,9 +230,10 @@ Things to note:
 3. Lambda functions are always slow (both Pandas and Polars).
 
 
-## Parallelism
+## Optimized for Within-Column Operations
 
-Polars seamlessly parallelizes over columns (also within, when possible). As the number of columns in the data grows, we would expect fixed runtime until all cores are used, and then linear scaling. 
+Polars seamlessly parallelizes over columns (also within, when possible). 
+As the number of columns in the data grows, we would expect fixed runtime until all cores are used, and then linear scaling. 
 The following code demonstrates this idea, using a simple sum-within-column.
 
 ```{python}
@@ -232,80 +241,173 @@ The following code demonstrates this idea, using a simple sum-within-column.
 # %pip install mlx
 import mlx.core as mx
 
-import time
-
-def scaling_of_sums(n_rows, n_cols):
-  
-  # Maker an array of floats.
-  A_numpy = np.random.randn(n_rows,n_cols)
-  
-  # Make a dict with various versions of A.
-  A = {}
-  A['numpy'] = A_numpy.copy()
-  A['polars'] = pl.DataFrame(A_numpy)
-  A['pandas'] = pd.DataFrame(A_numpy)
-  A['mlx'] = mx.array(A_numpy)
-
-  # Time the sum within column, of each frame type. 
-  times = {}
-  for key,value in A.items():
-    start= []
-    end = []
-    for _ in range(2): # warmup
-      start.append(time.time())
-      value.sum()
-      end.append(time.time())
-    times[key]= np.mean(np.array(end)-np.array(start))
-  return(times)
 ```
 
 ```{python}
-scaling_of_time = {
-  p:scaling_of_sums(n_rows= int(1e6), n_cols = p) 
-  for p in np.arange(1,16)
-  }
+
+# Maker an array of floats.
+A_numpy = np.random.randn(int(1e6), 10)
+
+A_numpy = A_numpy.copy()
+A_polars = pl.DataFrame(A_numpy)
+A_pandas_numpy = pd.DataFrame(A_numpy)
+A_pandas_arrow = pd.DataFrame(A_numpy, dtype="float32[pyarrow]")
+# A_arrow = pa.Table.from_pandas(A_pandas_numpy) # no sum method
+A_mlx = mx.array(A_numpy)
+
+```
+
+
+Candidates currently omited:
+
+1. JAX
+2. PyTorch
+3. TensorFlow
+4. ...?
+
+
+
+### Summing Over Columns
+
+```{python}
+%timeit -n 4 -r 2 A_numpy.sum(axis=0)
 ```
 
 ```{python}
-data = pd.DataFrame(scaling_of_time).T
-fig = px.line(
-  data, 
-  labels=dict(
-    index="Number of Columns", 
-    value="Runtime")
-)
-fig.show()
-```
-
-Things to note:
-
-1.  Pandas is slow.
-2.  Numpy is quite efficient.
-3.  MLX is insane! (but less useful when you run on the cloud).
-4.  My machine has 8 cores. I would thus expect a fixed timing until 8 columns, and then linear scaling. This is not the case. I suspect that is because parallelism occurs not only between columns, but also within.
-
-
-Now the same, while scaling the number of columns (i.e., more sums to compute, with fixed length each).
-
-```{python}
-scaling_of_time_2 = {
-  p:scaling_of_sums(n_rows=p ,n_cols = int(1e5)) for p in np.arange(1,16)}
+A_numpy.sum(axis=0).shape
 ```
 
 ```{python}
-data = pd.DataFrame(scaling_of_time_2).T
-fig = px.line(
-  data, 
-  labels=dict(
-    index="Number of Rows", 
-    value="Runtime")
-)
-fig.show()
+%timeit -n 4 -r 2 A_polars.sum()
 ```
 
-Things to note:
+```{python}
+A_polars.sum().shape
+```
 
-1. Polars is heavily optimized for operations in **columns**. 
+```{python}
+%timeit -n 4 -r 2 A_mlx.sum(axis=0)
+```
+
+```{python}
+A_mlx.sum(axis=0).shape
+```
+
+
+
+### 50 Shades of Pandas
+
+Pandas with numpy backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.sum(axis=0)
+```
+
+```{python}
+A_pandas_numpy.sum(axis=0).shape
+```
+
+
+Pandas with arrow backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.sum(axis=0)
+```
+
+```{python}
+A_pandas_arrow.sum(axis=0).shape
+```
+
+Pandas with numpy backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.values.sum(axis=0)
+```
+
+```{python}
+A_pandas_numpy.values.sum(axis=0).shape
+```
+
+Pandas with arrow backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.values.sum(axis=0)
+```
+
+```{python}
+type(A_pandas_arrow.values)
+```
+
+```{python}
+A_pandas_arrow.values.sum(axis=0).shape
+```
+
+Pandas to mlx
+```{python}
+%timeit -n 4 -r 2 mx.array(A_pandas_numpy.values).sum(axis=0)
+```
+
+```{python}
+mx.array(A_pandas_numpy.values).sum(axis=0).shape
+```
+
+
+
+
+
+### Summing Over Rows
+
+```{python}
+%timeit -n 4 -r 2 A_numpy.sum(axis=1)
+```
+
+```{python}
+A_numpy.sum(axis=1).shape
+```
+
+```{python}
+%timeit -n 4 -r 2 A_polars.sum_horizontal()
+```
+
+
+```{python}
+A_polars.sum_horizontal().shape
+```
+
+```{python}
+%timeit -n 4 -r 2 A_mlx.sum(axis=1)
+```
+
+```{python}
+A_mlx.sum(axis=1).shape
+```
+
+### 50 Shades of Pandas
+
+Pandas with numpy backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.sum(axis=1)
+```
+
+
+Pandas with arrow backend
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.sum(axis=1)
+```
+
+Pandas with numpy backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_numpy.values.sum(axis=1)
+```
+
+Pandas with arrow backend, converted to numpy
+```{python}
+%timeit -n 4 -r 2 A_pandas_arrow.values.sum(axis=1)
+```
+
+
+Pandas to mlx
+```{python}
+%timeit -n 4 -r 2 mx.array(A_pandas_numpy.values).sum(axis=1)
+```
+
+
 
 
 ## Speed Of Import
@@ -537,6 +639,8 @@ Things to note:
 3. Warning: The `pl.scan_paquet()` function will not work with a glob if files are in a remote data lake (e.g. S3). More on that later...
 
 
+
+
 # Getting Help
 
 Before we dive in, you should be aware of the following references for further help:
@@ -554,31 +658,34 @@ Polars is still very new, and they may give you pandas completions instead of po
 
 
 
-# Overview
+# Preliminaries
 
 
 
 
 ## Object Classes
 
-- **Polars Series**: Feels like a Pandas series.
-- **Polars DataFrame**: Just like Pandas/DataTable(R)/Tibble(R); a collection of polars series.
-- **Polars Expressions**: An expression may feel like a Polars series, but it is not! A Polars Expression can be thought of as:
+- **Polars Series**: Like a Pandas series. An in-memory array of data, with a name, and a dtype. 
+
+- **Polars Expr**: A Polars series that is not yet computed, and that will be computed when needed.  A Polars Expression can be thought of as:
   1. A Lazy Series: A series that is not yet computed, and that will be computed when needed.
-  2. A function: That maps a Polars series to another Polars series (possibly of length 1).  
-- **Polars LazyFrame**: A collection of Polars Expressions. This is the Polars equivalent of a Spark DataFrame. It is lazy, thus allows query planning. 
-- **Polars Functions**: These are methods that belong to the module, not to other classes. If what you are tying to do is an operation on a single polars class, there will probably be a class method for it. If you operate on multiple classes, or on non-polars classes, there will probably be a function for it. Examples include: `pl.read_csv()`, `pl.col()`, `pl.corr()`,etc. 
+  2. A function: That maps a Polars series to another Polars series (possibly of length 1).
+
+- **Polars LazyFrame**: A collection of Polars Expressions. This is the Polars equivalent of a Spark DataFrame. It is lazy, thus allows query planning.
+
+- **Polars DataFrame**: A collection of Polars Series. This is the Polars equivalent of a Pandas DataFrame. It is eager, and does not allow query planning.
   
 
 ::: {.callout-warning}
 Not all methods are implemented for all classes. 
-In particular, not all pl.Dataframe methods are implemented for pl.LazyFrame and vice versa. The same goes for pl.Series and pl.Expr.
+In particular, not all `pl.Dataframe` methods are implemented for `pl.LazyFrame` and vice versa. The same goes for `pl.Series` and `pl.Expr`.
 
 This is not because the developers are lazy, but because the API is still being developed, and there are fundamental differences between the classes.
-Here are some thought provoking examples:
 
-1. Why do we not see a `df.sample()` method for a `pl.LazyFrame`?
-2. Why do we not see a `df.height` attribute for a `pl.LazeFrame`?
+Think about it:
+
+1. Why do we not see a `df.height` attribute for a `pl.LazeFrame`?
+2. Why do we not see a `df.sample()` method for a `pl.LazyFrame`?
 
 :::
 
@@ -587,44 +694,38 @@ Here are some thought provoking examples:
 ## Polars dtypes
 
 Polars has its own dtypes, call with `pl.<dtype>`; e.g. `pl.Int32`.
+A comprehensive list may be found [here](https://docs.pola.rs/py-polars/html/reference/datatypes.html).
 
-These are the most common. 
+Here are the most common. 
 Note, that unlike Pandas, all are native Polars dtypes, and do not recur to Python objects. 
 
 - Floats: 
-  - `pl.Float32`:
   - `pl.Float64`: Arguably, the most frequently used dtype.
 - Integers: 
-  - `pl.Int8`: 
-  - `pl.Int16`: 
-  - `pl.Int32`:
-  - `pl.Int64`:
-  - `pl.UInt8`:
-  - `pl.UInt16`:
-  - `pl.UInt32`:
-  - `pl.UInt64`:
+  - `pl.Int64`: The most frequently used integer dtype.
 - Booleans: 
   - `pl.Boolean`: As the name suggests. 
 - Strings: 
   - `pl.Utf8`: The only string encoding supported by Polars. 
   - `pl.String`: Recently introduced as an alias to `pl.Utf8`.
 - Temporal: 
-  - `pl.Datetime`: Date, with time. 
   - `pl.Date`: Date, without time.
+  - `pl.Datetime`: Date, with time. 
   - `pl.Time`: Time, without date.
   - `pl.Duration`: Time difference.
-- Categorical: 
-  - `pl.Categorical`: Essentially, a string with a dictionary. 
-  - `pl.Enum`: Introduced in Polars 0.20.0, and currently unstable. A categorical with closed set of values; allowing joint caching within and between dataframes.
 - Nulls: 
   - `pl.Null`: Polars equivalent of `None`.
   - `np.nan`: The numpy dtype. Essentially a float, and not as a null.
+- Nested:
+  - `pl.List`: A list of items.
+  - `pl.Array`: Fixed length list. 
+  - `pl.Struct`: Think of it as a dict within a frame.
 
 
 
 Things to note:
 
--  Polars has no `Int` dtype. You must specify the number of bits.
+-  Polars has no `Int` dtype, nor `Float`. You must specify the number of bits.
 -  Polars recently introduced `pl.String` as an alias for `pl.Utf8`. No other encodings are supported.
 -  Polars also supports `np.nan`(!), which is different than its `pl.Null` dtype. `np.nan` is a **float**, and `Null` is a None.
   
@@ -636,28 +737,46 @@ Things to note:
 - You will fall in love with it!
 - Much more similar to PySpark than to Pandas. The Pandas API is simply not amenable to lazy evaluation. 
 
+
+### Some Design Principles
+
 Here are some principles that will help you understand the API:
 
-1. Always remember the class you are operating on: Is it a series, a dataframe, an expression, or a lazyframe?
-2. Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.groupby()` (starting version 19.0.0). 
-3. Polars was designed for operation within columns, not within rows. Operations within rows are the exception, and the will have a `_horizontal()` suffix. Examples: `pl.sum_horizontal()`, `pl.mean_horizontal()`, `pl.rolling_sum_horizontal()`.
-4. Operations on the columns of a dataframe will always be part of a **context**. Context may include:
-   1. `pl.DataFrame.select()`: This is the most common context. It is used to select columns, and to apply operations on columns.
-   2. `pl.DataFrame.with_columns()`: This is used to add columns to a dataframe.
-   3. `pl.DataFrame.group_by().agg()`: The `.agg()` context works like a `.select()` context, but it is used to apply operations on sub-groups of rows.
-5. Look for pl.Expr() methods so you can chain operations. E.g. `pl.col('a').add(pl.col('b'))` is better than `pl.col('a') + pl.col('b')`; the former can be further chained without the need for parenthesis.
+1. All columns are created equal. There are **no indexing** columns. 
+
+2. Always **remember the class** you are operating on: Is it a series, a dataframe, an expression, or a lazyframe?
+
+5. Operations on the columns of a dataframe will always be part of a **context**. Context may include:
+    1. `pl.DataFrame.select()`: This is the most common context. It is used to select columns, and to apply operations on columns.
+    2. `pl.DataFrame.with_columns()`: This is used to add columns to a dataframe.
+    3. `pl.DataFrame.group_by().agg()`: The `.agg()` context works like a `.select()` context, but it is used to apply operations on sub-groups of rows.
+
+3. Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.groupby()` (starting version 19.0.0). 
+
+4. Polars was designed for operation within **columns**, not within rows. Operations within rows are the exception, and the will have a `_horizontal()` suffix. Examples: `pl.sum_horizontal()`, `pl.mean_horizontal()`, `pl.rolling_sum_horizontal()`.
+
+6. Look for `pl.Expr()` methods so you can chain operations. E.g. `pl.col('a').add(pl.col('b'))` is better than `pl.col('a') + pl.col('b')`; the former can be further chained.
   
-Here is an example to give you a little taste of what the API feels like. It is more like PySpark than Pandas. 
-The following code is a simple group_by operation, with a filter, and a join. 
-The code is not optimized, and is meant to give you a taste of the API.
+
+### Some Examples of the API
+
+Here is an example to give you a little taste of what the API feels like. 
 
 ```{python}
 #| label: polars-api
 
 # Make some data
 polars_frame = pl.DataFrame(make_data(100,4))
-polars_frame.head(5)
+polars_frame.limit(5)
 ```
+
+
+::: {.callout-note}
+What is the difference between `.head()` and `limit()`?
+For eager frames? For lazy frames?
+:::
+
+
 
 Can you parse the following in your head?
 ```{python}
@@ -687,11 +806,102 @@ Ask yourself:
 
 
 
+```{python}
+#| label: polars-api-second-example
+
+(
+  polars_frame
+  .rename({'column_0':'group'})
+  .select(
+    pl.col('group').mod(2),
+
+    pl.mean_horizontal(
+      pl.col('^column_[0-9]$')
+    )
+    .name.suffix('_mean')
+  )
+  .filter(
+    pl.col('group').eq(1),
+    pl.col('column_1_mean').gt(0)
+  )
+)
+
+```
+
+Try parsing the following in your head:
+
+```{python}
+
+polars_frame_2 = (
+  pl.DataFrame(make_data(100,1))
+  .select(
+    pl.col('*').name.suffix('_second')
+  )
+)
+
+
+
+(
+  polars_frame
+  .join(
+    polars_frame_2,
+    left_on = 'column_0',
+    right_on = 'column_0_second',
+    how = 'left',
+    validate='1:1
+  )
+)
+
+
+
+```
+
+
+Can you parse the following in your head?
+
+```{python}
+
+polars_frame_3 = pl.DataFrame(make_data(10,1))
+
+(
+  polars_frame.lazy()
+  .select(
+    pl.col('*').name.suffix('_first')
+  )
+  .with_context(
+    polars_frame_3.lazy()
+    .select(
+      pl.col('*').name.suffix('_third')
+    ) 
+  )
+  .select(
+    'column_0_first',
+
+    pl.when(
+      pl.col('column_0_first').mod(2).eq(0)
+      )
+    .then(
+      pl.lit(1)
+      )
+    .otherwise(
+      polars_frame_3
+      .select(
+        pl.last().min()
+        )
+      )
+  )
+  .collect(streaming=True)
+)
+
+```
+
+
+
 
 # Polars Series
 
 A Polars series looks a feels a lot like a Pandas series.
-You usually will try to avoid them because:(a) You want your objects in frames, not in series. (b) If in frames, you will be calling `pl.Expr()` methods, and not `pl.Series()` methods. 
+You usually will try to avoid them because: (a) Your objects will usually be in frames, not in series. (b) If in frames, you will be calling `pl.Expr()` methods, and not `pl.Series()` methods. 
 Getting used to Polars series, will thus give you bad intuitions when you move to Polars expressions.
 Nevertheless, it is the simples object to learn, so we start there. 
 
@@ -742,10 +952,6 @@ s.alias("b")
 ```
 
 
-```{python}
-#| label: series-to-dummies
-s.to_dummies()
-```
 
 Constructing a series of floats, for later use.
 
@@ -759,6 +965,8 @@ f
 #| label: check-float-series-dtype
 f.dtype
 ```
+
+
 
 
 ## Export To Other Python Objects
@@ -798,11 +1006,6 @@ Maybe Scikit-learn will also support Arrow in the future? Although Scikit-learn 
 s.to_arrow() 
 ```
 
-To MLX Array. 
-```{python}
-#| label: series-to-mlx
-mx.array(s.to_numpy()) # useful for preparing data for learning with mxnet
-```
 
 
 ## Memory Representation of Series
@@ -813,7 +1016,7 @@ Will only be available for eager objects; by definitions.
 
 ```{python}
 #| label: series-memory-size
-s.estimated_size(unit="gb")
+s.estimated_size(unit="b") # 8(bytes) * 3(length)
 ```
 
 
@@ -823,13 +1026,6 @@ s.estimated_size(unit="gb")
 s[0] # same as s.__getitem__(0)
 ```
 
-Filtering with `[` and Booleans will not work:
-
-```{python}
-#| label: series-subset-with-boolean
-#| eval: false
-s[[True, False, True]]
-```
 
 To filter, you need to use the `.filter()` method.
 
@@ -838,9 +1034,23 @@ To filter, you need to use the `.filter()` method.
 s.filter(pl.Series("a", [True, False, True])) # works
 ```
 
+Filtering with the `[` operator will not work:
+
+```{python}
+#| label: series-subset-with-boolean
+#| eval: false
+s[[True, False, True]]
+```
+
+
 ```{python}
 #| label: series-filter-with-list
 s.filter([True, False, True])
+```
+
+```{python}
+#| label: series-limit
+s.limit(2)
 ```
 
 ```{python}
@@ -848,10 +1058,6 @@ s.filter([True, False, True])
 s.head(2)
 ```
 
-```{python}
-#| label: series-limit
-s.limit(2)
-```
 
 ```{python}
 #| label: series-tail
@@ -878,11 +1084,6 @@ s.slice(1, 2) # same as pandas .iloc[1:2]
 s.gather_every(2) # same as pandas .iloc[::2]
 ```
 
-::: {.callout-important}
-All methods that rely on indices, will not be available when you move to lazy frames. These include,: `.head()`, `.tail()`, `.sample()`, `.gather()`, `.slice()`, `.gather_every()`.
-Getting used to work with `.limit()` and `.filter()` will thus be very useful.
-I suspect that PySpark users will feel at home with this.
-:::
 
 
 
@@ -925,6 +1126,11 @@ s.median()
 ```
 
 ```{python}
+#| label: series-quantile
+s.quantile(0.2)
+```
+
+```{python}
 #| label: series-entropy
 s.entropy()
 ```
@@ -934,7 +1140,7 @@ s.entropy()
 s.describe() 
 ```
 
-Polars `pl.series.describe()` differs from Pandas `pd.series.describe()`.
+Polars `pl.series.describe()` is almost the same as Pandas `pd.series.describe()`.
 
 ```{python}
 #| label: pandas-series-describe
@@ -946,426 +1152,14 @@ s_pandas.describe()
 s.value_counts()
 ```
 
-::: {.callout-note}
-Do you expect a `.value_counts()` method for a `pl.DataFrame`? How would the output be structured?
-:::
-
-
-
-
-## Shape Transformations
-
-```{python}
-#| label: series-reshape
-pl.Series("a",[1,2,3,4]).reshape((2,2))
-```
-
-```{python}
-#| label: series-shift
-s.shift(1)
-```
-
-```{python}
-#| label: series-shift-back
-s.shift(-1)
-```
-
-```{python}
-#| label: series-shift-and-fill
-s.shift_and_fill(999)
-```
-
-
-## Mathematical Transformations
-
-```{python}
-#| label: series-add
-s.abs()
-```
-
-```{python}
-#| label: series-sin
-s.sin()
-```
-
-```{python}
-#| label: series-exp
-s.exp()
-```
-
-```{python}
-#| label: series-hash
-s.hash()
-```
-
-```{python}
-#| label: series-log
-s.log()
-```
-
-```{python}
-#| label: series-which-max
-s.peak_max()
-```
-
-```{python}
-#| label: series-sqrt
-s.sqrt()
-```
-
-## Comparisons
-
-
-```{python}
-#| label: series-eq
-s.eq(2)
-```
-
-```{python}
-#| label: series-ge
-s.ge(2)
-```
-
-Clip, aka Winsorize. 
-
-```{python}
-#| label: series-clip
-f.clip(lower_bound=1.5,upper_bound=2.5)
-```
-
-```{python}
-#| label: series-round
-f.round(2)
-```
-
-```{python}
-#| label: series-ceil
-f.ceil()
-```
-
-```{python}
-#| label: series-floor
-f.floor()
-```
-
-
-## Search
-
-```{python}
-#| label: series-search-in-series
-s.is_in(pl.Series([1, 10]))
-```
-
-```{python}
-#| label: series-search-in-list
-s.is_in([1, 10])
-```
-
-
-```{python}
-#| label: series-search-in-range
-s.is_between(1, 10)
-```
-
-
-
-## Apply (map_elements)
-
-Applying your own function. 
-Also note the informative error message (introduced in Polars Ver 0.18.0) that will try to recommend a more efficient way to do things.
-
-```{python}
-s.map_elements(lambda x: x + 1)
-```
-
-Are lambda functions really so much slower?
-
-```{python}
-s1 = pl.Series(np.random.randn(int(1e6)))
-```
-
-Adding 1 with apply:
-
-```{python}
-%timeit -n2 -r2 s1.map_elements(lambda x: x + 1)
-```
-
-Adding 1 without apply:
-
-```{python}
-%timeit -n2 -r2 s1+1
-```
-
-
-Things to note:
-
-- Polars had an apply method until version 19.0.0, where it has been replaced with `map_elements()`. Other family members include:
-  - `map` to `map_batches` 
-  - `GroupBy.apply` to `map_groups` .
-  - `DataFrame.apply` to `map_rows`. 
-  - `Series/Expr.rolling_apply` to `rolling_map` .
-  - `Series/Expr.apply` to `map_elements` .
-- `map_elements()` (i.e. apply in Pandas) is usually very slow.
-
-
-## Cumulative Operations
-
-```{python}
-#| label: series-cum-max
-s.cum_max()
-```
-
-```{python}
-#| label: series-cumsum
-s.cum_sum()
-```
-
-```{python}
-#| label: series-cumprod
-s.cum_prod()
-```
-
-```{python}
-#| label: series-ewm
-s.ewm_mean(com=0.5)
-```
-
-## Differentiation Operations
-
-```{python}
-#| label: series-diff
-s.diff()
-```
-
-```{python}
-#| label: series-pct-change
-s.pct_change()
-```
-
-## Windowed Operations
-
-
-
-```{python}
-#| label: series-rolling-mean
-
-s.rolling_mean(window_size=2)
-```
-
-```{python}
-#| label: series-rolling-sum
-
-s.rolling_sum(window_size=2)
-```
-
-
-```{python}
-#| label: series-rolling-map
-s.rolling_map(
-  sum, 
-  window_size=2)
-```
-
-Note:
-
-- `sum` is the `pl.sum()` function. You cannot use arbitrary functions within a `rolling_map()` context. 
-- Many rolling functions have been prepared. See the [computations section](https://docs.pola.rs/py-polars/html/reference/series/computation.html) of the Series class in the official API.
-
-
-## Logical Aggregations
-
-```{python}
-#| label: make-boolean-series
-b = pl.Series("a", [True, True, False])
-b.dtype
-```
-
-```{python}
-#| label: series-all
-b.all()
-```
-
-```{python}
-#| label: series-any
-b.any()
-```
-
-```{python}
-#| label: series-not
-b.not_()
-```
-
-
-
-## Uniques and Duplicates
-
-```{python}
-s.is_duplicated()
-```
-
-```{python}
-s.is_unique()
-```
-
-```{python}
-s.unique() # Same as Pandas drop_duplicates()
-```
-
-```{python}
-s.n_unique()
-```
-
-```{python}
-pl.Series([1,2,3,4,1]).unique_counts()
-```
-
-The first appearance of a value in a series:
-
-```{python}
-pl.Series([1,2,3,1]).is_first()
-```
-
-Note: Do not confuse `.is_first()` with `.first()`. The former is a logical aggregation, and the latter is a series method. 
-
-```{python}
-#| label: first-counter-examples
-(
-  pl.DataFrame(pl.Series("a",[1,2,3,1]))
-  .select(
-    pl.col('a').first()
-    )
-)
-```
-
-
-
-## dtypes
-
-
-### Testing
-
-The `.dtype.` namespace has been introduced around version 0.19.0 of Polars.
-
-```{python}
-#|  label: series-is-numeric
-s.dtype.is_numeric()
-```
-
-```{python}
-#| label: series-is-float
-s.dtype.is_float()
-```
-
-You cannot if a numeric is string. But you just negate it is numeric.
-Here are the tests available:
-
-```{python}
-#| label: series-is-not-numeric
-
-
-(
-  pl.Series(dir(s.dtype)) 
-  .alias('dir') #rename col
-  .to_frame() # to use pl.dataframe.filter method
-  .filter(
-    pl.col('dir').str.contains('is_')
-    )
-  .to_pandas()
-)
-```
-
-
-```{python}
-#| label: series-is-boolean
-s.is_boolean()
-```
-
-```{python}
-#| label: series-is-temporal
-s.dtype.is_temporal() 
-```
-
-
-
-### Casting
-
-```{python}
-s.cast(pl.Int32)
-```
-
-Things to note:
-
--   The dtypes to cast to are **polars** dtypes. Don't try `s.cast("int32")`, `s.cast(np.int32)`, or `s.cast(pd.int)`
--   `cast()` is polars' equivalent of pandas' `astype()`.
--   For a list of dtypes see the official [documentation](see%20https://pola-rs.github.io/polars/py-polars/html/reference/datatypes.html).
-
-
-### Optimizing dtypes
-
-Find the most efficient dtype for a series:
-
-```{python}
-s.shrink_dtype().dtype # like pandas pd.to_numeric(..., downcast="...") and pandas_dtype_efficiency module
-
-```
-
-Also see [here](http://braaannigan.github.io/software/2022/10/31/polars-dtype-diet.html).
-
-Shrink the memory allocation to the size of the actual data (in place).
-
-```{python}
-s.shrink_to_fit() 
-```
-
-
-
-## Ordering and Sorting
-
-```{python}
-#| label: series-sort
-s.sort()
-```
-
-```{python}
-#| label: series-reverse
-s.reverse()
-```
-
-```{python}
-#| label: series-rank
-s.rank()
-```
-
-```{python}
-#| label: series-arg-sort
-s.arg_sort() 
-```
-
-`arg_sort()` returns the indices that would sort the series. Same as R's `order()`.
-
-```{python}
-(s.sort() == s[s.arg_sort()]).all()
-```
-
-`arg_sort()` can also be used to return the original series from the sorted one:
-
-```{python}
-(s == s[s[s.arg_sort()].arg_sort()]).all()
-```
-
-```{python}
-#| label: series-shuffle
-s.shuffle(seed=1) # random permutation
-```
-
 ## Missing
 
 Thanks to Arrow, Polars has built in missing value support for all(!) dtypes. 
 This has been a long awaited feature in the Python data science ecosystem with implications on speed, memory, style and more. 
 The [Polars User Guide](https://pola-rs.github.io/polars-book/user-guide/howcani/missing_data.html) has a great overview of the topic from which we collect some take-homes:
 
--   `np.nan` is also supported along `pl.Null`, but is not considered as a missing value by polars. This has implications on null counts, statistical aggregations, etc.
--   `pl.Null`, and `np.nan`s have their own separate functions for imputing, counting, etc.
+- `np.nan` is also supported along `pl.Null`, but is not considered as a missing value by polars. This has implications on null counts, statistical aggregations, etc.
+- `pl.Null`, and `np.nan`s have their own separate functions for imputing, counting, etc.
 
 
 ```{python}
@@ -1394,6 +1188,15 @@ m_pandas.isna()
 m_pandas.isnull() # alias for pd.isna()
 ```
 
+### Operating on Missing
+
+We now compare the behavior of Polars to Pandas when operating on missing values.
+When interpreting the following remember:
+
+1. For Polars, nan is not missing. It is some unknown number. 
+2. For Pandas, nan and Nulls are the same. 
+
+
 ```{python}
 # Polars
 m1 = pl.Series("a", [1, None, 2, ]) # python native None
@@ -1407,7 +1210,14 @@ m6 = pd.Series([1, float('nan'), 2, ])
 ```
 
 ```{python}
-[m1.sum(), m2.sum(), m3.sum(), m4.sum(), m5.sum(), m6.sum()]
+[
+  m1.sum(), 
+  m2.sum(), 
+  m3.sum(), 
+  m4.sum(), 
+  m5.sum(), 
+  m6.sum(),
+  ]
 ```
 
 Things to note:
@@ -1457,9 +1267,399 @@ m1.interpolate()
 m2.interpolate() # np.nan is not considered missing, so why interpolate?
 ```
 
+
+
+
+## Shape Transformations
+
+```{python}
+#| label: series-to-dummies
+s.to_dummies()
+```
+
+
+```{python}
+#| label: series-shift
+s.shift(1, fill_value=999)
+```
+
+```{python}
+#| label: series-shift-back
+s.shift(-1)
+```
+
+
+```{python}
+#| label: series-reshape
+pl.Series("a",[1,2,3,4]).reshape((2,2))
+```
+
+
+## Arithmetic Operations
+
+The following will fail for `pl.Series` for will work(!) for `pl.Expr`.
+
+```{python}
+#| label: series-add
+#| eval: false
+
+s.add(1)
+```
+
+
+```{python}
+#| label: series-sub
+#| eval: false
+
+s.sub(1)
+```
+
+
+```{python}
+#| label: series-mul
+#| eval: false
+
+s.mul(2)
+```
+
+```{python}
+#| label: series-truediv
+#| eval: false
+
+s.truediv(2)
+```
+
+```{python}
+#| label: series-floordiv
+#| eval: false
+
+s.floordiv(2)
+```
+
+
+
+## Mathematical Transformations
+
+```{python}
+#| label: series-abs
+s.abs()
+```
+
+```{python}
+#| label: series-sin
+s.sin()
+```
+
+```{python}
+#| label: series-exp
+s.exp()
+```
+
+```{python}
+#| label: series-hash
+s.hash()
+```
+
+```{python}
+#| label: series-log
+s.log()
+```
+
+
+```{python}
+#| label: series-sqrt
+s.sqrt()
+```
+
+## Comparisons
+
+
+```{python}
+#| label: series-eq
+s.eq(2)
+```
+
+```{python}
+#| label: series-ge
+s.ge(2)
+```
+
+Clip, aka Winsorize. 
+
+```{python}
+#| label: series-clip
+f.clip(lower_bound=1.5,upper_bound=2.5)
+```
+
+```{python}
+#| label: series-round
+f.round(2)
+```
+
+```{python}
+#| label: series-ceil
+f..add()ceil()
+```
+
+```{python}
+#| label: series-floor
+f.floor()
+```
+
+```{python}
+#| label: series-which-max
+s.peak_max()
+```
+
+
+## Search
+
+```{python}
+#| label: series-search-in-list
+s.is_in([1, 10])
+```
+
+
+```{python}
+#| label: series-search-in-range
+s.is_between(2, 3, closed='both')
+```
+
+
+
+## Apply (map_elements)
+
+Applying your own function. 
+Also note the informative error message (introduced in Polars Ver 0.18.0) that will try to recommend a more efficient way to do things.
+
+```{python}
+s.map_elements(lambda x: x + 1)
+```
+
+Are lambda functions really so much slower?
+
+```{python}
+s1 = pl.Series(np.random.randn(int(1e6)))
+```
+
+Adding 1 with apply:
+
+```{python}
+%timeit -n2 -r2 s1.map_elements(lambda x: x + 1)
+```
+
+Adding 1 without apply:
+
+```{python}
+%timeit -n2 -r2 s1+1
+```
+
+
+## Cumulative Operations
+
+```{python}
+#| label: series-cum-max
+s.cum_max()
+```
+
+```{python}
+#| label: series-cumsum
+s.cum_sum()
+```
+
+```{python}
+#| label: series-cumprod
+s.cum_prod()
+```
+
+```{python}
+#| label: series-ewm
+s.ewm_mean(com=0.5)
+```
+
+## Differentiation Operations
+
+```{python}
+#| label: series-diff
+s.diff()
+```
+
+```{python}
+#| label: series-pct-change
+s.pct_change()
+```
+
+
+
+## Windowed Operations
+
+```{python}
+#| label: series-rolling-mean
+
+s.rolling_mean(window_size=2)
+```
+
+```{python}
+#| label: series-rolling-sum
+
+s.rolling_sum(window_size=2)
+```
+
+
+```{python}
+#| label: series-rolling-map
+s.rolling_map(
+  sum, 
+  window_size=2)
+```
+
+Note:
+
+- `sum` is the `pl.sum()` function. You cannot use arbitrary functions within a `rolling_map()` context. 
+- Many rolling functions have been prepared. See the [computations section](https://docs.pola.rs/py-polars/html/reference/series/computation.html) of the Series class in the official API.
+
+
+
+## Logical Aggregations
+
+```{python}
+#| label: make-boolean-series
+b = pl.Series("a", [True, True, False])
+b.dtype
+```
+
+```{python}
+#| label: series-all
+b.all()
+```
+
+```{python}
+#| label: series-any
+b.any()
+```
+
+```{python}
+#| label: series-not
+b.not_()
+```
+
+
+
+
+## Uniques and Duplicates
+
+
+```{python}
+#|label: series-is-duplicated
+s.is_duplicated()
+```
+
+
+```{python}
+#|label: series-is-unique
+s.is_unique()
+```
+
+```{python}
+#|label: series-n-unique
+s.unique() # Same as Pandas drop_duplicates()
+```
+
+```{python}
+s.n_unique()
+```
+
+```{python}
+pl.Series([1,2,3,4,1]).unique_counts()
+```
+
+```{python}
+#|label: series-is-first-distinct
+s.is_first_distinct() # not sure there is a pl.Expr method 
+```
+
+Notes:
+
+- `is_first_distinct()` has had many name changes in the past. It was `is_first()` in Polars 0.18.0, and `is_first_distinct()` in Polars 0.19.0.
+
+- Do not confuse `.is_first_distinct()` with `.first()`. The former is a logical aggregation, and the latter is a series method. 
+
+```{python}
+#| label: first-counter-examples
+(
+  pl.DataFrame(pl.Series("a",[1,2,3,1]))
+  .select(
+    pl.col('a').first()
+    )
+)
+```
+
+
+
+## Casting
+
+```{python}
+s.cast(pl.Int32)
+```
+
 Things to note:
 
-1. `np.nan` is not considered missing by Polars, so `fill_null()`, `drop_nulls()`, `interpolate()` will not work as expected **on nulls**.
+-   `cast()` is polars' equivalent of pandas' `astype()`.
+-   The dtypes to cast to are **polars** dtypes. Don't try `s.cast("int32")`, `s.cast(np.int32)`, or `s.cast(pd.int)`
+-   For a list of dtypes see the official [documentation](see%20https://pola-rs.github.io/polars/py-polars/html/reference/datatypes.html).
+
+
+
+Find the most efficient dtype for a series; Like pandas `pd.to_numeric(..., downcast="..."`).
+
+```{python}
+s.shrink_dtype().dtype # 
+
+```
+
+Also see [here](http://braaannigan.github.io/software/2022/10/31/polars-dtype-diet.html).
+
+Shrink the memory allocation to the size of the actual data (in place).
+
+```{python}
+s.shrink_to_fit() 
+```
+
+
+
+## Ordering and Sorting
+
+```{python}
+#| label: series-sort
+s.sort()
+```
+
+```{python}
+#| label: series-reverse
+s.reverse()
+```
+
+```{python}
+#| label: series-rank
+s.rank()
+```
+
+```{python}
+#| label: series-arg-sort
+s.arg_sort() 
+```
+
+`arg_sort()` returns the indices that would sort the series. Same as R's `order()`.
+
+```{python}
+sorted_s = s[s.arg_sort()]
+(s.sort() == sorted_s).all()
+```
+
+```{python}
+#| label: series-shuffle
+s.shuffle(seed=1) # random permutation
+```
 
 
 ## Strings
