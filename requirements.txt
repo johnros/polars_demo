@@ -28,6 +28,7 @@ kiwisolver==1.4.4
 matplotlib==3.6.3
 matplotlib-inline==0.1.6
 memory-profiler==0.61.0
+mlx==0.1.0
 nbclient==0.5.13
 nbformat==5.7.3
 nest-asyncio==1.5.6
@@ -41,7 +42,7 @@ pickleshare==0.7.5
 Pillow==9.4.0
 platformdirs==2.6.2
 plotly==5.18.0
-polars==0.20.6
+polars==0.20.11
 prompt-toolkit==3.0.36
 psutil==5.9.4
 ptyprocess==0.7.0

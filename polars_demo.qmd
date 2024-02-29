@@ -1,6 +1,8 @@
 ---
 title: "Intro 2 Polars"
+
 execute:
+  eval: false
   warning: true
   error: true
   keep-ipynb: true
@@ -193,12 +195,21 @@ Filter then sort.
 %timeit -n 2 -r 2 letter1.filter(letter1.is_in(['a','b','c'])).sort()
 ```
 
-Polars' Lazy evaluation (i.e. with query planning) in the **wrong** order. 
-Receives sort then filter; executes filter then sort.
-
 ```{python}
-%timeit -n 2 -r 2 letter1.alias('letters').to_frame().lazy().sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect()
+latter1_lazy = letter1.alias('letters').to_frame().lazy()
 ```
+
+Polars' Lazy evaluation in the **wrong** order; **without** query planning
+```{python}
+%timeit -n 2 -r 2 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect(no_optimization=True)
+```
+
+Polars' Lazy evaluation in the **wrong** order; **with** query planning
+```{python}
+%timeit -n 2 -r 2 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect()
+```
+
+
 
 Things to note:
 
@@ -740,7 +751,7 @@ Things to note:
 - Much more similar to PySpark than to Pandas. The Pandas API is simply not amenable to lazy evaluation. 
 
 
-### Some Design Principles
+### Some Design Principles {#sec-api-principles}
 
 Here are some principles that will help you understand the API:
 
@@ -752,12 +763,13 @@ Here are some principles that will help you understand the API:
     1. `pl.DataFrame.select()`: This is the most common context. It is used to select columns, and to apply operations on columns.
     2. `pl.DataFrame.with_columns()`: This is used to add columns to a dataframe.
     3. `pl.DataFrame.group_by().agg()`: The `.agg()` context works like a `.select()` context, but it is used to apply operations on sub-groups of rows.
+    4. `pl.DataFrame.filter()`: This is used to filter rows using expressions that evaluate to Booleans.
 
-3. Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.groupby()` (starting version 19.0.0). 
+6. Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.groupby()` (starting version 19.0.0). 
 
-4. Polars was designed for operation within **columns**, not within rows. Operations within rows are the exception, and the will have a `_horizontal()` suffix. Examples: `pl.sum_horizontal()`, `pl.mean_horizontal()`, `pl.rolling_sum_horizontal()`.
+7. Polars was designed for operation within **columns**, not within rows. Operations within rows are the exception, and the will have a `_horizontal()` suffix. Examples: `pl.sum_horizontal()`, `pl.mean_horizontal()`, `pl.rolling_sum_horizontal()`.
 
-6. Look for `pl.Expr()` methods so you can chain operations. E.g. `pl.col('a').add(pl.col('b'))` is better than `pl.col('a') + pl.col('b')`; the former can be further chained.
+8. Look for `pl.Expr()` methods so you can chain operations. E.g. `pl.col('a').add(pl.col('b'))` is better than `pl.col('a') + pl.col('b')`; the former can be further chained.
   
 
 ### Some Examples of the API
@@ -1928,50 +1940,60 @@ st = pl.Series("a", ["foo", "bar", "baz"])
 ```
 
 ```{python}
+#| label: string-length
 st.str.len_chars() # gets number of chars. In ASCII this is the same as lengths()
 ```
 
 
 ```{python}
+#| label: string-concat
 st.str.concat("-")
 ```
 
 
 
 ```{python}
+#| label: string-count-matches
 st.str.count_matches(pattern= 'o') # count literal matches
 ```
 
 
 ```{python}
+#| label: string-contains
 st.str.contains("foo|tra|bar") 
 ```
 
 ```{python}
+#| label: string-contains-regrex
 st.str.contains("ba[a-zA-Z]") 
 ```
 
 ```{python}
+#| label: string-contains-regex-2
 st.str.contains("[a-zA-Z]{4,5}") 
 ```
 
 
 ```{python}
+#| label: string-count-matches-2
 st.str.count_matches(pattern='[a-zA-Z]')
 ```
 
 
 ```{python}
+#| label: string-ends-with
 st.str.ends_with("oo")
 ```
 
 ```{python}
+#| label: string-starts-with
 st.str.starts_with("fo")
 ```
 
 To extract the **first** appearance of a pattern, use `extract`:
 
 ```{python}
+#| label: sample-strings
 url = pl.Series("a", [
             "http://vote.com/ballon_dor?candidate=messi&ref=polars",
 
@@ -1982,6 +2004,7 @@ url = pl.Series("a", [
 ```
 
 ```{python}
+#| label: string-extract
 url.str.extract("=([a-zA-Z]+)", 1) 
 # "=([a-zA-Z]+)" is read: "match an equality, followed by any number of alphanumerics".
 ```
@@ -1989,44 +2012,53 @@ url.str.extract("=([a-zA-Z]+)", 1)
 To extract **all** appearances of a pattern, use `extract_all`:
 
 ```{python}
+#|  label: string-extract-all
 url.str.extract_all("=(\w+)") # \w is a shorthand for [a-zA-Z0-9_], i.e., alphanumerics and underscore.
 ```
 
 ```{python}
+#| label: string-pad-end
 st.str.pad_end(8, "*")
 ```
 
 ```{python}
+#| label: string-pad-start
 st.str.pad_start(8, "*")
 ```
 
 ```{python}
+#| label: string-strip-char-start
 st.str.strip_chars_start('f')
 ```
 
 ```{python}
+#| label: string-strip-char-end
 st.str.strip_chars_end('r')
 ```
 
 Replacing first appearance of a pattern:
 
 ```{python}
+#| label: string-replace
 st.str.replace("o+", "ZZ")
 ```
 
 Replace all appearances of a pattern:
 
 ```{python}
+#| label: string-replace-all
 st.str.replace_all("o", "ZZ")
 ```
 
 String to list of strings. Number of splits inferred.
 
 ```{python}
+#| label: string-split
 st.str.split(by="o")
 ```
 
 ```{python}
+#| label: string-split-inclusive
 st.str.split(by="a", inclusive=True)
 ```
 
@@ -2034,6 +2066,7 @@ String to dict of strings.
 Number of **splits** fixed.
 
 ```{python}
+#| label: string-split-exact
 st.str.split_exact("a", 2)
 ```
 
@@ -2041,6 +2074,7 @@ String to dict of strings.
 Length of **output** fixed.
 
 ```{python}
+#| label: string-split-length
 st.str.splitn("a", 4)
 ```
 
@@ -2051,22 +2085,27 @@ pl.Series(['   ohh   ','   yeah   ']).str.strip()
 ```
 
 ```{python}
+#| label: string-to-uppercase
 st.str.to_uppercase()
 ```
 
 ```{python}
+#| label: string-to-lowercase
 st.str.to_lowercase()
 ```
 
 ```{python}
+#| label: string-to-titlecase
 st.str.to_titlecase()
 ```
 
 ```{python}
+#| label: string-zfill
 st.str.zfill(5)
 ```
 
 ```{python}
+#| label: string-slice
 st.str.slice(offset=1, length=1)
 ```
 
@@ -2095,7 +2134,7 @@ df = pl.DataFrame({
     (datetime(2022, 1, 1)), 
     (datetime(2022, 1, 2)), 
     (datetime(2022, 1, 3))], 
-    "float":[4.0, 5.0, 6.0],
+    "float": [4.0, 5.0, 6.0],
     "string": ["a", "b", "c"]})
 
 df
@@ -2105,14 +2144,15 @@ df
 print(df)
 ```
 
-```{python}
-df.glimpse() #useful for wide frames
-```
-
 Things to note:
 
 1.  The frame may be printed with Jupter's styling, or as ASCII with a `print()` statement.
 2.  Shape, and dtypes, are part of the output.
+
+```{python}
+df.glimpse() # useful for wide frames. Similar to R's str() of Pandas's .info()
+```
+
 
 ```{python}
 df.columns
@@ -2138,15 +2178,18 @@ df.schema # similar to pandas info()
 df.with_row_count()
 ```
 
-Add a single column
+Things to note:
 
-```{python}
-df.with_columns(
-    pl.Series("new", [1, 2, 3])
-    ) # replaces the now-deprecated function `df.with_column()`
-```
+1. `df.schema` and `df.columns` will be available for lazy objects, even before materializing them.
+2. `df.height` and `df.shape` will not be available for lazy objects, until they are materialized.
 
-Add multiple columns
+
+
+As discussed in @sec-api-principles, operations on columns will always be done within a **context**. 
+Use `df.with_columns()` to add columns, and `df.select()` to select columns.
+
+
+Add columns
 
 ```{python}
 df.with_columns(
@@ -2155,81 +2198,45 @@ df.with_columns(
   )
 ```
 
-```{python}
-df.clone() # deep copy
-```
-
-The following commands make changes in place; I am thus creating a copy of `df`.
-
-```{python}
-df_copy = df.clone() # making a copy since 
-df_copy.insert_at_idx(1, pl.Series("new", [1, 2, 3])) 
-```
-
-```{python}
-df_copy.replace_at_idx(0, pl.Series("new2", [1, 2, 3]))
-```
-
-```{python}
-df_copy.replace('float', pl.Series("new_float", [4.0, 5.0, 6.0])) 
-```
-
-```{python}
-def foo(frame):
-  return frame.with_columns(pl.Series("new", [1, 2, 3]))
-df.pipe(foo)
-```
-
-```{python}
-df.is_empty()
-```
-
-```{python}
-df.clear() # make empty copy. replaced .cleared()
-```
-
-```{python}
-df.clear().is_empty()
-```
-
-```{python}
-df.rename({'integer': 'integer2'})
-```
 
 ## Convert to Other Python Objects
 
-### To Pandas
-
+To Pandas DataFrame
 ```{python}
+#| label: dataframe-to-pandas
 df.to_pandas()
 ```
 
-### To Numpy
+To Numpy Array
 
 ```{python}
+#| label: dataframe-to-numpy
 df.to_numpy()
 ```
 
-### To List
-
+To List of Polars Series
 ```{python}
+#| label: dataframe-to-list
 df.get_columns() # columns as list of polars series
 ```
 
+To list of tuples
 ```{python}
+#| label: dataframe-to-list-of-tuples
 df.rows() # rows as list of tuples
 ```
 
-### To Python Dict
+To Dict of Polars Series
 
 ```{python}
+#| label: dataframe-to-dict
 df.to_dict() # columns as dict of polars series
 ```
 
 ## Dataframe in Memory
 
 ```{python}
-df.estimated_size(unit="gb")
+df.estimated_size(unit="mb")
 ```
 
 ```{python}
@@ -2250,17 +2257,12 @@ df.shrink_to_fit() # reduce memory allocation to actual size
 df.describe()
 ```
 
-Compare to pandas:
+Compare to pandas: Polars will summarize all columns even if they are not numeric.
 
 ```{python}
 df.to_pandas().describe()
 ```
 
-Things to note:
-
--   Comparing to pandas:
-    -   Polars will summarize all columns even if they are not numeric.
-    -   The statistics returned are different.
 
 Statistical aggregations operate column-wise (and in parallel).
 
@@ -2281,11 +2283,21 @@ df.median()
 ```
 
 ```{python}
+df.quantile(0.1)
+```
+
+
+```{python}
 df.sum()
 ```
 
 ```{python}
-df.with_columns(pl.all()sum_horizontal())
+(
+  df
+  .with_columns(
+    pl.sum_horizontal('*')
+    )
+)
 ```
 
 ```{python}
