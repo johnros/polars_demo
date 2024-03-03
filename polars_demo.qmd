@@ -935,7 +935,7 @@ Polars is still very new, and they may give you Pandas completions instead of Po
 
 
 
-# Polars Series
+# Polars Series {#sec-series}
 
 A Polars series looks a feels a lot like a Pandas series.
 You usually will try to avoid them because: (a) Your objects will usually be in frames, not in series. (b) If in frames, you will be calling `pl.Expr()` methods, and not `pl.Series()` methods. 
@@ -1594,18 +1594,18 @@ b.not_()
 
 
 ```{python}
-#|label: series-is-duplicated
+#| label: series-is-duplicated
 s.is_duplicated()
 ```
 
 
 ```{python}
-#|label: series-is-unique
+#| label: series-is-unique
 s.is_unique()
 ```
 
 ```{python}
-#|label: series-n-unique
+#| label: series-n-unique
 s.unique() # Same as Pandas drop_duplicates()
 ```
 
@@ -1618,7 +1618,7 @@ pl.Series([1,2,3,4,1]).unique_counts()
 ```
 
 ```{python}
-#|label: series-is-first-distinct
+#| label: series-is-first-distinct
 s.is_first_distinct() # not sure there is a pl.Expr method 
 ```
 
@@ -2143,7 +2143,7 @@ Recall :
 1.  There is no row index (like R's `data.frame`, `data.table`, and `tibble`; unlike Python's `Pandas`).
 2.  Will not accept duplicate column names (unlike Pandas).
 
-## DataFrame-Object Hosekeeping
+## Create
 
 A frame can be created as you would expect. From a dictionary of series, a numpy array, a Pandas sdataframe, or a list of Polars (or Pandas) series, etc.
 
@@ -2162,7 +2162,7 @@ df = pl.DataFrame({
 
 ```
 
-## Inspecting
+## Inspect
 
 Nice HTML printing to iPython. 
 ```{python}
@@ -2213,30 +2213,32 @@ Things to note:
 This is probably the most important section of the document.
 :::
 
-### Contexts
+### Contexts {#sec-contexts}
 
-As discussed in @sec-api-principles, operations on columns will always be done within a **context**:
+As discussed in @sec-api-principles, operations on columns will always be done within a **context**.
+Pandas fans may think of Polars Context as `.eval()` or `.assign()` Pandas methods.
 
 - `df.with_columns()` to add columns.
 - `df.select()` to select columns.
 - `df.group_by().agg()` is acutually `.select()` within a `group_by()` context.
+- `df.filter()` is a context for filtering rows. 
 
 Select Context:
 ```{python}
-#|label: select-context
+#| label: select-context
 df.select(pl.col("integer").add(1))
 ```
 
 
 ```{python}
-#|label: with-colummns-context
+#| label: with-colummns-context
 df.with_columns(pl.col("integer").add(1))
 ```
 
 Group-by context:
 
 ```{python}
-#|label: group-by-context
+#| label: group-by-context
 df.group_by("string").agg(pl.col("integer").add(1))
 ```
 
@@ -2247,7 +2249,7 @@ Within a context there are many ways to access a column.
 Here are some examples of various ways of adding 1 to the integer column.
 
 ```{python}
-#|label: add-1-to-column
+#| label: add-1-to-column
 #| lst-label: col-ref
 #| lst-cap: Referencing a Column in a Select Context
 df.select(pl.col("integer").add(1))
@@ -2287,7 +2289,6 @@ df.select(cs.starts_with('int').add(1))
 df.select(cs.integer().add(1))
 ```
 
-
 ```{python}
 df.select(cs.first().add(1))
 ```
@@ -2301,7 +2302,6 @@ df.select(cs.contains("int").add(1))
 ```
 
 
-
 ```{python}
 df.select(pl.col("integer")+1)
 ```
@@ -2311,15 +2311,24 @@ df['integer']+1
 ```
 
 ```{python}
-#| eval: false
-df['integer'].add(1)
+df.get_column('integer')+1
 ```
 
-My preferred syntax is @col-ref, which is the one I will use in the rest of the document.
+The following will not work because a series does not have a `.add(1)` method.
+```{python}
+#| eval: false
+df['integer'].add(1)
+df.get_column('integer').add(1)
+```
 
 ::: {.callout-important}
 Think: What are the differences between these methods?
 :::
+
+My preferred syntax is @col-ref, which is the one I will use in the rest of the document.
+
+
+
 
 
 
@@ -2331,6 +2340,8 @@ Think: What are the differences between these methods?
 
 ## Convert to Other Python Objects
 
+You can always convert your `pl.Series` or `pl.DataFrame` to other Python objects.
+
 To Pandas DataFrame
 ```{python}
 #| label: dataframe-to-Pandas
@@ -2338,7 +2349,6 @@ df.to_pandas()
 ```
 
 To Numpy Array
-
 ```{python}
 #| label: dataframe-to-numpy
 df.to_numpy()
@@ -2353,129 +2363,149 @@ df.get_columns() # columns as list of Polars series
 To list of tuples
 ```{python}
 #| label: dataframe-to-list-of-tuples
-df.rows() # rows as list of tuples
+df.rows() 
 ```
 
 To Dict of Polars Series
-
 ```{python}
-#| label: dataframe-to-dict
+#| label: dataframe-to-dict-of-series
 df.to_dict() # columns as dict of Polars series
 ```
 
-## Dataframe in Memory
-
+To Dict of Python Lists
 ```{python}
-df.estimated_size(unit="mb")
+#| label: dataframe-to-dict-of-lists
+df.to_dict(as_series=False) # columns as dict of Polars series
 ```
 
+To String Representation (`repr`)
 ```{python}
-df.n_chunks() # number of ChunkedArrays in the dataframe
+#| label: dataframe-to-repr
+df.to_init_repr()
 ```
 
+To a Polars Series of Polars Struct
 ```{python}
-df.rechunk() # ensure contiguous memory layout
+#| label: dataframe-to-struct
+df.to_struct()
 ```
 
+To PyArrow Table
 ```{python}
-df.shrink_to_fit() # reduce memory allocation to actual size
+#| label: dataframe-to-arrow
+df.to_arrow()
 ```
+
+
 
 ## Statistical Aggregations
 
 ```{python}
+#| label: dataframe-describe
 df.describe()
 ```
 
 Compare to Pandas: Polars will summarize all columns even if they are not numeric.
 
 ```{python}
+#| label: dataframe-describe-pandas
 df.to_pandas().describe()
 ```
 
 
-Statistical aggregations operate column-wise (and in parallel).
-
+Statistical aggregations operate column-wise (and in parallel!).
 ```{python}
+#| label: dataframe-max
 df.max()
 ```
 
 ```{python}
+#| label: dataframe-min
 df.min()
 ```
 
 ```{python}
+#| label: dataframe-mean
 df.mean()
 ```
 
 ```{python}
+#| label: dataframe-median
 df.median()
 ```
 
 ```{python}
+#| label: dataframe-quantile
 df.quantile(0.1)
 ```
 
 
 ```{python}
+#| label: dataframe-sum
 df.sum()
 ```
 
+Constrast with summation in row:
 ```{python}
-(
-  df
-  .with_columns(
-    pl.sum_horizontal('*')
-    )
-)
+#| label: dataframe-sum-horizontal
+df.with_columns(pl.sum_horizontal('*'))
 ```
 
-```{python}
-df.std()
-```
-
-```{python}
-df.quantile(0.1)
-```
 
 ## Selections {#sec-filtering-subsetting-frames}
 
 1.  If you are used to Pandas, recall there is no index. There is thus no need for `loc` vs. `iloc`, `reset_index()`, etc. See [here](https://pola-rs.github.io/Polars-book/user-guide/howcani/selecting_data/selecting_data_indexing.html) for a comparison of extractors between Polars and Pandas.
 2.  Filtering and selection is possible with the `[` operator, or the `filter()` and `select()` methods. The latter is recommended to facilitate query planning (discussed in @sec-query-planning).
 
-Single cell extraction.
+### Selecting With Indices
+
+The following are presented for completeness. 
+Gnerally, you can, and should, avoid selecting with indices. 
+See @sec-selecting-columns for selecting columns, and @sec-filtering-rows for selecting rows.
 
 ```{python}
+#| label: single-cell-extraction
 df[0,0] # like Pandas .iloc[]
 ```
 
 Slicing along rows.
-
 ```{python}
+#| label: slice-rows
 df[0:1] 
 ```
 
 Slicing along columns.
 
 ```{python}
+#| label: slice-columns
 df[:,0:1]
 ```
 
-### Selecting Columns
 
-Column selection by label
+### Selecting Columns {#sec-selecting-columns}
 
+First- do you want to return a Polars frame or a Polars series?
+
+For a frame:
 ```{python}
 df.select("integer")
-# or df['integer']
-# or df[:,'integer']
 ```
+
+For a series:
+```{python}
+df['integer']
+```
+
+How do I know which is which? 
+
+1. You can use `type()`.
+2. Notice the dimension of the index in the output. 
+
 
 Select columns with list of labels
 
 ```{python}
 df.select(["integer", "float"])
-# or df[['integer', 'float']]
 ```
 
 As of Polars\>=15.0.0, you don't have to pass a list:
@@ -2485,27 +2515,24 @@ df.select("integer", "float")
 ```
 
 Column slicing by label
-
 ```{python}
 df[:,"integer":"float"]
 ```
 
-Note: `df.select()` does not support slicing ranges such as `df.select("integer":"float")`.
+Note: `df.select()` does not support slicing ranges such as `df.select("integer":"float")`. 
 
-Get a column as a 1D Polars frame.
-
+Get a column as a Polars Series.
 ```{python}
 df.get_column('integer')
 ```
 
 Get a column as a Polars series.
-
 ```{python}
 df.to_series(0)
 ```
 
 ```{python}
-df.find_idx_by_name('float')
+df.get_column_index('float')
 ```
 
 ```{python}
@@ -2514,13 +2541,11 @@ df.drop("integer")
 
 `df.drop()` not have an `inplace` argument. Use `df.drop_in_place()` instead.
 
+
+
 ### pl.col()
 
-The `pl.col()` is **super important** for referencing columns. It will be used to select columns within a `df.select()` context, and to transform columns within a `df.with_columns()` context. It may extract a single column, a list, a particular (Polars) dtype, a regex pattern, or simply all columns.
-
-When exctracting along dtype, use Polars' dtypes, not Pandas' dtypes. For example, use `pl.Int64` instead of `np.int64`.
-
-Select along dtype
+The `pl.col()` is **super important**. It allows you to select columns in many ways, and provides almost all the methods (i.e. Polars Expressions) you will need to operate on them. 
 
 ```{python}
 df.select(pl.col(pl.Int64))
@@ -2534,18 +2559,31 @@ df.select(pl.col(pl.Float64))
 df.select(pl.col(pl.Utf8))
 ```
 
-List of dtypes
-
+Python List of Polars dtypes
 ```{python}
 df.select(pl.col([pl.Int64, pl.Float64]))
 ```
 
-Regular Expression
-
+Patterns ("glob")
 ```{python}
 df.select(pl.col("*")) # same as df.select(pl.all())
 ```
 
+Regular Expression. Important! Use `pl.col('^<patterh>$')` to match regular expressions.
+```{python}
+df.select(pl.col("^\w{4}$")) 
+```
+
+```{python}
+df.select(pl.col('^.*g$'))
+```
+
+```{python}
+#| label: pl-col-with-regex
+df.select(pl.col("^.*te.*$")) # regex matching anything with a "te"
+```
+
+You can use `pl.col()` to exclude columns.
 ```{python}
 df.select(pl.col("*").exclude("integer"))
 ```
@@ -2554,22 +2592,11 @@ df.select(pl.col("*").exclude("integer"))
 df.select(pl.col("*").exclude(pl.Float64))
 ```
 
-::: {.callout-important}
-`pl.col()` with regex is insanely powerful!
-:::
-
-```{python}
-#| label: pl-col-with-regex
-
-
-df.select(pl.col("^.*te.*$")) # regex matching anything with a "te"
-```
-
 Exciting! [New API](https://pola-rs.github.io/Polars/py-Polars/html/reference/selectors.html) for column selection. 
 
 ```{python}
 #| label: pl-column-selector
-import Polars.selectors as cs
+import polars.selectors as cs
 
 df.select(cs.starts_with('i'))
 ```
@@ -2585,16 +2612,19 @@ df.select(cs.starts_with('i') | cs.starts_with('d'))
 ```
 
 
+### Selecting Rows By Index
 
-### Filtering Rows
+```{python}
+df.limit(2) 
+```
 
 ```{python}
 df.head(2)
 ```
 
-```{python}
-df.limit(2) # same as pl.head()
-```
+::: {.callout-important}
+`df.limit()` is not the same as `df.head()`. The former does not rely on row indices, and will thus work for lazy objects, while the latter will not.
+:::
 
 ```{python}
 df.tail(1)
@@ -2612,108 +2642,109 @@ df.slice(offset=1, length=1)
 df.sample(1)
 ```
 
+Because `.sample()` requires row counts, it will not work for lazy objects.
+
 ```{python}
 df.row(1) # get row as tuple
 ```
 
-Row filtering by label
+
+### Selecting Rows By Condition {#sec-filtering-rows}
+
+Aka [Projection](https://en.wikipedia.org/wiki/Projection_(relational_algebra)). 
+
+Enter the `df.filter()` context. 
 
 ```{python}
+#| label: filter-context
+#| lst-label: filter-context
+#| lst-cap: Filtering Rows in a DataFrame
 df.filter(pl.col("integer") == 2)
 ```
 
 Things to note:
 
+- `df.filter()` is a **Polars Context**. 
+- It is a **keep** filter, not a **drop** filter: it will evaluate expressions, and return the rows where the expression does not evaluate to `False`. 
 -   The `[` operator does not support indexing with boolean such as `df[df["integer"] == 2]`.
 -   The `filter()` method is recommended over `[` by the authors of Polars, to facilitate lazy evaluation (discussed later).
 
-### Selecting A Single Item
 
-Exctracts the first element as a scalar. Useful when you output a single number as a frame object.
+An alternative syntax for equality filtering, known as **constraint** in the Polars documentation.
 
 ```{python}
-pl.DataFrame([1]).item() # notice the output is not a frame, rather, a scalar.
+df.filter(integer = 2) 
 ```
 
-## Uniques and Duplicates
-
+AND conditions:
 ```{python}
-df.is_unique()
-```
-
-```{python}
-df.is_duplicated()
-```
-
-```{python}
-df.unique() # same as pd.drop_duplicates()
-```
-
-```{python}
-df.n_unique()
-```
-
-## Missing
-
-```{python}
-df_with_nulls = df.with_columns(
-    pl.Series("missing", [3, None, np.nan]),
+#| label: filter-and
+df.filter(
+  pl.col('integer').eq(2),
+  pl.col('float').gt(10)
 )
 ```
 
 ```{python}
-df_with_nulls.null_count() # same as pd.isnull().sum()
+#| label: filter-and-2
+df.filter(
+  pl.col('integer').eq(2) &
+  pl.col('float').gt(10)
+)
 ```
 
+
+OR conditions:
 ```{python}
-df_with_nulls.drop_nulls() # same as pd.dropna()
+#| label: filter-or
+df.filter(
+  pl.col('integer').eq(2) |
+  pl.col('float').gt(10)
+)
 ```
 
-**Note**: There is no `drop_nan()` method. See [here](https://stackoverflow.com/questions/75548444/Polars-dataframe-drop-nans) for workarounds.
+::: {.callout-note}
+How would you write an AND, or OR condition, without using the comparison methods `.eq()`, `.gt()`, etc.?
+:::
 
+
+### Selecting From Single Item Frame
+
+Say your operation returned a Polars frame with a single float, which you want to manipulate as a Python float:
 ```{python}
-df_with_nulls.fill_null(0) # same as pd.fillna(0)
+#| label: single-item-to-python
+pl.DataFrame([1]).item() 
 ```
 
-But recall that `None` and `np.nan` are not the same thing.
 
-```{python}
-df_with_nulls.fill_nan(99)
-```
 
-```{python}
-df_with_nulls.interpolate()
-```
 
-## Transformations
+## Column Transformations 
 
--   The general idea of colum trasformation is to wrap all transformations in a `with_columns()` method, and the select colums to operat on with `pl.col()`.
--   Previous versions of Polars used `df.with_column()` and `df.with_columns()`. The `with_column()` method is now deprecated.
+1. Transformations are done with Polars Expressions (@sec-expressions) within a **context** (see @sec-contexts).
 -   The output column will have the same name as the input, unless you use the `alias()` method to rename it.
--   The `with_columns()` is called a **Polars context**.
--   The flavor of the `with_columns()` context is similar to Pandas' `assign()`.
--   One can use `df.iter_rows()` to get an iterator over rows.
+
 
 ```{python}
+#| label: with-columns
 df.with_columns(
-    pl.col("integer") * 2,
+    pl.col("integer").mul(2),
     pl.col("integer").alias("integer2"),
-    integer3 = pl.col("integer") * 3
+    integer3 = pl.col("integer").truediv(3)
 )
 ```
 
 Things to note:
 
--   The columns `integer` is multiplied by 2 in place, because no `alias` is used.
--   The column `integer` is copied, by renaming it to `integer2`.
--   As of Polars version \>15.*.* (I think), you can use `=` to assign. That is how `integer3` is created.
 -   You cannot use `[` to assign! This would not have worked `df['integer3'] = df['integer'] * 2`
+-   The columns `integer` is multiplied by 2 **in place**, because no `alias` is used.
+-   As of Polars version \>15.*.* (I think), you can use `=` to assign. That is how `integer3` is created.
+-   The column `integer` is copied, by renaming it to `integer2`.
 
 If a selection returns multiple columns, all will be transformed:
-
 ```{python}
 df.with_columns(
-    pl.col([pl.Int64,pl.Float64])*2
+    pl.col([pl.Int64,pl.Float64]).mul(2)
 )
 ```
 
@@ -2723,8 +2754,49 @@ df.with_columns(
 )
 ```
 
-Apply your own lambda function.
+You cannot `.alias()` when operating on multiple columns. But you can `.name.suffix()` or `.name.prefix()`.
+```{python}
+df.with_columns(
+    pl.col([pl.Int64,pl.Float64]).mul(2).name.suffix("_2X")
+)
+```
 
+
+### Conditional Transformation (if-else)
+
+```{python}
+df.with_columns(
+    pl.when(
+      pl.col("integer").gt(2)
+    )
+    .then(pl.lit(1))
+    .otherwise(pl.col("integer"))
+    .alias("new_col")
+)
+```
+
+Things to note:
+
+-  The `otherwise()` method is optional. If omitted, the original column will be returned (see next example).
+-  `pl.lit(1)` is a Polars expression that returns the literal 1. It may be ommited, but it is good practice to include it for clarity and safety.
+-  `pl.col("integer").gt(2)` could have been replaced with `pl.col("integer") > 2`. I like the former because it allows easier composition of conditions.
+
+STOPPED HERE
+
+```{python}
+df.with_columns(
+    pl.when(
+      pl.col("integer") > 2
+    )
+    .then(1)
+    # .otherwise(pl.col("integer"))
+    .alias("new_col")
+)
+```
+
+### Python Lambda Functions
+
+Apply your own lambda function.
 ```{python}
 df.select([pl.col("integer"), pl.col("float")]).apply(lambda x: x[0] + x[1])
 ```
@@ -2754,41 +2826,87 @@ df.shift_and_fill(1, 'WOW')
 ```
 
 
-### Conditional Transformation (if-else)
 
-```{python}
-df.with_columns(
-    pl.when(
-      pl.col("integer") > 2
-    )
-    .then(1)
-    .otherwise(pl.col("integer"))
-    .alias("new_col")
-)
-```
+### Numpy Ufuncs
 
-Note what happens if `otherwise()` omitted:
+You can use Numpy's universal functions (ufuncs) on Polars frames. 
+There is little overhead in using Numpy ufuncs.
 
-```{python}
-df.with_columns(
-    pl.when(
-      pl.col("integer") > 2
-    )
-    .then(1)
-    # .otherwise(pl.col("integer"))
-    .alias("new_col")
-)
-```
+- See [here](https://docs.pola.rs/user-guide/expressions/numpy/) to use Numpy   ufuncs in Polars.
+- See [here](https://www.w3schools.com/python/numpy/numpy_ufunc_create_function.asp) to create your own Numpy ufunc's.
 
 
 
-## Struct (multi-colum operations)
+
+#### Making Your Own Ufuncs
 
 TODO
 
-### Unset
 
-https://pola-rs.github.io/Polars/py-Polars/html/reference/dataframe/api/Polars.DataFrame.unnest.html#Polars.DataFrame.unnest
+## Uniques and Duplicates
+
+Keep uniques; same as `pd.drop_duplicates()`.
+
+```{python}
+#| label: dataframe-unique
+df.unique() 
+```
+
+Can be used with column subset
+```{python}
+#| label: dataframe-unique-subset
+df.unique(["integer", "float"])
+```
+
+```{python}
+df.is_unique()
+```
+
+```{python}
+df.is_duplicated()
+```
+
+
+```{python}
+df.n_unique()
+```
+
+## Missing
+
+```{python}
+df_with_nulls = df.with_columns(
+    pl.Series("missing", [3, None, np.nan]),
+)
+```
+
+```{python}
+df_with_nulls.null_count() # same as pd.isnull().sum()
+```
+
+```{python}
+df_with_nulls.drop_nulls() # same as pd.dropna()
+```
+
+Can I also drop `np.nan`'s? 
+There is no `drop_nan()` method. 
+See [StackOverflow](https://stackoverflow.com/questions/75548444/Polars-dataframe-drop-nans) for workarounds.
+
+```{python}
+df_with_nulls.fill_null(0) # same as pd.fillna(0)
+```
+
+But recall that `None` and `np.nan` are not the same thing.
+```{python}
+df_with_nulls.fill_nan(99)
+```
+
+```{python}
+df_with_nulls.interpolate()
+```
+
+
+
+
 
 
 ## Sorting
@@ -2800,6 +2918,98 @@ df.sort(by=["integer","float"])
 ```{python}
 df.reverse()
 ```
+
+## Groupby
+
+Grouping over categories:
+
+-   `df.partion_by()` will return a list of frames.
+-   `df.groupby()` for grouping. Just like Pandas, only parallelized, etc. The output will have the length of the number of groups.
+-   `over()` will assign each row the aggregate in the group. Like Pandas `groupby.transform`. The output will have the same length as the input.
+
+Grouping over time:
+
+-   `df.grouby_rolling()` for rolling window grouping, a.k.a. a sliding window. Each row will be assigned the aggregate in the window.
+-   `df.groupby_dynamic()` for dynamic grouping. Each period will be assigned the agregate in the period. The output may have more rows than the input.
+
+After grouping:
+
+-   `df.groupby().agg()` for aggregating.
+-   `df.groupby().apply()` for applying a function to each group.
+-   `df.groupby().count()` for counting.
+-   `df.groupby().first()` for getting the first row of each group.
+-   ...
+
+See the [API reference](https://pola-rs.github.io/Polars/py-Polars/html/reference/dataframe/groupby.html) for the various options. Also see the [user guide](https://pola-rs.github.io/Polars-book/user-guide/howcani/timeseries/temporal_groupby.html) for more details.
+
+```{python}
+df2 = pl.DataFrame({
+    "integer": [1, 1, 2, 2, 3, 3],
+    "float": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+    "string": ["a", "b", "c", "d", "e", "f"],
+    "datetime": [
+        (datetime(2022, 1, 4)), 
+        (datetime(2022, 1, 4)), 
+        (datetime(2022, 1, 4)), 
+        (datetime(2022, 1, 9)), 
+        (datetime(2022, 1, 9)), 
+        (datetime(2022, 1, 9))],
+})
+```
+
+```{python}
+df2.partition_by("integer")
+```
+
+```{python}
+groupper = df2.groupby("integer")
+groupper.count()
+```
+
+```{python}
+groupper.sum()
+```
+
+Groupby a fixed time window with `df.groupby_dynamic()`:
+
+```{python}
+(
+  df2
+  .groupby_dynamic(index_column="datetime", every="1d")
+  .agg(pl.col("float").sum())
+)
+```
+
+If you do not want a single summary per period, rather, a window at each datapoint, use `df.groupby_rolling()`:
+
+```{python}
+(
+  df2
+  .groupby_rolling(index_column="datetime", period='1d')
+  .agg(pl.col("float").sum())
+)
+```
+
+### Over
+
+You may be familar with Pandas `groupby().transform()`, which will return a frame with the same row-count as its input. You may be familiar with Postgres SQL [window function](https://www.postgresql.org/docs/current/tutorial-window.html). You may not be familiar with either, and still want to aggregate within group, but propagate the result to all group members. Polars' `over()` is the answer.
+
+```{python}
+df.with_columns(
+  pl.col("float").sum().over("string").alias("sum")
+).limit(5)
+```
+
+**Careful**: `over()` should follow the aggregation. The following will not fail, but return the wrong result:
+
+```{python}
+df.with_columns(
+  pl.col("float").over("string").sum().alias("sum")
+).limit(5)
+```
+
+
+
 
 ## Joins {#sec-joins}
 
@@ -2910,6 +3120,7 @@ Things to note:
 -   The `strategy=` argument may take the following values: 'backward', 'forward'.
 -   The `tolerance=` argument may take the following values: '1w', '1d', '1h', '1m', '1s', '1ms', '1us', '1ns'.
 
+
 ## Reshaping
 
 High level:
@@ -2978,94 +3189,30 @@ long.pivot(
 long.unstack(step=2) # works like a transpose, and then wrap rows. Change the `step=` to get the feeling. 
 ```
 
-## Groupby
 
-Grouping over categories:
+## Nested dtypes
 
--   `df.partion_by()` will return a list of frames.
--   `df.groupby()` for grouping. Just like Pandas, only parallelized, etc. The output will have the length of the number of groups.
--   `over()` will assign each row the aggregate in the group. Like Pandas `groupby.transform`. The output will have the same length as the input.
 
-Grouping over time:
 
--   `df.grouby_rolling()` for rolling window grouping, a.k.a. a sliding window. Each row will be assigned the aggregate in the window.
--   `df.groupby_dynamic()` for dynamic grouping. Each period will be assigned the agregate in the period. The output may have more rows than the input.
-
-After grouping:
-
--   `df.groupby().agg()` for aggregating.
--   `df.groupby().apply()` for applying a function to each group.
--   `df.groupby().count()` for counting.
--   `df.groupby().first()` for getting the first row of each group.
--   ...
-
-See the [API reference](https://pola-rs.github.io/Polars/py-Polars/html/reference/dataframe/groupby.html) for the various options. Also see the [user guide](https://pola-rs.github.io/Polars-book/user-guide/howcani/timeseries/temporal_groupby.html) for more details.
+## Dataframe in Memory
 
 ```{python}
-df2 = pl.DataFrame({
-    "integer": [1, 1, 2, 2, 3, 3],
-    "float": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
-    "string": ["a", "b", "c", "d", "e", "f"],
-    "datetime": [
-        (datetime(2022, 1, 4)), 
-        (datetime(2022, 1, 4)), 
-        (datetime(2022, 1, 4)), 
-        (datetime(2022, 1, 9)), 
-        (datetime(2022, 1, 9)), 
-        (datetime(2022, 1, 9))],
-})
+df.estimated_size(unit="mb")
 ```
 
 ```{python}
-df2.partition_by("integer")
+df.n_chunks() # number of ChunkedArrays in the dataframe
 ```
 
 ```{python}
-groupper = df2.groupby("integer")
-groupper.count()
+df.rechunk() # ensure contiguous memory layout
 ```
 
 ```{python}
-groupper.sum()
+df.shrink_to_fit() # reduce memory allocation to actual size
 ```
 
-Groupby a fixed time window with `df.groupby_dynamic()`:
 
-```{python}
-(
-  df2
-  .groupby_dynamic(index_column="datetime", every="1d")
-  .agg(pl.col("float").sum())
-)
-```
-
-If you do not want a single summary per period, rather, a window at each datapoint, use `df.groupby_rolling()`:
-
-```{python}
-(
-  df2
-  .groupby_rolling(index_column="datetime", period='1d')
-  .agg(pl.col("float").sum())
-)
-```
-
-### Over
-
-You may be familar with Pandas `groupby().transform()`, which will return a frame with the same row-count as its input. You may be familiar with Postgres SQL [window function](https://www.postgresql.org/docs/current/tutorial-window.html). You may not be familiar with either, and still want to aggregate within group, but propagate the result to all group members. Polars' `over()` is the answer.
-
-```{python}
-df.with_columns(
-  pl.col("float").sum().over("string").alias("sum")
-).limit(5)
-```
-
-**Careful**: `over()` should follow the aggregation. The following will not fail, but return the wrong result:
-
-```{python}
-df.with_columns(
-  pl.col("float").over("string").sum().alias("sum")
-).limit(5)
-```
 
 ## Processing Multiple Frames Simultanously
 
@@ -3124,13 +3271,38 @@ test_lf = pl.LazyFrame(
 ```
 
 
-# Polars Expressions
+
+
+
+# Polars Expressions {#sec-expressions}
+
+Things to recall about Polars expressions:
+
+1. Think of them as functions, that can be chained, and evaluated (lazyly) within a Polars context such as `df.select()`, `df.with_columns()`, etc.
+2. They are not the same as Python functions, and will not work outside of a Polars context.
+3. Almost all `pl.Series()` methods are available as Polars expressions. There are however some exceptions.
+
+
+Because almost all Polars Series methods are available as Polars expressions, we refer the reader to @sec-series for a review of importanta series methods. 
+In this section we will focus on exceptions, and some important expressions that are not available for Series.
+
+
+## Arithmetic
+
+
+
+
+
 
 # Polars LazyFrames
 
-# Plotting
+# Extensions
 
-# ML 
+## SQL
+
+## Plotting
+
+## ML 
 
 
 
