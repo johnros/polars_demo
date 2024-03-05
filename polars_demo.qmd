@@ -112,6 +112,7 @@ At this point you may want to create and activate a [venv](https://realpython.co
 
 import polars as pl
 pl.Config(fmt_str_lengths=50)
+import polars.selectors as cs
 
 import pandas as pd
 import numpy as np
@@ -546,7 +547,6 @@ data_left.shape
 
 ### Polars Join
 
-
 ```{python}
 data_left_Polars = pl.DataFrame(data_left)
 data_right_Polars = pl.DataFrame(data_right)
@@ -594,7 +594,7 @@ query = '''
     total_amount >= 0 and 
     total_amount <= 100
     '''.replace('\n', '')
-taxi_Pandas.query(query).groupby('passenger_count').agg({'tip_amount':'mean'})
+taxi_Pandas.query(query).group_by('passenger_count').agg({'tip_amount':'mean'})
 ```
 
 Well, the `df.loc[]` syntax is usually faster than the `query` syntax:
@@ -612,14 +612,15 @@ ind = (
 )
 (
     taxi_Pandas[ind]
-    .groupby('passenger_count')
+    .group_by('passenger_count')
     .agg({'tip_amount':'mean'})
 )
 ```
 
 
 
-### Polars
+### Polars Lazy In Memory
+
 
 ```{python}
 %%time 
@@ -638,25 +639,41 @@ q = (
         pl.col('total_amount').is_between(0,100)
     )
     .group_by('passenger_count')
-    .agg(pl.col('tip_amount').mean().name.suffix('_mean'))
+    .agg(
+      pl.col('tip_amount').mean().name.suffix('_mean')
+      ) 
     )
 
 q.collect()
 ```
 
+
 ```{python}
-q.show_graph() # Graphviz has to be installed
+q.show_graph(optimized=True) # Graphviz has to be installed
 ```
 
 Things to note:
 
-1. I only have 2 parquet files. When I run the same with more files, despite my 16GB of RAM, **Pandas will crash my python kernel**.
-2. From the query graph I see import is done in parallel, and filtering done at scanning time!
-3. Warning: The `pl.scan_paquet()` function will not work with a glob if files are in a remote data lake (e.g. S3). More on that later...
+1. I did not use the native `pl.scan_parquet()` as it is recommended. For your purposes, you will almost always use the native readers. It is convenient to remember, however, that you can also use the PyArrow importers in the native importers fail. 
+2. I only have 2 parquet files. When I run the same with more files, despite my 16GB of RAM, **Pandas will crash my python kernel**.
+3. From the query graph I see import is done in parallel, and filtering done at scanning time!
+4. 
 
 
 
+### Polars Lazy From Disk
 
+::: {.callout-important}
+The following shows how to use the Polars streaming engine. 
+This is arguably the biggest difference with Pandas, and other in memory dataframe libraries.
+:::
+
+
+```{python}
+#|  label: Polars-lazy-from-disk
+
+q.collect(streaming=True)
+```
 
 
 
@@ -771,7 +788,7 @@ Here are some principles that will help you understand the API:
     3. `pl.DataFrame.group_by().agg()`: The `.agg()` context works like a `.select()` context, but it is used to apply operations on sub-groups of rows.
     4. `pl.DataFrame.filter()`: This is used to filter rows using expressions that evaluate to Booleans.
 
-6. Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.groupby()` (starting version 19.0.0). 
+6. Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.group_by()` (starting version 19.0.0). 
 
 7. Polars was designed for operation within **columns**, not within rows. Operations within rows are the exception, and the will have a `_horizontal()` suffix. Examples: `pl.sum_horizontal()`, `pl.mean_horizontal()`, `pl.rolling_sum_horizontal()`.
 
@@ -2150,7 +2167,6 @@ A frame can be created as you would expect. From a dictionary of series, a numpy
 ```{python}
 #| label: make-dataframe
 
-
 df = pl.DataFrame({
   "integer": [1, 2, 3], 
   "date": [
@@ -2222,6 +2238,8 @@ Pandas fans may think of Polars Context as `.eval()` or `.assign()` Pandas metho
 - `df.select()` to select columns.
 - `df.group_by().agg()` is acutually `.select()` within a `group_by()` context.
 - `df.filter()` is a context for filtering rows. 
+- `pl.when()` is a context for conditional operations.
+
 
 Select Context:
 ```{python}
@@ -2236,7 +2254,6 @@ df.with_columns(pl.col("integer").add(1))
 ```
 
 Group-by context:
-
 ```{python}
 #| label: group-by-context
 df.group_by("string").agg(pl.col("integer").add(1))
@@ -2615,16 +2632,12 @@ df.select(cs.starts_with('i') | cs.starts_with('d'))
 ### Selecting Rows By Index
 
 ```{python}
-df.limit(2) 
+df.limit(2)
 ```
 
 ```{python}
 df.head(2)
 ```
-
-::: {.callout-important}
-`df.limit()` is not the same as `df.head()`. The former does not rely on row indices, and will thus work for lazy objects, while the latter will not.
-:::
 
 ```{python}
 df.tail(1)
@@ -2659,7 +2672,8 @@ Enter the `df.filter()` context.
 #| label: filter-context
 #| lst-label: filter-context
 #| lst-cap: Filtering Rows in a DataFrame
-df.filter(pl.col("integer") == 2)
+
+df.filter(pl.col("integer").eq(2))
 ```
 
 Things to note:
@@ -2673,7 +2687,7 @@ Things to note:
 An alternative syntax for equality filtering, known as **constraint** in the Polars documentation.
 
 ```{python}
-df.filter(integer = 2) 
+df.filter(integer = 2)
 ```
 
 AND conditions:
@@ -2713,7 +2727,7 @@ How would you write an AND, or OR condition, without using the comparison method
 Say your operation returned a Polars frame with a single float, which you want to manipulate as a Python float:
 ```{python}
 #| label: single-item-to-python
-pl.DataFrame([1]).item() 
+pl.DataFrame([1]).item()
 ```
 
 
@@ -2730,9 +2744,21 @@ pl.DataFrame([1]).item()
 df.with_columns(
     pl.col("integer").mul(2),
     pl.col("integer").alias("integer2"),
-    integer3 = pl.col("integer").truediv(3)
+    integer3 = pl.col("integer").truediv(3),
 )
 ```
+
+Warning!
+```{python}
+#| eval: false
+df.with_columns(
+    integer3 = pl.col("integer").truediv(3),
+    pl.col("integer").mul(2),
+    pl.col("integer").alias("integer2"),
+)
+```
+
+
 
 Things to note:
 
@@ -2740,31 +2766,57 @@ Things to note:
 -   The columns `integer` is multiplied by 2 **in place**, because no `alias` is used.
 -   As of Polars version \>15.*.* (I think), you can use `=` to assign. That is how `integer3` is created.
 -   The column `integer` is copied, by renaming it to `integer2`.
+-   Why `.truediv()`? To distinguish from `.floordiv()` and `.mod()`.
 
 If a selection returns multiple columns, all will be transformed:
 ```{python}
+#| label: with-columns-multiple
 df.with_columns(
     pl.col([pl.Int64,pl.Float64]).mul(2)
 )
 ```
 
 ```{python}
+#| label: with-columns-all-cast
 df.with_columns(
     pl.all().cast(pl.Utf8)
 )
 ```
 
-You cannot `.alias()` when operating on multiple columns. But you can `.name.suffix()` or `.name.prefix()`.
+You cannot `.alias()` when operating on multiple columns. But you can use `.name.suffix()` or `.name.prefix()` from the `.name.` namespace.
 ```{python}
+#| label: with-columns-multiple-2
 df.with_columns(
     pl.col([pl.Int64,pl.Float64]).mul(2).name.suffix("_2X")
 )
 ```
 
+### Transform the Transformed Columns
+
+All the expressions within a context see the frame as it's initial state. 
+Recall, odds are expressions will be evaluated in parallel, and not sequentially. 
+So how can I operate on columns I have just transformed?
+By chaining contexts!
+
+```{python}
+#| label: chained-contexts
+(
+  df
+  .with_columns(
+    pl.col("integer").truediv(pl.col("float")).alias("ratio")
+  )
+  .with_columns(
+    pl.col("ratio").mul(100)
+  )
+)
+```
+
+
 
 ### Conditional Transformation (if-else)
 
 ```{python}
+#| label: conditional-transformation
 df.with_columns(
     pl.when(
       pl.col("integer").gt(2)
@@ -2781,48 +2833,38 @@ Things to note:
 -  `pl.lit(1)` is a Polars expression that returns the literal 1. It may be ommited, but it is good practice to include it for clarity and safety.
 -  `pl.col("integer").gt(2)` could have been replaced with `pl.col("integer") > 2`. I like the former because it allows easier composition of conditions.
 
-STOPPED HERE
-
 ```{python}
 df.with_columns(
     pl.when(
       pl.col("integer") > 2
     )
     .then(1)
-    # .otherwise(pl.col("integer"))
+    .otherwise(pl.col("integer"))
     .alias("new_col")
 )
 ```
+
+
 
 ### Python Lambda Functions
 
 Apply your own lambda function.
 ```{python}
-df.select([pl.col("integer"), pl.col("float")]).apply(lambda x: x[0] + x[1])
+df.select([pl.col("integer"), pl.col("float")]).map_rows(lambda x: x[0] + x[1])
 ```
 
-As usual, using your own functions may have a very serious toll on performance:
+As usual, using your own functions may have a very serious toll on performance.
 
 ```{python}
 df_big = pl.DataFrame(np.random.randn(1000000, 2), schema=["a", "b"]) # previous versions used columns= instead of schema=
 ```
 
 ```{python}
-%timeit -n2 -r2 df_big.sum(axis=1)
+%timeit -n2 -r2 df_big.sum_horizontal()
 ```
 
 ```{python}
-%timeit -n2 -r2 df_big.apply(lambda x: x[0] + x[1])
-```
-
-How would numpy and Pandas deal with this row-wise summation?
-
-```{python}
-df.shift(1)
-```
-
-```{python}
-df.shift_and_fill(1, 'WOW')
+%timeit -n2 -r2 df_big.map_rows(lambda x: x[0] + x[1])
 ```
 
 
@@ -2835,12 +2877,40 @@ There is little overhead in using Numpy ufuncs.
 - See [here](https://docs.pola.rs/user-guide/expressions/numpy/) to use Numpy   ufuncs in Polars.
 - See [here](https://www.w3schools.com/python/numpy/numpy_ufunc_create_function.asp) to create your own Numpy ufunc's.
 
+Applying off-the-shelf Numpy ufuncs is as simple.
+
+```{python}
+#| label: numpy-ufunc
+
+df.select(pl.col('integer').pipe(np.sin))
+# the same as 
+# df.select(np.sin(pl.col('integer')))
+```
+
+
+Writing your own Numpy ufunc is easy. 
+```{python}
+#| label: numpy-ufunc-2
+
+def myfunc(x):
+  return x**2 + 2*x + 1
+
+# make myfunc a ufunc
+myfunc_ufunc = np.frompyfunc(myfunc, 1, 1)
+
+df.select(
+  pl.col('float').pipe(myfunc_ufunc, casting='unsafe')
+  )
+```
+
+Things to note:
+
+- My Ufunc is created with `np.frompyfunc()`. It could have also been created with `np.vectorize()`.
+- The `casting='unsafe'` argument is required, to deal with dtype mismatch. There could be a more elegant way, but I did not find it. 
+- Calling a **Ufunc with multiple arguments** is slightly more involved, and I currently did not find a "clean" solution. 
 
 
 
-#### Making Your Own Ufuncs
-
-TODO
 
 
 ## Uniques and Duplicates
@@ -2871,19 +2941,27 @@ df.is_duplicated()
 df.n_unique()
 ```
 
+
+
 ## Missing
 
+Make some data with missing. 
+
 ```{python}
+#| label: make-dataframe-with-nulls
 df_with_nulls = df.with_columns(
-    pl.Series("missing", [3, None, np.nan]),
+    null_1 = pl.Series("missing", [3, None, np.nan]),
+    null_2 = pl.Series("missing", [None, 5, 6]),
 )
 ```
 
 ```{python}
+#| label: dataframe-with-nulls
 df_with_nulls.null_count() # same as pd.isnull().sum()
 ```
 
 ```{python}
+#| label: df-drop-nulls
 df_with_nulls.drop_nulls() # same as pd.dropna()
 ```
 
@@ -2892,15 +2970,18 @@ There is no `drop_nan()` method.
 See [StackOverflow](https://stackoverflow.com/questions/75548444/Polars-dataframe-drop-nans) for workarounds.
 
 ```{python}
+#| label: df-fill-nulls
 df_with_nulls.fill_null(0) # same as pd.fillna(0)
 ```
 
 But recall that `None` and `np.nan` are not the same thing.
 ```{python}
+#| label: df-fill-nans
 df_with_nulls.fill_nan(99)
 ```
 
 ```{python}
+#| label: df-null-interpolate
 df_with_nulls.interpolate()
 ```
 
@@ -2919,34 +3000,38 @@ df.sort(by=["integer","float"])
 df.reverse()
 ```
 
+
+
+
 ## Groupby
 
-Grouping over categories:
+High level:
 
--   `df.partion_by()` will return a list of frames.
--   `df.groupby()` for grouping. Just like Pandas, only parallelized, etc. The output will have the length of the number of groups.
--   `over()` will assign each row the aggregate in the group. Like Pandas `groupby.transform`. The output will have the same length as the input.
+-   `df.group_by()` is a **context**, for grouping. Just like Pandas, only parallelized, etc. The output will have as many rows as the number of groups.
+-   `df.partion_by()` will return a **list** of frames.
+-   `pl.col().expression().over()` is like Pandas `df.groupby.transform()`: will will not collapse rows in the original frame. Rather, it will assign each row in the original frame with the aggregate in the group. The output will have the same number of rows as the input. 
 
 Grouping over time:
 
 -   `df.grouby_rolling()` for rolling window grouping, a.k.a. a sliding window. Each row will be assigned the aggregate in the window.
--   `df.groupby_dynamic()` for dynamic grouping. Each period will be assigned the agregate in the period. The output may have more rows than the input.
+-   `df.group_by_dynamic()` for dynamic grouping. Each period will be assigned the agregate in the period. The output may have more rows than the input.
 
-After grouping:
 
--   `df.groupby().agg()` for aggregating.
--   `df.groupby().apply()` for applying a function to each group.
--   `df.groupby().count()` for counting.
--   `df.groupby().first()` for getting the first row of each group.
--   ...
 
-See the [API reference](https://pola-rs.github.io/Polars/py-Polars/html/reference/dataframe/groupby.html) for the various options. Also see the [user guide](https://pola-rs.github.io/Polars-book/user-guide/howcani/timeseries/temporal_groupby.html) for more details.
+The `group_by()` context will be followed by an aggregation:
+
+1.   `df.group_by().agg()`: an aggregating context. 
+2.   `df.group_by().apply()`: deprecated and replaced by `df.group_by().map_groups()`.
+3.   `df.group_by().map_groups()`: to apply your own function to each group.
+
+See the [API reference](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.group_by.html) for the various options. 
+Also see the [user guide](https://docs.pola.rs/user-guide/transformations/time-series/rolling/) for more details.
 
 ```{python}
 df2 = pl.DataFrame({
     "integer": [1, 1, 2, 2, 3, 3],
     "float": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
-    "string": ["a", "b", "c", "d", "e", "f"],
+    "string": ["a", "b", "c", "c", "d", "d"],
     "datetime": [
         (datetime(2022, 1, 4)), 
         (datetime(2022, 1, 4)), 
@@ -2957,55 +3042,137 @@ df2 = pl.DataFrame({
 })
 ```
 
+### partition_by()
+
+Make the list of frames
 ```{python}
-df2.partition_by("integer")
+#| label: partition-by
+partitioner = df2.partition_by("integer")
+partitioner
+```
+
+The iterate like any Python list, with a function that operates on Polars frames:
+```{python}
+def myfunc(
+  df: pl.DataFrame
+  ) -> pl.DataFrame:
+  return df.select(pl.col("float").sum())
+
+for df in partitioner: 
+  print(myfunc(df))
+```
+
+
+
+### group_by()
+
+```{python}
+#| label: group-by
+groupper = df2.group_by("integer")
 ```
 
 ```{python}
-groupper = df2.groupby("integer")
-groupper.count()
+groupper.agg(
+  cs.numeric().sum().name.suffix("_sum"),
+  pl.col('string').n_unique().name.suffix("_n_unique"),
+  pl.col('string'),
+)
+```
+
+
+Things to note:
+
+- Don't expect an index. This is Polars, not Pandas.
+- The grouping may be saved as an object, and used later.
+- The `group_by()` and `.agg()` contexts offer the usual functonality of `.select()` and `.with_columns()`. In particular, you can use `pl.col()` to access columns, or the `pl.selector` module (`cs`).
+- In the selector is not followed by an expression, it will collapse the Series to a Polars List (see @sec-nested-dtypes). 
+
+Some random/useful examples now follow.
+
+#### Examples
+
+The count (length) of each group:
+```{python}
+groupper.agg(pl.len())
+```
+
+When operating on all columns,
+```{python}
+groupper.len()
 ```
 
 ```{python}
 groupper.sum()
 ```
 
-Groupby a fixed time window with `df.groupby_dynamic()`:
+
+
+
+### over()
+
+You may be familar with Pandas `group_by().transform()`, which will return a frame with the same row-count as its input. 
+You may be familiar with Postgres SQL [window function](https://www.postgresql.org/docs/current/tutorial-window.html). 
+You may not be familiar with neither, and still want to aggregate within group, but propagate the result to all group members. 
+Polars' `.over()` is the answer.
 
 ```{python}
-(
-  df2
-  .groupby_dynamic(index_column="datetime", every="1d")
-  .agg(pl.col("float").sum())
-)
-```
-
-If you do not want a single summary per period, rather, a window at each datapoint, use `df.groupby_rolling()`:
-
-```{python}
-(
-  df2
-  .groupby_rolling(index_column="datetime", period='1d')
-  .agg(pl.col("float").sum())
-)
-```
-
-### Over
-
-You may be familar with Pandas `groupby().transform()`, which will return a frame with the same row-count as its input. You may be familiar with Postgres SQL [window function](https://www.postgresql.org/docs/current/tutorial-window.html). You may not be familiar with either, and still want to aggregate within group, but propagate the result to all group members. Polars' `over()` is the answer.
-
-```{python}
-df.with_columns(
+#| label: over
+df2.with_columns(
   pl.col("float").sum().over("string").alias("sum")
-).limit(5)
+)
 ```
 
-**Careful**: `over()` should follow the aggregation. The following will not fail, but return the wrong result:
+Things to note:
+
+- The output will have the same number of rows as the input.
+- `.over()` is a **context**. As such, you can evaluate column selectors and expressions within it.
+- **Careful**: `over()` should be the last operation in a chain. @over-wrong will sadly **not fail**, while it should have.
 
 ```{python}
-df.with_columns(
+#| label: over-wrong
+#| lst-label: over-wrong
+#| lst-cap: A wrong use of over()
+
+df2.with_columns(
   pl.col("float").over("string").sum().alias("sum")
-).limit(5)
+)
+```
+
+
+
+### Grouping on time
+
+High level:
+
+1. Grouping on time is special, because a temporal variable implies multiple resolutions which may be used for grouping. E.g. a date may be grouped by year, month, day, etc.
+2. For a temporal version of `group_by()`, use `df.group_by_dynamic()`.
+3. For a temporal version of `over()`, use `df.rolling()`.
+
+```{python}
+#| label: group-by-dynamic
+(
+  df2
+  .sort("datetime")
+  .group_by_dynamic(
+    index_column="datetime", 
+    every="1d",
+    )
+  .agg(pl.col("float").sum())
+)
+```
+
+
+```{python}
+#| label: rolling
+(
+  df2
+  .sort("datetime")
+  .rolling(
+    index_column="datetime", 
+    period='1d',
+    )
+  .agg(pl.col("float").sum())
+)
 ```
 
 
@@ -3190,7 +3357,7 @@ long.unstack(step=2) # works like a transpose, and then wrap rows. Change the `s
 ```
 
 
-## Nested dtypes
+## Nested dtypes {#sec-nested-dtypes}
 
 
 
