@@ -3182,26 +3182,21 @@ High level:
 
 High level:
 
+-   `df.join()` for joins; like Pandas `pd.merge()` or `df.join()`.
+-  `df.join_asof()` for asof joins; like Pandas `pd.merge_asof()`.
 -   `df.hstack()` for horizontal concatenation; like Pandas `pd.concat([],axis=1)` or R's `cbind`.
 -   `df.vstack()` for vertical concatenation; like Pandas `pd.concat([],axis=0)` or R's `rbind`.
 -   `df.merge_sorted()` for vertical stacking, with sorting.
 -   `pl.concat()`, which is similar to the previous two, but with memory re-chunking. `pl.concat()` also allows diagonal concatenation, if columns are not shared.
 -   `df.extend()` for vertical concatenation, but with memory re-chunking. Similar to `df.vstack().rechunk()`.
--   `df.join()` for joins; like Pandas `pd.merge()` or `df.join()`.
 
 For more on the differences between these methods, see [here](https://www.rhosignal.com/posts/Polars-extend-vstack/).
 
-### hstack
+### join()
 
 ```{python}
-new_column = pl.Series("c", np.repeat(1, df.height))
+#| label: join
 
-df.hstack([new_column])
-```
-
-### vstack
-
-```{python}
 df2 = pl.DataFrame({
   "integer": [1, 2, 3], 
   "date": [
@@ -3212,64 +3207,24 @@ df2 = pl.DataFrame({
     "string": ["d", "d", "d"]})
 
 
-df.vstack(df2)
-```
-
-### Concatenation
-
-```{python}
-pl.concat([df, df2]) 
-# equivalent to:
-# pl.concat([df, df2], how='vertical', rechunk=True, parallel=True) 
-```
-
-```{python}
-pl.concat([df,new_column.to_frame()], how='horizontal')
-```
-
-### extend
-
-```{python}
-df.extend(df2) # like vstack, but with memory re-chunking. Similar to df.vstack().rechunk()
-```
-
-### merge_sorted
-
-```{python}
-df.merge_sorted(df2, key="integer") # vstacking with sorting.
-```
-
-**Caution**: Joining along rows is possible only if matched columns have the same dtype. Timestamps may be tricky because they may have different time units. Recall that timeunits may be cast before joining using `series.dt.cast_time_unit()`:
-
-```{python}
-#| eval: false
-df.with_columns(
-    pl.col(pl.Datetime("ns")).dt.cast_time_unit(tu="ms")
-)            
-```
-
-If you cannot arrange schema before concatenating, use a diagonal concatenation:
-
-```{python}
-pl.concat(
-    [df,new_column.to_frame()], 
-    how='diagonal')
-```
-
-### join
-
-```{python}
-df.join(df2, on="integer", how="left")
+df.join(
+  df2, 
+  on="integer", 
+  how="left",
+  validate='m:1'
+  )
 ```
 
 Things to note:
 
 -   Repeating column names have been suffixed with "\_right".
--   Unlike Pandas, there are no indices. The `on`/`left_on`/`right_on` argument is always required.
--   `how=` may take the following values: 'inner', 'left', 'outer', 'semi', 'anti', 'cross'.
--   The join is super fast, as demonstrated in @sec-motivation above.
+-   Recall, there are **no indices**. The `on`/`left_on`/`right_on` argument is always required.
+- `how=` may take the following values: 'inner', 'left', 'outer', 'semi', 'anti', 'cross'. 'inner' is the default. 
+- I like to add the `validate=` argument, for safety. 
+- The join is super fast, as demonstrated in @sec-motivation above.
 
-### join_asof
+
+### join_asof()
 
 ```{python}
 df.join_asof(
@@ -3278,14 +3233,112 @@ df.join_asof(
     right_on='date', 
     by="integer", 
     strategy="backward", 
-    tolerance='1w')
+    tolerance='1w',
+    )
 ```
 
 Things to note:
 
--   Yes! `merge_asof()` is also available.
+-   Yes! `join_asof()` is available. In streaming engine as well!
 -   The `strategy=` argument may take the following values: 'backward', 'forward'.
 -   The `tolerance=` argument may take the following values: '1w', '1d', '1h', '1m', '1s', '1ms', '1us', '1ns'.
+
+
+
+
+### hstack
+```{python}
+#| label: hstack
+new_column = pl.Series("c", np.repeat(1, df.height))
+
+df.hstack([new_column])
+```
+
+### vstack
+```{python}
+#| label: vstack
+
+df.vstack(df2)
+```
+
+Caution: Joining along rows is possible only if matched columns have the same dtype. Timestamps may be tricky because they may have different time units. Recall that timeunits may be cast before joining using `series.dt.cast_time_unit()`. 
+Here is a demonstration of the problem:
+
+```{python}
+#| label: vstack-caution
+#| eval: false
+(
+  df
+  .vstack(
+    df2
+    .with_columns(
+      pl.col('date').dt.cast_time_unit(time_unit="ms")
+      )
+    )
+)
+```
+
+### merge_sorted
+
+This is a **vertical** stacking, when expecting a sorted result, and assuming inputs are sorted. 
+
+```{python}
+df.merge_sorted(df2, key="integer") 
+```
+
+
+### concat()
+
+Vertical 
+```{python}
+pl.concat([df, df2]) 
+# equivalent to:
+# pl.concat([df, df2], how='vertical', rechunk=True, parallel=True) 
+```
+
+Horizontal
+```{python}
+pl.concat(
+  [df,new_column.to_frame()], 
+  how='horizontal',
+  )
+```
+
+Diagonal
+```{python}
+pl.concat(
+  [df,new_column.to_frame()], 
+  how='diagonal')
+```
+
+What is the difference between `pl.concat()` and `df.vstack()` and `hstack()`?
+`pl.concat()` is more general with more functionality.
+
+- concat includes re-chunking, which is useful for memory management.
+- concat includes diagonal concatenation, which is useful when columns are not shared.
+- concat includes parallel execution, which is useful for performance.
+- concat has recenetly been equipped with `how=vertial_relaxed` and `how=horizontal_relaxed`, which finds a common dtype if schemas are mismatched.
+
+
+
+### extend()
+
+Like `vstack()`, but with memory re-chunking. Similar to `df.vstack().rechunk()`.
+
+```{python}
+df.extend(df2) 
+```
+
+Why should I care about re-chunking?
+Since Polar is a columnar store, it is important to have contiguous memory layout. Otherwise, you may not enjoy the benefits of vectorized operations. 
+
+Is there a method for `df.hstack().rechunk()`?
+No. 
+A columnar storage is not sensitive to emory framgmentation along columns.
+
+
+
+
 
 
 ## Reshaping
