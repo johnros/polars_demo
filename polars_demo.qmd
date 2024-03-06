@@ -2,7 +2,7 @@
 title: "Intro 2 Polars"
 
 execute:
-  eval: false
+  eval: true
   warning: true
   error: true
   keep-ipynb: true
@@ -177,7 +177,7 @@ Although the potential of `sink_parquet()` is amazing, I find that it currently 
 :::
 
 
-## Lazy Frames and Query Planning
+## Lazy Frames and Query Planning {#sec-query-planning}
 
 Consider a sort operation that follows a filter operation. 
 Ideally, filter precedes the sort, but we did not ensure this... 
@@ -2766,7 +2766,7 @@ Things to note:
 -   The columns `integer` is multiplied by 2 **in place**, because no `alias` is used.
 -   As of Polars version \>15.*.* (I think), you can use `=` to assign. That is how `integer3` is created.
 -   The column `integer` is copied, by renaming it to `integer2`.
--   Why `.truediv()`? To distinguish from `.floordiv()` and `.mod()`.
+-   Why `.truediv()`? To distinguish from `.floordiv()` and `.mod()`. See [this issue](https://github.com/pola-rs/polars/issues/12450) for a discussion of the topic. 
 
 If a selection returns multiple columns, all will be transformed:
 ```{python}
@@ -3192,6 +3192,8 @@ High level:
 
 For more on the differences between these methods, see [here](https://www.rhosignal.com/posts/Polars-extend-vstack/).
 
+
+
 ### join()
 
 ```{python}
@@ -3338,6 +3340,215 @@ A columnar storage is not sensitive to emory framgmentation along columns.
 
 
 
+## Nested dtypes {#sec-nested-dtypes}
+
+Recall the nested dtypes:
+
+1. Polars Struct: Like a Python dict within a cell; Multiple named elements. 
+2. Polars List: Similar to a Python list within a cell; Multiple unnamed elements. Unlike the Python list, in a Polars list, all elements must have the same dtype.
+3. Polars Array: Like a Polars list, but with a fixed length for all cells in the column.
+
+### Polars Struct {#sec-struct}
+
+Why would I want to use a Polars Struct?
+
+1. To call functions that expects a dict argument constructed from multiple columns. E.g. a Ufunc called using `pl.col().pipe()` or `pl.col().map_elements()`. See [here](https://docs.pola.rs/user-guide/expressions/user-defined-functions/). 
+2. To use column methods on multiple columns: hashing, checking uniqueness, etc.
+3. As the output of a an operation that returns multiple columns. E.g. `value_counts()` within a `group_by()` context.
+4. When information cannot be structured into tabular form. 
+
+See [here](https://docs.pola.rs/user-guide/expressions/structs/) for more information on Polars Structs.
+
+
+Make a Polars Struct
+```{python}
+#| label: struct
+#| lst-label: struct
+#| lst-cap: Making a Polars Struct
+
+df.with_columns(
+  pl.struct(
+    pl.col("integer"),
+    pl.col("float"),
+    pl.col("string"),
+    )
+  .alias("struct")
+  )
+
+```
+
+Or more compactly:
+```{python}
+df.with_columns(
+  pl.struct('integer', 'float', 'string').alias('struct')
+  )
+```
+
+Now add field names:
+```{python}
+df_with_struct = df.select(
+  pl.struct(
+    integer=pl.col("integer"),
+    float=pl.col("float"),
+    string=pl.col("string"),
+    )
+  .alias("struct")
+  )
+
+df_with_struct
+```
+
+Convert struct to string in JSON format
+```{python}
+df_with_struct.select(
+  pl.col("struct").struct.json_encode()
+  )
+```
+
+Get field names
+```{python}
+#| label: struct-fields
+#| lst-label: struct-fields
+#| lst-cap: Getting the fields of a Polars Struct
+df_with_struct["struct"].struct.fields
+```
+
+::: {.callout-note}
+In @struct-fields, I used a Series method. 
+For reasons I do not understand, `struct.fields` has currently only a `pl.Series` [version](https://docs.pola.rs/py-polars/html/reference/series/struct.html), and not a `pl.Expr` [version](https://docs.pola.rs/py-polars/html/reference/expressions/struct.html).
+:::
+
+
+Accessing fields
+```{python}
+#| label: struct-access
+df_with_struct.select(
+  pl.col("struct").struct.field("integer")
+  )
+```
+
+Struct to columns with `unnest()`
+```{python}
+df_with_struct.unnest(columns=["struct"])
+```
+
+
+### Polars List
+
+When will I want to use a Polars List?
+
+1. When I want to hold variable length data in a single cell. E.g. a list of tags, a list of items in a shopping cart, etc.
+
+See [here](https://docs.pola.rs/user-guide/expressions/lists/) for more information on Polars Lists.
+
+
+Make a Polars Series with strings
+```{python}
+#| label: list
+
+pl.Series(["Alice, Bob, Charlie", "David, Eve, Frank", "George, Helen, Ida, Jack, Kate"])
+
+df_with_long_strings = pl.DataFrame(
+  {"employees": [
+    "Alice, Bob, Charlie", 
+    "David, Eve, Frank", 
+    "George, Helen, Ida, Jack, Kate",
+    "Liam, Mary, Noah, Olivia, Paul, Queen, Rose, Sam, Tom, Uma, Victor, Wendy, Xavier, Yara, Zane",
+    "Abe, Ben, Cal, Dan, Ed, Fred, Gus, Hal, Ike, Joe, Ken, Lou, Max, Ned, Ollie, Pat, Quin, Ray, Sam, Tom, Ulf, Vic, Will, Xan, Yul, Zed",
+    "Tim, Kim, Jim, Sim, Dim, Lim, Mim, Rim, Vim",
+  ]}
+)
+
+pl.Config.set_fmt_str_lengths(200)
+df_with_long_strings
+```
+
+Break strings into list
+```{python}
+#| label: list-split
+
+df_with_list = df_with_long_strings.with_columns(
+  pl.col("employees").str.split(", ").alias("employees")
+  )
+
+pl.Config.set_fmt_table_cell_list_len(100)
+df_with_list
+```
+
+Start Operating on List Elements
+```{python}
+#| label: list-operations
+
+df_with_list.select(
+  pl.col("employees").list.len().alias("n_employees"),
+  pl.col("employees").list.first().alias("first_employee"),
+  # pl.col("employees").list.get(0).alias("first_employee"), will also work
+  pl.col("employees").list.last().alias("last_employee"),
+  # pl.col("employees").list.get(-1).alias("last_employee"), will also work
+  pl.col("employees").list.slice(offset=1, length=2).alias("second_and_third_employees"),
+  pl.col("employees").list.contains("Alice").alias("contains_Alice")
+)
+
+```
+
+Things to note:
+
+1. Use `.list.` to access list methods.
+2. The full list of list methods is [here](https://docs.pola.rs/py-polars/html/reference/expressions/list.html).
+
+
+### explode()
+
+Polars List columns may be "exploded", i.e. broken into rows of a single list element each. 
+
+```{python}
+#| label: explode
+
+df_with_list.explode("employees").shape
+
+```
+
+
+
+#### List-to-Struct and Struct-to List
+
+Sometimes, you need to convert a list to a struct. 
+For instance, if you want to `unnest()` a list, you will need to convert it to a struct first. Alternatively, if you want named access to list elements. 
+
+List to Struct
+```{python}
+#| label: list-to-struct
+
+(
+  df_with_list
+  .select(
+    pl.col('employees').list.to_struct(
+      n_field_strategy='max_width',
+    )
+  )
+  .unnest('employees')
+)
+
+```
+
+When converting list to struct there are two things to consider: the number of fields and their names.
+The number of fields is governed by the `n_field_strategy` argument.
+The name of the fields is governed by the `fields` argument.
+
+
+### Polars Array
+
+As of March 2024, Arrays are quite new to Polars. 
+Currently, the behave mostly like lists, but with a fixed length.
+I can expect that the fixed length constraint will allow for more efficient memory allocation, and simpler API than the more general Polars Lists. 
+
+
+See [here](https://docs.pola.rs/py-polars/html/reference/expressions/array.html) for more information on Polars Arrays.
+
+
+
+
+
 
 
 
@@ -3348,43 +3559,64 @@ High level:
 -   `df.transpose()` as the name suggests.
 -   `df.melt()` for wide to long.
 -   `df.pivot()` for long to wide.
--   `df.explode()` for breaking strings into rows.
+-   `df.unnest()` for breaking structs into columns.
 -   `df.unstack()`
 
+
+
+### transpose()
+
+Recall
+
 ```{python}
-df.transpose()
+df
 ```
 
-### Wide to Long
+Since there are no indices, if you want to keep the column names, as a new column you need to use the `include_header=True` argument.
+```{python}
+df.transpose(include_header=True)
+```
 
+
+
+
+### Wide to Long- melt()
+
+Some data in wide format
 ```{python}
 # The following example is adapted from Pandas documentation: https://Pandas.pydata.org/docs/reference/api/Pandas.wide_to_long.html
 
 np.random.seed(123)
 wide = pl.DataFrame({
-    'famid': ["11", "12", "13", "2", "2", "2", "3", "3", "3"],
-    'birth': [1, 2, 3, 1, 2, 3, 1, 2, 3],
-    'ht1': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
-    'ht2': [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9]})
+    'famid': ["11", "12", "13"],
+    'birth': [1, 2, 3],
+    'ht1': [2.8, 2.9, 2.2],
+    'ht2': [3.4, 3.8, 2.9]})
 
-wide.head(2)
+wide
 ```
 
+Reshape into long format
 ```{python}
 wide.melt(
   id_vars=['famid', 'birth'], 
   value_vars=['ht1', 'ht2'], 
   variable_name='treatment', 
-  value_name='height').sample(5)
+  value_name='height')
 ```
 
-Break strings into rows.
+Things to note:
 
-```{python}
-wide.explode(columns=['famid']).limit(5)
-```
+- `id_vars` are the columns that index the wide format; these will be repeated.
+- `value_vars` are the columns that hold information in the wide format; these will be stacked in the long format.
+- `variable_name` is the column name, in the long format, that holds the column names from the wide format. The indexing columns in the long format will thus be `id_vars`+`variable_name`.
+- `value_name` is the column name, in the long format, that holds the values after stacking.
+
+
 
 ### Long to Wide
+
+stopped here
 
 ```{python}
 # Example adapted from https://stackoverflow.com/questions/5890584/how-to-reshape-data-from-long-to-wide-format
@@ -3395,22 +3627,39 @@ long = pl.DataFrame({
     'height': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1]
     })
   
-long.limit(5)
+long
 ```
 
+Pivot Without Aggregation
 ```{python}
 long.pivot(
+  values='height',
   index='id', # index in the wide format
   columns='treatment', # defines columns in the wide format
-  values='height')
+  )
 ```
 
+Pivot with Aggregation
+
+#### pivot() VS value_counts()
+
+
+
+
+### unstack()
+
+Works like a transpose, and then wrap rows. 
+Change the `step=` to get the feeling. 
 ```{python}
-long.unstack(step=2) # works like a transpose, and then wrap rows. Change the `step=` to get the feeling. 
+long.unstack(step=2) 
 ```
 
 
-## Nested dtypes {#sec-nested-dtypes}
+
+### unest()
+
+See @sec-struct.
+
 
 
 
@@ -3431,6 +3680,44 @@ df.rechunk() # ensure contiguous memory layout
 ```{python}
 df.shrink_to_fit() # reduce memory allocation to actual size
 ```
+
+
+
+
+
+
+
+# I/O
+
+## Reading Frames from Disk
+
+## Writing Frames to Disk {#sec-disk-export}
+
+
+
+
+# Polars Expressions {#sec-expressions}
+
+Things to recall about Polars expressions:
+
+1. Think of them as functions, that can be chained, and evaluated (lazyly) within a Polars context such as `df.select()`, `df.with_columns()`, etc.
+2. They are not the same as Python functions, and will not work outside of a Polars context.
+3. Almost all `pl.Series()` methods are available as Polars expressions. There are however some exceptions.
+
+
+Because almost all Polars Series methods are available as Polars expressions, we refer the reader to @sec-series for a review of importanta series methods. 
+In this section we will focus on exceptions, and some important expressions that are not available for Series.
+
+
+## Arithmetic
+
+
+
+
+
+
+# Polars LazyFrames
+
 
 
 
@@ -3493,28 +3780,6 @@ test_lf = pl.LazyFrame(
 
 
 
-
-# Polars Expressions {#sec-expressions}
-
-Things to recall about Polars expressions:
-
-1. Think of them as functions, that can be chained, and evaluated (lazyly) within a Polars context such as `df.select()`, `df.with_columns()`, etc.
-2. They are not the same as Python functions, and will not work outside of a Polars context.
-3. Almost all `pl.Series()` methods are available as Polars expressions. There are however some exceptions.
-
-
-Because almost all Polars Series methods are available as Polars expressions, we refer the reader to @sec-series for a review of importanta series methods. 
-In this section we will focus on exceptions, and some important expressions that are not available for Series.
-
-
-## Arithmetic
-
-
-
-
-
-
-# Polars LazyFrames
 
 # Extensions
 
