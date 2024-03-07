@@ -85,7 +85,7 @@ At this point you may want to create and activate a [venv](https://realpython.co
 
 ```{python}
 # %pip install --upgrade pip
-# %pip install --upgrade Polars
+# %pip install --upgrade polars
 # %pip install --upgrade pyarrow
 # %pip install --upgrade Pandas
 # %pip install --upgrade plotly
@@ -612,7 +612,7 @@ ind = (
 )
 (
     taxi_Pandas[ind]
-    .group_by('passenger_count')
+    .groupby('passenger_count')
     .agg({'tip_amount':'mean'})
 )
 ```
@@ -1459,7 +1459,7 @@ f.round(2)
 
 ```{python}
 #| label: series-ceil
-f..add()ceil()
+f.ceil()
 ```
 
 ```{python}
@@ -3199,6 +3199,16 @@ For more on the differences between these methods, see [here](https://www.rhosig
 ```{python}
 #| label: join
 
+df = pl.DataFrame({
+  "integer": [1, 2, 3], 
+  "date": [
+    (datetime(2022, 1, 1)), 
+    (datetime(2022, 1, 2)), 
+    (datetime(2022, 1, 3))], 
+    "float": [4.0, 5.0, 6.0],
+    "string": ["a", "b", "c"]})
+
+
 df2 = pl.DataFrame({
   "integer": [1, 2, 3], 
   "date": [
@@ -3614,17 +3624,15 @@ Things to note:
 
 
 
-### Long to Wide
-
-stopped here
+### Long to Wide- pivot()
 
 ```{python}
 # Example adapted from https://stackoverflow.com/questions/5890584/how-to-reshape-data-from-long-to-wide-format
 
 long = pl.DataFrame({
-    'id': [1, 1, 1, 2, 2, 2, 3, 3, 3],
-    'treatment': ['A', 'A', 'B', 'A', 'A', 'B', 'A', 'A', 'B'],
-    'height': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1]
+    'id': [1, 1, 2, 2, 3, 3],
+    'treatment': ['A', 'B', 'A', 'B', 'A', 'B'],
+    'height': [2.8, 2.9, 1.9, 2.2, 2.3, 2.1]
     })
   
 long
@@ -3633,25 +3641,98 @@ long
 Pivot Without Aggregation
 ```{python}
 long.pivot(
-  values='height',
   index='id', # index in the wide format
   columns='treatment', # defines columns in the wide format
+  values='height',
   )
 ```
 
-Pivot with Aggregation
+If each combinatio of `index=` and `columns=` maps to more than a single value of `values=`, you can use the `aggregate_function=` argument of `.pivot()`.
+
+
 
 #### pivot() VS value_counts()
 
+Here are two ways to count the number of unique values in a column, by group.
 
-
-
-### unstack()
-
-Works like a transpose, and then wrap rows. 
-Change the `step=` to get the feeling. 
 ```{python}
-long.unstack(step=2) 
+#| label: pivot-vs-value_counts
+
+df_to_count = (
+  pl.DataFrame({
+    "group": ["A", "A", "A", "B", "B", "B"],
+    "value": [1, 2, 3, 1, 2, 3],
+    })
+)
+
+```
+
+How to get the distribution of `value` by `group`?
+
+The `.pivot()` method:
+
+```{python}
+#| label: pivot-vs-value_counts-0
+df_to_count.pivot(
+  index="group",
+  columns="value",
+  values="value",
+  aggregate_function="len",
+  )
+
+```
+
+The `.value_counts()` method:
+
+```{python}
+#| label: pivot-vs-value_counts-1
+counts_with_value_counts = (
+  df_to_count
+  .group_by("group")
+  .agg(
+    pl.col("value").value_counts().alias("n_unique_values")
+  )
+)
+
+counts_with_value_counts
+```
+
+Things to note:
+
+- The `.pivot()` methods return a column per unique value. 
+- `value_counts()` returns a Polars-List of Polars-Struct per group. This may be a pro or a con; depending on your planned usage, or the number of unique values in each group. To see this, consider a case where each group has 1000 value, non overlapping with the other groups; how many columns will the `.pivot()` method return?
+
+
+Here is my best attempt to extract the frequencies of each value. 
+If you have a better solution, please let me know.
+```{python}
+#| label: pivot-vs-value_counts-2
+(
+  counts_with_value_counts
+  .with_columns(
+    pl.col('n_unique_values').list.to_struct().struct.json_encode()
+  )
+)
+```
+
+
+### Long to Wide- unstack()
+
+Another way to pivot from long to wide, which is less general but more efficient, is the `unstack()` method.
+Unstacking is much "dumber" than pivoting, and thus, much faster. 
+
+```{python}
+#| label: unstack
+
+(
+  long
+  .sort('treatment')
+  .unstack(
+    step = 3,
+    how='vertical',
+    columns="height",
+    )
+)
 ```
 
 
@@ -3670,12 +3751,14 @@ df.estimated_size(unit="mb")
 ```
 
 ```{python}
+df.rechunk() # ensure contiguous memory layout
+```
+
+
+```{python}
 df.n_chunks() # number of ChunkedArrays in the dataframe
 ```
 
-```{python}
-df.rechunk() # ensure contiguous memory layout
-```
 
 ```{python}
 df.shrink_to_fit() # reduce memory allocation to actual size
