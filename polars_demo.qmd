@@ -619,7 +619,7 @@ ind = (
 
 
 
-### Polars Lazy In Memory
+### Polars Lazy In Memory {#sec-polars-lazy-in-memory}
 
 
 ```{python}
@@ -3774,8 +3774,80 @@ df.shrink_to_fit() # reduce memory allocation to actual size
 
 ## Reading Frames from Disk
 
+### tl;dr
+
+If you want an eager frame use `pl.read_xxx()`, and if you want a lazy frame use `pl.scan_xxx()`. 
+
+### In Detail
+
+To read data from disk we need to think about the following:
+
+1. What is the taget object?
+2. What is the struture of the data on disk?
+   1. Single file VS multiple files? If multiple files, how are they organized? 
+   2. Format of each file. 
+   3. Are the files remote or local? 
+
+If the target object is an eager frame you will want to use `pl.read_xxx()`.
+So to read a csv you will use `pl.read_csv()`, to read a parquet you will use `pl.read_parquet()`, etc.
+
+If the target object is a lazy frame you will want to use `pl.scan_xxx()`.
+So to read a csv you will use `pl.scan_csv()`, to read a parquet you will use `pl.scan_parquet()`, etc.
+
+If the data is stored in multiple files, `scan_xxx()` methods currently have better support. 
+You can state the locations of the files in many ways. 
+Note, however, that if you are used to Pandas that takes a path to folder and will import, recursively, all the files in the folder, Polars will not do that; it will expect a more precise glob. 
+
+For example, say the data is in 
+
+.  
+|-- data
+|   |-- 2022
+|   |   |-- 01
+|   |   |   |-- 01.parquet
+|   |   |   |-- 02.parquet
+|   |-- 2023
+|   |   |-- 01
+|   |   |   |-- 01.parquet
+|   |   |   |-- 02.parquet
+
+In Pandas you could use `pd.read_parquet("data/")`.
+This will not work in Polars (TTBOMK), where you will need the following glob `pl.scan_parquet("data/**/*.parquet)"`.
+
+Multiple Parquet files also make an Apache Arrow Dataset. 
+Polars will allow you to read an Arrow Dataset with `pl.scan_arrow_dataset()`.
+The syntax was used in @sec-polars-lazy-in-memory and  looks like:
+```{python}
+#| eval: false
+dset = ds.dataset("data/", format="parquet") 
+pl.scan_pyarrow_dataset(dset)
+```
+
+When using this functionality you should recall the follwing:
+
+1. PyArrow has more functionality that Polars. As such, it may be able to read more formats, and more complex formats, where `pl.scan_xxx()` may fail.
+2. Polars native readers are more optimized than PyArrow. In particular, they push-down more operations, which is particularly imopirtant when reading from remote storage (i.e. DataLakes) such as S3 or Azure Blob Storage.
+
+
+### Why Parquet?
+
+Why do I prefer Parquet over CSV, Pickle, Feather, or other formats?
+
+I prefer Parquet over CSV because Parquet is compressed, and stores schema. Thus avoiding time and errors involved in guessing the schema at import time. 
+
+I prefer Parquet over Pickle because Parquet is a standard, and is not specific to a particular Python version. Also, being optimized for columnar storage, Parquet has better compression and read performance. 
+
+I Prefer Parquet over Feather because Parquet has better compression. 
+
+
+
 ## Writing Frames to Disk {#sec-disk-export}
 
+### tl;dr
+
+An eager Polars frame will have a `.write_xxx()` method.
+
+If the output of an opeation does not fit into memory, so that an eager frame cannot materialize, look into the `.sink_parquet()` engine. It will write to disk in a streaming fashion. Alas, it currently supports a very limited set of operations.
 
 
 
