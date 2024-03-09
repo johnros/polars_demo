@@ -21,67 +21,53 @@ html:
     embed-resources: true
 ---
 
-
-
 # Background {#sec-background}
-
 
 ## Ritchie Vink, Rust, Apache Arrow and Covid
 
 [Here](https://www.ritchievink.com/blog/2021/02/28/i-wrote-one-of-the-fastest-dataframe-libraries/) is the story, by the creator of Polars.
 
-
 ## Who Can Benefit from Polars?
 
-- Researcher (DS, Analyst, Statistician, etc):
-  - Working on their local machine. 
-  - Working on a cloud machine (SageMaker, EC2).
-- Production system:
-  - Running on a dedicated server. 
-  - Running on "serverless" (e.g. AWS Lambda, Google Cloud Functions).
+-   Researcher (DS, Analyst, Statistician, etc):
+    -   Working on their local machine.
+    -   Working on a cloud machine (SageMaker, EC2).
+-   Production system:
+    -   Running on a dedicated server.
+    -   Running on "serverless" (e.g. AWS Lambda, Google Cloud Functions).
 
 ## The DataFrame Landscape
 
-Initially there were R's `data.frame`. 
-R has evolved, and it now offers `tibble`s and `data.table`s.
-Python had only `Pandas` for years. 
-Then the Python ecosystem exploded, and now we have:
+Initially there were R's `data.frame`. R has evolved, and it now offers `tibble`s and `data.table`s. Python had only `Pandas` for years. Then the Python ecosystem exploded, and now we have:
 
--  [Pandas](https://Pandas.pydata.org/): The original Python dataframe module. Build by Wes McKinney, on top of numpy.
--  [Polars](https://www.pola.rs/): A new dataframe module, build by Ritchie Vink, on top of Rust and Apache Arrow.
--  [datatable](https://datatable.readthedocs.io/en/latest/): An attempt to recreate R's [data.table](https://github.com/Rdatatable/data.table) API and (crazy) speed in Python. 
--  [Dask](https://www.dask.org/): A distributed computing engine for Python, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
--  [Vaex](https://vaex.io/): A high performance Python library for lazy Out-of-Core DataFrames (similar to dask, but with a different API).
--  [Modin](https://github.com/modin-project/modin): A drop-in distributed  replacement for Pandas, built on top of [Ray](https://www.ray.io/). 
--  [DuckDB](https://duckdb.org/): An embeddable SQL OLAP database management system. These are dataframe that are stored on disk, compute on a single process, and queried with SQL or pythonic API.
-- [Daft](https://www.getdaft.io/): A distributed dataframe library built for "Complex Data" (data that doesn't usually fit in a SQL table such as images, videos, documents etc). 
--  [Fugue](https://fugue-tutorials.readthedocs.io/): A dataframe library that allows you to write SQL-like code, and execute it on different backends (e.g. Spark, Dask, Pandas, Polars, etc).
--  [pySpark](https://spark.apache.org/docs/latest/api/python/index.html): The Python API for Spark. Spark is a distributed computing engine, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
--  [CUDF](https://github.com/rapidsai/cudf): A GPU accelerated dataframe library, build on top of Apache Arrow.
+-   [Pandas](https://Pandas.pydata.org/): The original Python dataframe module. Build by Wes McKinney, on top of numpy.
+-   [Polars](https://www.pola.rs/): A new dataframe module, build by Ritchie Vink, on top of Rust and Apache Arrow.
+-   [datatable](https://datatable.readthedocs.io/en/latest/): An attempt to recreate R's [data.table](https://github.com/Rdatatable/data.table) API and (crazy) speed in Python.
+-   [Dask](https://www.dask.org/): A distributed computing engine for Python, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
+-   [Vaex](https://vaex.io/): A high performance Python library for lazy Out-of-Core DataFrames (similar to dask, but with a different API).
+-   [Modin](https://github.com/modin-project/modin): A drop-in distributed replacement for Pandas, built on top of [Ray](https://www.ray.io/).
+-   [DuckDB](https://duckdb.org/): An embeddable SQL OLAP database management system. These are dataframe that are stored on disk, compute on a single process, and queried with SQL or pythonic API.
+-   [Daft](https://www.getdaft.io/): A distributed dataframe library built for "Complex Data" (data that doesn't usually fit in a SQL table such as images, videos, documents etc).
+-   [Fugue](https://fugue-tutorials.readthedocs.io/): A dataframe library that allows you to write SQL-like code, and execute it on different backends (e.g. Spark, Dask, Pandas, Polars, etc).
+-   [pySpark](https://spark.apache.org/docs/latest/api/python/index.html): The Python API for Spark. Spark is a distributed computing engine, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
+-   [CUDF](https://github.com/rapidsai/cudf): A GPU accelerated dataframe library, build on top of Apache Arrow.
 
-
-
-See [here](https://pola-rs.github.io/Polars-book/user-guide/misc/alternatives/) and [here](https://www.getdaft.io/projects/docs/en/latest/dataframe_comparison.html) for more details. 
-
-
-
-
+See [here](https://pola-rs.github.io/Polars-book/user-guide/misc/alternatives/) and [here](https://www.getdaft.io/projects/docs/en/latest/dataframe_comparison.html) for more details.
 
 # Motivation {#sec-motivation}
 
 Each of the following, alone(!), is amazing.
 
-1. Small memory footprint.
-1. Native dtypes: missing, strings.
-2. Lazy evaluation allows query Planning.
-3. Streaming engine: No need to load entire dataset into memory.
-4. Out of the box parallelism: Fast and informative messages for debugging.
-5. Strict typing: This means the dtype of output is defined by the operation and not bu the input. This is both safer, and allows static analysis.
-
+1.  Small memory footprint.
+2.  Native dtypes: missing, strings.
+3.  Lazy evaluation allows query Planning.
+4.  Streaming engine: No need to load entire dataset into memory.
+5.  Out of the box parallelism: Fast and informative messages for debugging.
+6.  Strict typing: This means the dtype of output is defined by the operation and not bu the input. This is both safer, and allows static analysis.
 
 ## Setting Up the Environment
 
-At this point you may want to create and activate a [venv](https://realpython.com/python-virtual-environments-a-primer/) for this project. 
+At this point you may want to create and activate a [venv](https://realpython.com/python-virtual-environments-a-primer/) for this project.
 
 ```{python}
 # %pip install --upgrade pip
@@ -93,7 +79,6 @@ At this point you may want to create and activate a [venv](https://realpython.co
 # %pip install -r requirements.txt
 ```
 
-
 ```{python}
 #| label: Polars-version
 %pip show Polars # check you Polars version
@@ -103,9 +88,6 @@ At this point you may want to create and activate a [venv](https://realpython.co
 #| label: Pandas-version
 %pip show Pandas # check you Polars version
 ```
-
-
-
 
 ```{python}
 #| label: preliminaries
@@ -132,16 +114,24 @@ import plotly.io as pio
 pio.renderers.default = "plotly_mimetype+notebook"
 ```
 
+What modules and dependencies are installed
+```{python}
+pl.show_versions()
+```
 
-
+How many cores are available for parallelism?
+```{python}
+pl.thread_pool_size()
+```
 
 ## Memory Footprint
 
 ### Memory Footprint of Storage
 
-Comparing Polars to Pandas- the memory footprint of a series of strings. 
+Comparing Polars to Pandas- the memory footprint of a series of strings.
 
-Polars. 
+Polars.
+
 ```{python}
 letters = pl.Series(list(string.ascii_letters))
 
@@ -150,8 +140,8 @@ letter1 = letters.sample(n,with_replacement=True)
 letter1.estimated_size(unit='gb') 
 ```
 
+Pandas before Pandas 2.0.
 
-Pandas before Pandas 2.0. 
 ```{python}
 # Pandas with Ver 1.x backend
 letter1_Pandas = letter1.to_pandas(use_pyarrow_extension_array=False) 
@@ -159,41 +149,31 @@ letter1_Pandas.memory_usage(deep=True, index=False) / 1e9
 ```
 
 Pandas after Pandas 2.0, with the Pyarrow backend (Apr 2023).
+
 ```{python}
 letter1_Pandas = letter1.to_pandas(use_pyarrow_extension_array=True) 
 letter1_Pandas.memory_usage(deep=True, index=False) / 1e9
 ```
 
-
 ### Operating From Disk to Disk
 
-What if my data does not fit into RAM? 
-Turns out you manifest a lazy frame into disk, instead of RAM, thus avoiding the need to load the entire dataset into memory. 
-Alas, the function that does so, [sink_parquet()](https://pola-rs.github.io/Polars/py-Polars/html/reference/lazyframe/api/Polars.LazyFrame.sink_parquet.html), has currently limited functionality. 
-It is certainly worth keeping an eye on this function, as it matures.
+What if my data does not fit into RAM? Turns out you manifest a lazy frame into disk, instead of RAM, thus avoiding the need to load the entire dataset into memory. Alas, the function that does so, [sink_parquet()](https://pola-rs.github.io/Polars/py-Polars/html/reference/lazyframe/api/Polars.LazyFrame.sink_parquet.html), has currently limited functionality. It is certainly worth keeping an eye on this function, as it matures.
 
-::: {.callout-note}
-Although the potential of `sink_parquet()` is amazing, I find that it currently does not support complicated queries. 
+::: callout-note
+Although the potential of `sink_parquet()` is amazing, I find that it currently does not support complicated queries.
 :::
-
 
 ## Lazy Frames and Query Planning {#sec-query-planning}
 
-Consider a sort operation that follows a filter operation. 
-Ideally, filter precedes the sort, but we did not ensure this... 
-We now demonstrate that Polars' query planner will do it for you. 
-En passant, we see Polars is more efficient also without the query planner.
+Consider a sort operation that follows a filter operation. Ideally, filter precedes the sort, but we did not ensure this... We now demonstrate that Polars' query planner will do it for you. En passant, we see Polars is more efficient also without the query planner.
 
-
-Polars' Eager evaluation in the **wrong** order. 
-Sort then filter.
+Polars' Eager evaluation in the **wrong** order. Sort then filter.
 
 ```{python}
 %timeit -n 2 -r 2 letter1.sort().filter(letter1.is_in(['a','b','c']))
 ```
 
-Polars' Eager evaluation in the **right** order. 
-Filter then sort.
+Polars' Eager evaluation in the **right** order. Filter then sort.
 
 ```{python}
 %timeit -n 2 -r 2 letter1.filter(letter1.is_in(['a','b','c'])).sort()
@@ -204,21 +184,21 @@ latter1_lazy = letter1.alias('letters').to_frame().lazy()
 ```
 
 Polars' Lazy evaluation in the **wrong** order; **without** query planning
+
 ```{python}
 %timeit -n 2 -r 2 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect(no_optimization=True)
 ```
 
 Polars' Lazy evaluation in the **wrong** order; **with** query planning
+
 ```{python}
 %timeit -n 2 -r 2 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect()
 ```
 
-
-
 Things to note:
 
-1. A lazy evaluation was triggered when `df.lazy()` converted the Polars DataFrame to a Polars LazyFrame.
-2. The query planner worked: The Lazy evaluation in the wrong order timed as much as an eager evaluation in the right order; even when accounting for the overhead of converting the frame from eager to lazy.
+1.  A lazy evaluation was triggered when `df.lazy()` converted the Polars DataFrame to a Polars LazyFrame.
+2.  The query planner worked: The Lazy evaluation in the wrong order timed as much as an eager evaluation in the right order; even when accounting for the overhead of converting the frame from eager to lazy.
 
 Now compare to Pandas...
 
@@ -242,16 +222,13 @@ Pandas without lambda functions syntax; looks slightly better.
 
 Things to note:
 
-1. Query planning works!
-2. Pandas has dramatically improved since <2.0.0. 
-3. Lambda functions are always slow (both Pandas and Polars).
-
+1.  Query planning works!
+2.  Pandas has dramatically improved since \<2.0.0.
+3.  Lambda functions are always slow (both Pandas and Polars).
 
 ## Optimized for Within-Column Operations
 
-Polars seamlessly parallelizes over columns (also within, when possible). 
-As the number of columns in the data grows, we would expect fixed runtime until all cores are used, and then linear scaling. 
-The following code demonstrates this idea, using a simple sum-within-column.
+Polars seamlessly parallelizes over columns (also within, when possible). As the number of columns in the data grows, we would expect fixed runtime until all cores are used, and then linear scaling. The following code demonstrates this idea, using a simple sum-within-column.
 
 ```{python}
 # Mac users with Apple silicon (M1 or M2) may also want to benchmark Apples' mlx:
@@ -274,15 +251,12 @@ A_mlx = mx.array(A_numpy)
 
 ```
 
-
 Candidates currently omited:
 
-1. JAX
-2. PyTorch
-3. TensorFlow
-4. ...?
-
-
+1.  JAX
+2.  PyTorch
+3.  TensorFlow
+4.  ...?
 
 ### Summing Over Columns
 
@@ -310,11 +284,10 @@ A_Polars.sum().shape
 A_mlx.sum(axis=0).shape
 ```
 
-
-
 ### 50 Shades of Pandas
 
 Pandas with numpy backend
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_numpy.sum(axis=0)
 ```
@@ -323,8 +296,8 @@ Pandas with numpy backend
 A_Pandas_numpy.sum(axis=0).shape
 ```
 
-
 Pandas with arrow backend
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_arrow.sum(axis=0)
 ```
@@ -334,6 +307,7 @@ A_Pandas_arrow.sum(axis=0).shape
 ```
 
 Pandas with numpy backend, converted to numpy
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_numpy.values.sum(axis=0)
 ```
@@ -343,6 +317,7 @@ A_Pandas_numpy.values.sum(axis=0).shape
 ```
 
 Pandas with arrow backend, converted to numpy
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_arrow.values.sum(axis=0)
 ```
@@ -356,6 +331,7 @@ A_Pandas_arrow.values.sum(axis=0).shape
 ```
 
 Pandas to mlx
+
 ```{python}
 %timeit -n 4 -r 2 mx.array(A_Pandas_numpy.values).sum(axis=0)
 ```
@@ -363,10 +339,6 @@ Pandas to mlx
 ```{python}
 mx.array(A_Pandas_numpy.values).sum(axis=0).shape
 ```
-
-
-
-
 
 ### Summing Over Rows
 
@@ -381,7 +353,6 @@ A_numpy.sum(axis=1).shape
 ```{python}
 %timeit -n 4 -r 2 A_Polars.sum_horizontal()
 ```
-
 
 ```{python}
 A_Polars.sum_horizontal().shape
@@ -398,39 +369,38 @@ A_mlx.sum(axis=1).shape
 ### 50 Shades of Pandas
 
 Pandas with numpy backend
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_numpy.sum(axis=1)
 ```
 
-
 Pandas with arrow backend
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_arrow.sum(axis=1)
 ```
 
 Pandas with numpy backend, converted to numpy
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_numpy.values.sum(axis=1)
 ```
 
 Pandas with arrow backend, converted to numpy
+
 ```{python}
 %timeit -n 4 -r 2 A_Pandas_arrow.values.sum(axis=1)
 ```
 
-
 Pandas to mlx
+
 ```{python}
 %timeit -n 4 -r 2 mx.array(A_Pandas_numpy.values).sum(axis=1)
 ```
 
-
-
-
 ## Speed Of Import
 
-Polar's `read_X` functions are quite faster than Pandas. 
-This is due to better type "guessing" heuristics, and easier mapping between the disk representation and memory representation of the data.
+Polar's `read_X` functions are quite faster than Pandas. This is due to better type "guessing" heuristics, and easier mapping between the disk representation and memory representation of the data.
 
 We benchmark by making synthetic data, save it on disk, and reimporting it.
 
@@ -444,7 +414,6 @@ data_Polars.write_csv('data/data.csv', include_header = False)
 f"{os.path.getsize('data/data.csv')/1e7:.2f} MB on disk"
 ```
 
-
 Import with Pandas.
 
 ```{python}
@@ -457,11 +426,7 @@ Import with Polars.
 %timeit -n2 -r2 data_Polars = pl.read_csv('data/data.csv', has_header = False)
 ```
 
-What is the ratio of times on your machine?
-How many cores do you have?
-
-
-
+What is the ratio of times on your machine? How many cores do you have?
 
 ### Parquet Format
 
@@ -493,9 +458,8 @@ f"{os.path.getsize('data/data.feather')/1e7:.2f} MB on disk"
 %timeit -n2 -r2 data_Pandas = pd.read_feather('data/data.feather')
 ```
 
-
-
 ### Pickle Format
+
 ```{python}
 import pickle
 pickle.dump(data_Polars, open('data/data.pickle', 'wb'))
@@ -506,18 +470,15 @@ f"{os.path.getsize('data/data.pickle')/1e7:.2f} MB on disk"
 %timeit -n2 -r2 data_Polars = pickle.load(open('data/data.pickle', 'rb'))
 ```
 
-
 ### Summarizing Import
 
 Things to note:
 
-1. The difference in speed is quite large between Pandas vs. Polars.
-1. When dealing with CSV's, the function `pl.read_csv` reads in parallel, and has better type guessing heuristics.
-2. The difference in speed is quite large between csv vs. parquet and feather, with feather\<parquet\<csv.
-1. Feather is the fastest, but larger on disk. Thus good for short-term storage, and parquet for long-term.
-1. The fact that pickle isn't the fastest surprised me; but then again, it is not optimized for data.
-
-
+1.  The difference in speed is quite large between Pandas vs. Polars.
+2.  When dealing with CSV's, the function `pl.read_csv` reads in parallel, and has better type guessing heuristics.
+3.  The difference in speed is quite large between csv vs. parquet and feather, with feather\<parquet\<csv.
+4.  Feather is the fastest, but larger on disk. Thus good for short-term storage, and parquet for long-term.
+5.  The fact that pickle isn't the fastest surprised me; but then again, it is not optimized for data.
 
 ## Speed Of Join
 
@@ -563,12 +524,9 @@ data_right_Pandas = pd.DataFrame(data_right)
 %timeit -n2 -r2 Pandas_joined = data_left_Pandas.merge(data_right_Pandas, on = 0, how = 'inner')
 ```
 
-
-
 ## The NYC Taxi Dataset {#sec-nyc_taxi}
 
-Empirical demonstration:
-Load the celebrated NYC taxi dataset, filter some rides and get the mean `tip_amount` by `passenger_count`.
+Empirical demonstration: Load the celebrated NYC taxi dataset, filter some rides and get the mean `tip_amount` by `passenger_count`.
 
 ```{python}
 path = 'data/NYC' # Data from https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
@@ -578,6 +536,7 @@ file_names = os.listdir(path)
 ### Pandas
 
 `df.query()` syntax.
+
 ```{python}
 %%time 
 taxi_Pandas = pd.read_parquet(path)
@@ -617,10 +576,7 @@ ind = (
 )
 ```
 
-
-
 ### Polars Lazy In Memory {#sec-polars-lazy-in-memory}
-
 
 ```{python}
 %%time 
@@ -647,27 +603,22 @@ q = (
 q.collect()
 ```
 
-
 ```{python}
 q.show_graph(optimized=True) # Graphviz has to be installed
 ```
 
 Things to note:
 
-1. I did not use the native `pl.scan_parquet()` as it is recommended. For your purposes, you will almost always use the native readers. It is convenient to remember, however, that you can also use the PyArrow importers in the native importers fail. 
-2. I only have 2 parquet files. When I run the same with more files, despite my 16GB of RAM, **Pandas will crash my python kernel**.
-3. From the query graph I see import is done in parallel, and filtering done at scanning time!
-4. 
-
-
+1.  I did not use the native `pl.scan_parquet()` as it is recommended. For your purposes, you will almost always use the native readers. It is convenient to remember, however, that you can also use the PyArrow importers in the native importers fail.
+2.  I only have 2 parquet files. When I run the same with more files, despite my 16GB of RAM, **Pandas will crash my python kernel**.
+3.  From the query graph I see import is done in parallel, and filtering done at scanning time!
+4.  
 
 ### Polars Lazy From Disk
 
-::: {.callout-important}
-The following shows how to use the Polars streaming engine. 
-This is arguably the biggest difference with Pandas, and other in memory dataframe libraries.
+::: callout-important
+The following shows how to use the Polars streaming engine. This is arguably the biggest difference with Pandas, and other in memory dataframe libraries.
 :::
-
 
 ```{python}
 #|  label: Polars-lazy-from-disk
@@ -675,129 +626,108 @@ This is arguably the biggest difference with Pandas, and other in memory datafra
 q.collect(streaming=True)
 ```
 
-
-
 # Preliminaries
-
-
-
 
 ## Object Classes
 
-- **Polars Series**: Like a Pandas series. An in-memory array of data, with a name, and a dtype. 
+-   **Polars Series**: Like a Pandas series. An in-memory array of data, with a name, and a dtype.
 
-- **Polars Expr**: A Polars series that is not yet computed, and that will be computed when needed.  A Polars Expression can be thought of as:
-  1. A Lazy Series: A series that is not yet computed, and that will be computed when needed.
-  2. A function: That maps a Polars series to another Polars series (possibly of length 1).
+-   **Polars Expr**: A Polars series that is not yet computed, and that will be computed when needed. A Polars Expression can be thought of as:
 
-- **Polars LazyFrame**: A collection of Polars Expressions. This is the Polars equivalent of a Spark DataFrame. It is lazy, thus allows query planning.
+    1.  A Lazy Series: A series that is not yet computed, and that will be computed when needed.
+    2.  A function: That maps a Polars series to another Polars series (possibly of length 1).
 
-- **Polars DataFrame**: A collection of Polars Series. This is the Polars equivalent of a Pandas DataFrame. It is eager, and does not allow query planning.
-  
+-   **Polars LazyFrame**: A collection of Polars Expressions. This is the Polars equivalent of a Spark DataFrame. It is lazy, thus allows query planning.
 
-::: {.callout-warning}
-Not all methods are implemented for all classes. 
-In particular, not all `pl.Dataframe` methods are implemented for `pl.LazyFrame` and vice versa. The same goes for `pl.Series` and `pl.Expr`.
+-   **Polars DataFrame**: A collection of Polars Series. This is the Polars equivalent of a Pandas DataFrame. It is eager, and does not allow query planning.
+
+::: callout-warning
+Not all methods are implemented for all classes. In particular, not all `pl.Dataframe` methods are implemented for `pl.LazyFrame` and vice versa. The same goes for `pl.Series` and `pl.Expr`.
 
 This is not because the developers are lazy, but because the API is still being developed, and there are fundamental differences between the classes.
 
 Think about it:
 
-1. Why do we not see a `df.height` attribute for a `pl.LazeFrame`?
-2. Why do we not see a `df.sample()` method for a `pl.LazyFrame`?
-
+1.  Why do we not see a `df.height` attribute for a `pl.LazeFrame`?
+2.  Why do we not see a `df.sample()` method for a `pl.LazyFrame`?
 :::
-
-
 
 ## Evaluation Engines
 
 Polars seemingly **2 evaluation engines**:
 
-1. **Eager**: This is the default. It is the same as Pandas. When you call a method, the method is immediately executed.
-2. **Lazy**: This is the same as Spark. When you call a method, the method is not immediately executed. Instead, a query plan is created. The query plan is then executed when you call `.collect()`.
+1.  **Eager**: This is the default. It is the same as Pandas. When you call a method, the method is immediately executed.
+2.  **Lazy**: This is the same as Spark. When you call a method, the method is not immediately executed. Instead, a query plan is created. The query plan is then executed when you call `.collect()`.
 
-Why "seemingly" 2? 
-Because each engine has it's own subtleties.
-For instance, the behavior of the lazy engine may depend on streaming VS non-streaming evaluation, and on the means of loading the data.
+Why "seemingly" 2? Because each engine has it's own subtleties. For instance, the behavior of the lazy engine may depend on streaming VS non-streaming evaluation, and on the means of loading the data.
 
-1. **Streaming**: This is a special case of lazy evaluation. It is used when you have a large dataset, and you want to process it in chunks. You can then call `.collect(streaming=True)` to process the dataset in chunks. This is useful when you have a dataset that is too large to fit into memory, and you want to process it in chunks. It is also useful when you want to process a dataset in real-time, as it is being generated.
-2. **Loading**: Reading multiple parquet files using Polars native readers, may behave slightly different than reading the same files as a Pyarrow dataset (always prefer the native readers, when possible).
-  
-
-
+1.  **Streaming**: This is a special case of lazy evaluation. It is used when you have a large dataset, and you want to process it in chunks. You can then call `.collect(streaming=True)` to process the dataset in chunks. This is useful when you have a dataset that is too large to fit into memory, and you want to process it in chunks. It is also useful when you want to process a dataset in real-time, as it is being generated.
+2.  **Loading**: Reading multiple parquet files using Polars native readers, may behave slightly different than reading the same files as a Pyarrow dataset (always prefer the native readers, when possible).
 
 ## Polars dtypes
 
-Polars has its own dtypes, call with `pl.<dtype>`; e.g. `pl.Int32`.
-A comprehensive list may be found [here](https://docs.pola.rs/py-Polars/html/reference/datatypes.html).
+Polars has its own dtypes, call with `pl.<dtype>`; e.g. `pl.Int32`. A comprehensive list may be found [here](https://docs.pola.rs/py-Polars/html/reference/datatypes.html).
 
-Here are the most common. 
-Note, that unlike Pandas, all are native Polars dtypes, and do not recur to Python objects. 
+Here are the most common. Note, that unlike Pandas, all are native Polars dtypes, and do not recur to Python objects.
 
-- Floats: 
-  - `pl.Float64`: Arguably, the most frequently used dtype.
-- Integers: 
-  - `pl.Int64`: The most frequently used integer dtype.
-- Booleans: 
-  - `pl.Boolean`: As the name suggests. 
-- Strings: 
-  - `pl.Utf8`: The only string encoding supported by Polars. 
-  - `pl.String`: Recently introduced as an alias to `pl.Utf8`.
-- Temporal: 
-  - `pl.Date`: Date, without time.
-  - `pl.Datetime`: Date, with time. 
-  - `pl.Time`: Time, without date.
-  - `pl.Duration`: Time difference.
-- Nulls: 
-  - `pl.Null`: Polars equivalent of `None`.
-  - `np.nan`: The numpy dtype. Essentially a float, and not as a null.
-- Nested:
-  - `pl.List`: A list of items.
-  - `pl.Array`: Fixed length list. 
-  - `pl.Struct`: Think of it as a dict within a frame.
-
-
+-   Floats:
+    -   `pl.Float64`: Arguably, the most frequently used dtype.
+-   Integers:
+    -   `pl.Int64`: The most frequently used integer dtype.
+-   Booleans:
+    -   `pl.Boolean`: As the name suggests.
+-   Strings:
+    -   `pl.Utf8`: The only string encoding supported by Polars.
+    -   `pl.String`: Recently introduced as an alias to `pl.Utf8`.
+-   Temporal:
+    -   `pl.Date`: Date, without time.
+    -   `pl.Datetime`: Date, with time.
+    -   `pl.Time`: Time, without date.
+    -   `pl.Duration`: Time difference.
+-   Nulls:
+    -   `pl.Null`: Polars equivalent of `None`.
+    -   `np.nan`: The numpy dtype. Essentially a float, and not as a null.
+-   Nested:
+    -   `pl.List`: A list of items.
+    -   `pl.Array`: Fixed length list.
+    -   `pl.Struct`: Think of it as a dict within a frame.
 
 Things to note:
 
--  Polars has no `Int` dtype, nor `Float`. You must specify the number of bits.
--  Polars recently introduced `pl.String` as an alias for `pl.Utf8`. No other encodings are supported.
--  Polars also supports `np.nan`(!), which is different than its `pl.Null` dtype. `np.nan` is a **float**, and `Null` is a None.
-  
-
-
+-   Polars has no `Int` dtype, nor `Float`. You must specify the number of bits.
+-   Polars recently introduced `pl.String` as an alias for `pl.Utf8`. No other encodings are supported.
+-   Polars also supports `np.nan`(!), which is different than its `pl.Null` dtype. `np.nan` is a **float**, and `Null` is a None.
 
 ## The Polars API
 
-- You will fall in love with it!
-- Much more similar to PySpark than to Pandas. The Pandas API is simply not amenable to lazy evaluation. 
-
+-   You will fall in love with it!
+-   Much more similar to PySpark than to Pandas. The Pandas API is simply not amenable to lazy evaluation.
 
 ### Some Design Principles {#sec-api-principles}
 
 Here are some principles that will help you understand the API:
 
-1. All columns are created equal. There are **no indexing** columns. 
+1.  All columns are created equal. There are **no indexing** columns.
 
-2. Always **remember the class** you are operating on: Is it a series, a dataframe, an expression, or a lazyframe?
+2.  Always **remember the class** you are operating on: Is it a series, a dataframe, an expression, or a lazyframe?
 
-5. Operations on the columns of a dataframe will always be part of a **context**. Context may include:
-    1. `pl.DataFrame.select()`: This is the most common context. It is used to select columns, and to apply operations on columns.
-    2. `pl.DataFrame.with_columns()`: This is used to add columns to a dataframe.
-    3. `pl.DataFrame.group_by().agg()`: The `.agg()` context works like a `.select()` context, but it is used to apply operations on sub-groups of rows.
-    4. `pl.DataFrame.filter()`: This is used to filter rows using expressions that evaluate to Booleans.
+3.  Operations on the columns of a dataframe will always be part of a **context**. Context may include:
 
-6. Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.group_by()` (starting version 19.0.0). 
+    1.  `pl.DataFrame.select()`: This is the most common context. It is used to select columns, and to apply operations on columns.
+    2.  `pl.DataFrame.with_columns()`: This is used to add columns to a dataframe.
+    3.  `pl.DataFrame.group_by().agg()`: The `.agg()` context works like a `.select()` context, but it is used to apply operations on sub-groups of rows.
+    4.  `pl.DataFrame.filter()`: This is used to filter rows using expressions that evaluate to Booleans.
+    5.  `pl.SQLContext().execute()`: This is used if you prefer to use SQL syntax, instead of the Polars API.
 
-7. Polars was designed for operation within **columns**, not within rows. Operations within rows are the exception, and the will have a `_horizontal()` suffix. Examples: `pl.sum_horizontal()`, `pl.mean_horizontal()`, `pl.rolling_sum_horizontal()`.
+4.  Two-word methods are always lower-case, and separated by underscores. E.g: `.is_in()` instead of `.isin()`; `.is_null()` instead of `.isnull()`; `.group_by()` instead of `.group_by()` (starting version 19.0.0).
 
-8. Look for `pl.Expr()` methods so you can chain operations. E.g. `pl.col('a').add(pl.col('b'))` is better than `pl.col('a') + pl.col('b')`; the former can be further chained.
-  
+5.  Polars was designed for operation within **columns**, not within rows. Operations within rows are the exception, and the will have a `_horizontal()` suffix. Examples: `pl.sum_horizontal()`, `pl.mean_horizontal()`, `pl.rolling_sum_horizontal()`.
+
+6.  Look for `pl.Expr()` methods so you can chain operations. E.g. `pl.col('a').add(pl.col('b'))` is better than `pl.col('a') + pl.col('b')`; the former can be further chained.
 
 ### Some Examples of the API
 
-Here is an example to give you a little taste of what the API feels like. 
+Here is an example to give you a little taste of what the API feels like.
 
 ```{python}
 #| label: Polars-api
@@ -807,15 +737,12 @@ polars_frame = pl.DataFrame(make_data(100,4))
 polars_frame.limit(5)
 ```
 
-
-::: {.callout-note}
-What is the difference between `.head()` and `limit()`?
-For eager frames? For lazy frames?
+::: callout-note
+What is the difference between `.head()` and `limit()`? For eager frames? For lazy frames?
 :::
 
-
-
 Can you parse the following in your head?
+
 ```{python}
 (
   polars_frame
@@ -834,14 +761,12 @@ Can you parse the following in your head?
 
 Ask yourself:
 
-- What is `polars_frame`? Is it an eager or a lazy Polars dataframe?
-- Why is `column_1_mean` when `non-negative=false` indeed non negative?
-- What is a Polars expression?
-- What is a Polars series?
-- How did I create the columns `column_1_mean`...`column_4_mean`?
-- How would you have written this in Pandas?
-
-
+-   What is `polars_frame`? Is it an eager or a lazy Polars dataframe?
+-   Why is `column_1_mean` when `non-negative=false` indeed non negative?
+-   What is a Polars expression?
+-   What is a Polars series?
+-   How did I create the columns `column_1_mean`...`column_4_mean`?
+-   How would you have written this in Pandas?
 
 ```{python}
 #| label: Polars-api-second-example
@@ -893,7 +818,6 @@ polars_frame_2 = (
 
 ```
 
-
 Can you parse the following in your head?
 
 ```{python}
@@ -932,33 +856,22 @@ polars_frame_3 = pl.DataFrame(make_data(10,1))
 
 ```
 
-
-
 ## Getting Help
 
 Before we dive in, you should be aware of the following references for further help:
 
-1.  A [github page](https://github.com/pola-rs/Polars). It is particular important to subscribe to [release updates](https://github.com/pola-rs/Polars/releases). 
+1.  A [github page](https://github.com/pola-rs/Polars). It is particular important to subscribe to [release updates](https://github.com/pola-rs/Polars/releases).
 2.  A [user guide](https://pola-rs.github.io/Polars-book/user-guide/index.html).
 3.  A very active community on [Discord](https://discord.gg/4UfP5cfBE7).
 4.  The [API reference](https://pola-rs.github.io/Polars/py-Polars/html/reference/index.html).
 5.  A Stack-Overflow [tag](https://stackoverflow.com/questions/tagged/python-Polars).
 6.  Cheat-sheet for [Pandas users](https://www.rhosignal.com/posts/Polars-Pandas-cheatsheet/).
 
-**Warning**: Be careful of AI assistants such as Github-Copilot, TabNine, etc. 
-Polars is still very new, and they may give you Pandas completions instead of Polars.
-
-
-
-
+**Warning**: Be careful of AI assistants such as Github-Copilot, TabNine, etc. Polars is still very new, and they may give you Pandas completions instead of Polars.
 
 # Polars Series {#sec-series}
 
-A Polars series looks a feels a lot like a Pandas series.
-You usually will try to avoid them because: (a) Your objects will usually be in frames, not in series. (b) If in frames, you will be calling `pl.Expr()` methods, and not `pl.Series()` methods. 
-Getting used to Polars series, will thus give you bad intuitions when you move to Polars expressions.
-Nevertheless, it is the simples object to learn, so we start there. 
-
+A Polars series looks a feels a lot like a Pandas series. You usually will try to avoid them because: (a) Your objects will usually be in frames, not in series. (b) If in frames, you will be calling `pl.Expr()` methods, and not `pl.Series()` methods. Getting used to Polars series, will thus give you bad intuitions when you move to Polars expressions. Nevertheless, it is the simples object to learn, so we start there.
 
 Construct a series
 
@@ -1005,8 +918,6 @@ Renaming a series; will be very useful when operating on dataframe columns.
 s.alias("b")
 ```
 
-
-
 Constructing a series of floats, for later use.
 
 ```{python}
@@ -1020,69 +931,59 @@ f
 f.dtype
 ```
 
-
-
-
 ## Export To Other Python Objects
 
-The current section deals with exports to other python objects, **in memory**. 
-See @sec-disk-export for exporting to disk.
+The current section deals with exports to other python objects, **in memory**. See @sec-disk-export for exporting to disk.
 
 Export to Polars DataFrame.
+
 ```{python}
 #| label: series-to-Polars-dataframe
 s.to_frame() 
 ```
 
-Export to Python list. 
+Export to Python list.
+
 ```{python}
 #| label: series-to-list
 s.to_list()
 ```
 
-Export to Numpy array. 
+Export to Numpy array.
+
 ```{python}
 #| label: series-to-numpy
 s.to_numpy() # useful for preparing data for learning with scikit-learn
 ```
 
-Export to Pandas Series. 
+Export to Pandas Series.
+
 ```{python}
 #| label: series-to-Pandas-series
 s.to_pandas()
 ```
 
-Export to Arrow Array.
-Useful for preparing data for learning with XGBoost which supports Arrow.
-Maybe Scikit-learn will also support Arrow in the future? Although Scikit-learn [may support Polars](https://github.com/scikit-learn/scikit-learn/issues/25896) before it supports Arrow.
+Export to Arrow Array. Useful for preparing data for learning with XGBoost which supports Arrow. Maybe Scikit-learn will also support Arrow in the future? Although Scikit-learn [may support Polars](https://github.com/scikit-learn/scikit-learn/issues/25896) before it supports Arrow.
+
 ```{python}
 #| label: series-to-arrow
 s.to_arrow() 
 ```
 
-
-
-
-
-
 ## Memory Representation of Series
 
-Object size in memory. 
-Super useful for profiling.
-Will only be available for eager objects; by definitions. 
+Object size in memory. Super useful for profiling. Will only be available for eager objects; by definitions.
 
 ```{python}
 #| label: series-memory-size
 s.estimated_size(unit="b") # 8(bytes) * 3(length)
 ```
 
-
 ## Filtering and Subsetting {#sec-filtering-subsetting-series}
 
 ```{python}
 s[0] # same as s.__getitem__(0)
 ```
-
 
 To filter, you need to use the `.filter()` method.
 
@@ -1099,7 +1000,6 @@ Filtering with the `[` operator will not work:
 s[[True, False, True]]
 ```
 
-
 ```{python}
 #| label: series-filter-with-list
 s.filter([True, False, True])
@@ -1114,7 +1014,6 @@ s.limit(2)
 #| label: series-head
 s.head(2)
 ```
-
 
 ```{python}
 #| label: series-tail
@@ -1140,10 +1039,6 @@ s.slice(1, 2) # same as Pandas .iloc[1:2]
 #| label: series-gather-every
 s.gather_every(2) # same as Pandas .iloc[::2]
 ```
-
-
-
-
 
 ## Aggregations
 
@@ -1211,13 +1106,10 @@ s.value_counts()
 
 ## Missing
 
-Thanks to Arrow, Polars has built in missing value support for all(!) dtypes. 
-This has been a long awaited feature in the Python data science ecosystem with implications on speed, memory, style and more. 
-The [Polars User Guide](https://pola-rs.github.io/Polars-book/user-guide/howcani/missing_data.html) has a great overview of the topic from which we collect some take-homes:
+Thanks to Arrow, Polars has built in missing value support for all(!) dtypes. This has been a long awaited feature in the Python data science ecosystem with implications on speed, memory, style and more. The [Polars User Guide](https://pola-rs.github.io/Polars-book/user-guide/howcani/missing_data.html) has a great overview of the topic from which we collect some take-homes:
 
-- `np.nan` is also supported along `pl.Null`, but is not considered as a missing value by Polars. This has implications on null counts, statistical aggregations, etc.
-- `pl.Null`, and `np.nan`s have their own separate functions for imputing, counting, etc.
-
+-   `np.nan` is also supported along `pl.Null`, but is not considered as a missing value by Polars. This has implications on null counts, statistical aggregations, etc.
+-   `pl.Null`, and `np.nan`s have their own separate functions for imputing, counting, etc.
 
 ```{python}
 m = pl.Series("a", [1, 2, None, np.nan])
@@ -1247,12 +1139,10 @@ m_Pandas.isnull() # alias for pd.isna()
 
 ### Operating on Missing
 
-We now compare the behavior of Polars to Pandas when operating on missing values.
-When interpreting the following remember:
+We now compare the behavior of Polars to Pandas when operating on missing values. When interpreting the following remember:
 
-1. For Polars, nan is not missing. It is some unknown number. 
-2. For Pandas, nan and Nulls are the same. 
-
+1.  For Polars, nan is not missing. It is some unknown number.
+2.  For Pandas, nan and Nulls are the same.
 
 ```{python}
 # Polars
@@ -1324,16 +1214,12 @@ m1.interpolate()
 m2.interpolate() # np.nan is not considered missing, so why interpolate?
 ```
 
-
-
-
 ## Shape Transformations
 
 ```{python}
 #| label: series-to-dummies
 s.to_dummies()
 ```
-
 
 ```{python}
 #| label: series-shift
@@ -1345,12 +1231,10 @@ s.shift(1, fill_value=999)
 s.shift(-1)
 ```
 
-
 ```{python}
 #| label: series-reshape
 pl.Series("a",[1,2,3,4]).reshape((2,2))
 ```
-
 
 ## Arithmetic Operations
 
@@ -1363,14 +1247,12 @@ The following will fail for `pl.Series` for will work(!) for `pl.Expr`.
 s.add(1)
 ```
 
-
 ```{python}
 #| label: series-sub
 #| eval: false
 
 s.sub(1)
 ```
-
 
 ```{python}
 #| label: series-mul
@@ -1392,8 +1274,6 @@ s.truediv(2)
 
 s.floordiv(2)
 ```
-
-
 
 ## Mathematical Transformations
 
@@ -1422,7 +1302,6 @@ s.hash()
 s.log()
 ```
 
-
 ```{python}
 #| label: series-sqrt
 s.sqrt()
@@ -1434,7 +1313,6 @@ s.sqrt()
 s.equals(pl.Series("a", [1, 2, 3]))
 ```
 
-
 ```{python}
 #| label: series-eq
 s.eq(2)
@@ -1445,7 +1323,7 @@ s.eq(2)
 s.ge(2)
 ```
 
-Clip, aka Winsorize. 
+Clip, aka Winsorize.
 
 ```{python}
 #| label: series-clip
@@ -1472,7 +1350,6 @@ f.floor()
 s.peak_max()
 ```
 
-
 ## Search
 
 ```{python}
@@ -1480,18 +1357,14 @@ s.peak_max()
 s.is_in([1, 10])
 ```
 
-
 ```{python}
 #| label: series-search-in-range
 s.is_between(2, 3, closed='both')
 ```
 
-
-
 ## Apply (map_elements)
 
-Applying your own function. 
-Also note the informative error message (introduced in Polars Ver 0.18.0) that will try to recommend a more efficient way to do things.
+Applying your own function. Also note the informative error message (introduced in Polars Ver 0.18.0) that will try to recommend a more efficient way to do things.
 
 ```{python}
 s.map_elements(lambda x: x + 1)
@@ -1514,7 +1387,6 @@ Adding 1 without apply:
 ```{python}
 %timeit -n2 -r2 s1+1
 ```
-
 
 ## Cumulative Operations
 
@@ -1550,8 +1422,6 @@ s.diff()
 s.pct_change()
 ```
 
-
-
 ## Windowed Operations
 
 ```{python}
@@ -1566,7 +1436,6 @@ s.rolling_mean(window_size=2)
 s.rolling_sum(window_size=2)
 ```
 
-
 ```{python}
 #| label: series-rolling-map
 s.rolling_map(
@@ -1576,10 +1445,8 @@ s.rolling_map(
 
 Note:
 
-- `sum` is the `pl.sum()` function. You cannot use arbitrary functions within a `rolling_map()` context. 
-- Many rolling functions have been prepared. See the [computations section](https://docs.pola.rs/py-Polars/html/reference/series/computation.html) of the Series class in the official API.
-
-
+-   `sum` is the `pl.sum()` function. You cannot use arbitrary functions within a `rolling_map()` context.
+-   Many rolling functions have been prepared. See the [computations section](https://docs.pola.rs/py-Polars/html/reference/series/computation.html) of the Series class in the official API.
 
 ## Logical Aggregations
 
@@ -1604,17 +1471,12 @@ b.any()
 b.not_()
 ```
 
-
-
-
 ## Uniques and Duplicates
-
 
 ```{python}
 #| label: series-is-duplicated
 s.is_duplicated()
 ```
-
 
 ```{python}
 #| label: series-is-unique
@@ -1641,9 +1503,9 @@ s.is_first_distinct() # not sure there is a pl.Expr method
 
 Notes:
 
-- `is_first_distinct()` has had many name changes in the past. It was `is_first()` in Polars 0.18.0, and `is_first_distinct()` in Polars 0.19.0.
+-   `is_first_distinct()` has had many name changes in the past. It was `is_first()` in Polars 0.18.0, and `is_first_distinct()` in Polars 0.19.0.
 
-- Do not confuse `.is_first_distinct()` with `.first()`. The former is a logical aggregation, and the latter is a series method. 
+-   Do not confuse `.is_first_distinct()` with `.first()`. The former is a logical aggregation, and the latter is a series method.
 
 ```{python}
 #| label: first-counter-examples
@@ -1654,8 +1516,6 @@ Notes:
     )
 )
 ```
-
-
 
 ## Casting
 
@@ -1668,8 +1528,6 @@ Things to note:
 -   `cast()` is Polars' equivalent of Pandas' `astype()`.
 -   The dtypes to cast to are **Polars** dtypes. Don't try `s.cast("int32")`, `s.cast(np.int32)`, or `s.cast(pd.int)`
 -   For a list of dtypes see the official [documentation](see%20https://pola-rs.github.io/Polars/py-Polars/html/reference/datatypes.html).
-
-
 
 Find the most efficient dtype for a series; Like Pandas `pd.to_numeric(..., downcast="..."`).
 
@@ -1685,8 +1543,6 @@ Shrink the memory allocation to the size of the actual data (in place).
 ```{python}
 s.shrink_to_fit() 
 ```
-
-
 
 ## Ordering and Sorting
 
@@ -1722,8 +1578,6 @@ sorted_s = s[s.arg_sort()]
 s.shuffle(seed=1) # random permutation
 ```
 
-
-
 ## Date and Time
 
 There are 4 datetime dtypes in Polars:
@@ -1733,12 +1587,9 @@ There are 4 datetime dtypes in Polars:
 3.  **Time**: Hour of day. Generated with `pl.Time()`.
 4.  **Duration**: As the name suggests. Similar to `timedelta` in Pandas. Generated with `pl.Duration()`.
 
-::: {.callout-warning}
-Python has a sea of modules that support datetimes. 
-A partial list includes: [datetime module](https://docs.python.org/3/library/datetime.html), extensions in [dateutil](https://dateutil.readthedocs.io/en/stable/), [numpy](https://numpy.org/doc/stable/reference/arrays.datetime.html), [Pandas](https://Pandas.pydata.org/Pandas-docs/version/1.1/user_guide/timeseries.html), [arrow](https://arrow.readthedocs.io/en/latest/), the deprecated [scikits.timeseries](https://pytseries.sourceforge.net/) and certainly others. 
-Be aware of the dtype you are using, and the accompanying methods.
+::: callout-warning
+Python has a sea of modules that support datetimes. A partial list includes: [datetime module](https://docs.python.org/3/library/datetime.html), extensions in [dateutil](https://dateutil.readthedocs.io/en/stable/), [numpy](https://numpy.org/doc/stable/reference/arrays.datetime.html), [Pandas](https://Pandas.pydata.org/Pandas-docs/version/1.1/user_guide/timeseries.html), [arrow](https://arrow.readthedocs.io/en/latest/), the deprecated [scikits.timeseries](https://pytseries.sourceforge.net/) and certainly others. Be aware of the dtype you are using, and the accompanying methods.
 :::
-
 
 ### Time Range
 
@@ -1769,15 +1620,13 @@ Things to note:
 date.dtype
 ```
 
-Cast to different time unit. 
-May be useful when joining datasets, and the time unit is different.
+Cast to different time unit. May be useful when joining datasets, and the time unit is different.
 
 ```{python}
 date.dt.cast_time_unit(time_unit="ms")
 ```
 
 Datetime methods are accessed with the `.dt` namespace.
-
 
 ### Extract Time Sub-Units
 
@@ -1834,7 +1683,7 @@ diffs
 diffs.dtype
 ```
 
-::: {.callout-important}
+::: callout-important
 The extrator of sub-units from a `pl.Duration` has recently changed from `.dt.X()` to `.dt.total_X()`.
 :::
 
@@ -1867,6 +1716,7 @@ date.dt.min()
 ```
 
 I never quite undersootd that is the "average day."
+
 ```{python}
 date.dt.mean()
 ```
@@ -1895,7 +1745,6 @@ date.dt.truncate("1m")
 date.dt.round(every="1m")
 ```
 
-
 ### From Date to String
 
 ```{python}
@@ -1903,10 +1752,10 @@ date.dt.to_string("%Y-%m-%d")
 ```
 
 Or equivalently:
+
 ```{python}
 date.dt.strftime("%Y-%m-%d")
 ```
-
 
 ### From String to Datetime
 
@@ -1930,6 +1779,7 @@ sd.str.to_date(format="%F", strict=False)
 ```
 
 Or equivalently:
+
 ```{python}
 sd.str.strptime(dtype= pl.Date, format="%F", strict=False)
 ```
@@ -1945,6 +1795,7 @@ sd.str.to_datetime(format="%F %T", strict=False)
 ```
 
 Or equivalently:
+
 ```{python}
 sd.str.strptime(pl.Datetime, "%F %T", strict=False)
 ```
@@ -1954,21 +1805,14 @@ sd.str.strptime(pl.Datetime, "%a %h %d %T %Y",strict=False)
 ```
 
 Parse into `Time` dtype.
+
 ```{python}
 sd.str.to_time("%a %h %d %T %Y",strict=False)
 ```
+
 ```{python}
 sd.str.strptime(pl.Time, "%a %h %d %T %Y", strict=False)
 ```
-
-
-
-
-
-
-
-
-
 
 ## Strings
 
@@ -1984,19 +1828,15 @@ st = pl.Series("a", ["foo", "bar", "baz"])
 st.str.len_chars() # gets number of chars. In ASCII this is the same as lengths()
 ```
 
-
 ```{python}
 #| label: string-concat
 st.str.concat("-")
 ```
 
-
-
 ```{python}
 #| label: string-count-matches
 st.str.count_matches(pattern= 'o') # count literal matches
 ```
-
 
 ```{python}
 #| label: string-contains
@@ -2013,12 +1853,10 @@ st.str.contains("ba[a-zA-Z]")
 st.str.contains("[a-zA-Z]{4,5}") 
 ```
 
-
 ```{python}
 #| label: string-count-matches-2
 st.str.count_matches(pattern='[a-zA-Z]')
 ```
-
 
 ```{python}
 #| label: string-ends-with
@@ -2102,16 +1940,14 @@ st.str.split(by="o")
 st.str.split(by="a", inclusive=True)
 ```
 
-String to dict of strings. 
-Number of **splits** fixed.
+String to dict of strings. Number of **splits** fixed.
 
 ```{python}
 #| label: string-split-exact
 st.str.split_exact("a", 2)
 ```
 
-String to dict of strings. 
-Length of **output** fixed.
+String to dict of strings. Length of **output** fixed.
 
 ```{python}
 #| label: string-split-length
@@ -2149,10 +1985,6 @@ st.str.zfill(5)
 st.str.slice(offset=1, length=1)
 ```
 
-
-
-
-
 # Polars (Eager) DataFrames {#sec-dataframes}
 
 Recall :
@@ -2180,7 +2012,8 @@ df = pl.DataFrame({
 
 ## Inspect
 
-Nice HTML printing to iPython. 
+Nice HTML printing to iPython.
+
 ```{python}
 df
 ```
@@ -2192,7 +2025,6 @@ print(df)
 ```{python}
 df.glimpse() # useful for wide frames. Similar to R's str() of Pandas's .info()
 ```
-
 
 ```{python}
 df.columns
@@ -2220,33 +2052,31 @@ df.with_row_count()
 
 Things to note:
 
-1. `df.schema` and `df.columns` will be available for lazy objects, even before materializing them.
-2. `df.height` and `df.shape` will not be available for lazy objects, until they are materialized.
+1.  `df.schema` and `df.columns` will be available for lazy objects, even before materializing them.
+2.  `df.height` and `df.shape` will not be available for lazy objects, until they are materialized.
 
 ## Intro to Column Operations
 
-::: {.callout-important}
+::: callout-important
 This is probably the most important section of the document.
 :::
 
 ### Contexts {#sec-contexts}
 
-As discussed in @sec-api-principles, operations on columns will always be done within a **context**.
-Pandas fans may think of Polars Context as `.eval()` or `.assign()` Pandas methods.
+As discussed in @sec-api-principles, operations on columns will always be done within a **context**. Pandas fans may think of Polars Context as `.eval()` or `.assign()` Pandas methods.
 
-- `df.with_columns()` to add columns.
-- `df.select()` to select columns.
-- `df.group_by().agg()` is acutually `.select()` within a `group_by()` context.
-- `df.filter()` is a context for filtering rows. 
-- `pl.when()` is a context for conditional operations.
-
+-   `df.with_columns()` to add columns.
+-   `df.select()` to select columns.
+-   `df.group_by().agg()` is acutually `.select()` within a `group_by()` context.
+-   `df.filter()` is a context for filtering rows.
+-   `pl.when()` is a context for conditional operations.
 
 Select Context:
+
 ```{python}
 #| label: select-context
 df.select(pl.col("integer").add(1))
 ```
-
 
 ```{python}
 #| label: with-colummns-context
@@ -2254,16 +2084,15 @@ df.with_columns(pl.col("integer").add(1))
 ```
 
 Group-by context:
+
 ```{python}
 #| label: group-by-context
 df.group_by("string").agg(pl.col("integer").add(1))
 ```
 
-
 ### Column Access
 
-Within a context there are many ways to access a column.
-Here are some examples of various ways of adding 1 to the integer column.
+Within a context there are many ways to access a column. Here are some examples of various ways of adding 1 to the integer column.
 
 ```{python}
 #| label: add-1-to-column
@@ -2318,7 +2147,6 @@ df.select(cs.matches(r"^integer$").add(1))
 df.select(cs.contains("int").add(1))
 ```
 
-
 ```{python}
 df.select(pl.col("integer")+1)
 ```
@@ -2332,88 +2160,85 @@ df.get_column('integer')+1
 ```
 
 The following will not work because a series does not have a `.add(1)` method.
+
 ```{python}
 #| eval: false
 df['integer'].add(1)
 df.get_column('integer').add(1)
 ```
 
-::: {.callout-important}
+::: callout-important
 Think: What are the differences between these methods?
 :::
 
 My preferred syntax is @col-ref, which is the one I will use in the rest of the document.
-
-
-
-
-
-
-
-
-
-
-
 
 ## Convert to Other Python Objects
 
 You can always convert your `pl.Series` or `pl.DataFrame` to other Python objects.
 
 To Pandas DataFrame
+
 ```{python}
 #| label: dataframe-to-Pandas
 df.to_pandas()
 ```
 
 To Numpy Array
+
 ```{python}
 #| label: dataframe-to-numpy
 df.to_numpy()
 ```
 
 To List of Polars Series
+
 ```{python}
 #| label: dataframe-to-list
 df.get_columns() # columns as list of Polars series
 ```
 
 To list of tuples
+
 ```{python}
 #| label: dataframe-to-list-of-tuples
 df.rows() 
 ```
 
 To Dict of Polars Series
+
 ```{python}
 #| label: dataframe-to-dict-of-series
 df.to_dict() # columns as dict of Polars series
 ```
 
 To Dict of Python Lists
+
 ```{python}
 #| label: dataframe-to-dict-of-lists
 df.to_dict(as_series=False) # columns as dict of Polars series
 ```
 
 To String Representation (`repr`)
+
 ```{python}
 #| label: dataframe-to-repr
 df.to_init_repr()
 ```
 
 To a Polars Series of Polars Struct
+
 ```{python}
 #| label: dataframe-to-struct
 df.to_struct()
 ```
 
 To PyArrow Table
+
 ```{python}
 #| label: dataframe-to-arrow
 df.to_arrow()
 ```
-
-
 
 ## Statistical Aggregations
 
@@ -2429,8 +2254,8 @@ Compare to Pandas: Polars will summarize all columns even if they are not numeri
 df.to_pandas().describe()
 ```
 
-
 Statistical aggregations operate column-wise (and in parallel!).
+
 ```{python}
 #| label: dataframe-max
 df.max()
@@ -2456,18 +2281,17 @@ df.median()
 df.quantile(0.1)
 ```
 
-
 ```{python}
 #| label: dataframe-sum
 df.sum()
 ```
 
 Constrast with summation in row:
+
 ```{python}
 #| label: dataframe-sum-horizontal
 df.with_columns(pl.sum_horizontal('*'))
 ```
-
 
 ## Selections {#sec-filtering-subsetting-frames}
 
@@ -2476,9 +2300,7 @@ df.with_columns(pl.sum_horizontal('*'))
 
 ### Selecting With Indices
 
-The following are presented for completeness. 
-Gnerally, you can, and should, avoid selecting with indices. 
-See @sec-selecting-columns for selecting columns, and @sec-filtering-rows for selecting rows.
+The following are presented for completeness. Gnerally, you can, and should, avoid selecting with indices. See @sec-selecting-columns for selecting columns, and @sec-filtering-rows for selecting rows.
 
 ```{python}
 #| label: single-cell-extraction
@@ -2486,6 +2308,7 @@ df[0,0] # like Pandas .iloc[]
 ```
 
 Slicing along rows.
+
 ```{python}
 #| label: slice-rows
 df[0:1] 
@@ -2498,26 +2321,26 @@ Slicing along columns.
 df[:,0:1]
 ```
 
-
 ### Selecting Columns {#sec-selecting-columns}
 
 First- do you want to return a Polars frame or a Polars series?
 
 For a frame:
+
 ```{python}
 df.select("integer")
 ```
 
 For a series:
+
 ```{python}
 df['integer']
 ```
 
-How do I know which is which? 
+How do I know which is which?
 
-1. You can use `type()`.
-2. Notice the dimension of the index in the output. 
-
+1.  You can use `type()`.
+2.  Notice the dimension of the index in the output.
 
 Select columns with list of labels
 
@@ -2532,18 +2355,21 @@ df.select("integer", "float")
 ```
 
 Column slicing by label
+
 ```{python}
 df[:,"integer":"float"]
 ```
 
-Note: `df.select()` does not support slicing ranges such as `df.select("integer":"float")`. 
+Note: `df.select()` does not support slicing ranges such as `df.select("integer":"float")`.
 
 Get a column as a Polars Series.
+
 ```{python}
 df.get_column('integer')
 ```
 
 Get a column as a Polars series.
+
 ```{python}
 df.to_series(0)
 ```
@@ -2558,11 +2384,9 @@ df.drop("integer")
 
 `df.drop()` not have an `inplace` argument. Use `df.drop_in_place()` instead.
 
-
-
 ### pl.col()
 
-The `pl.col()` is **super important**. It allows you to select columns in many ways, and provides almost all the methods (i.e. Polars Expressions) you will need to operate on them. 
+The `pl.col()` is **super important**. It allows you to select columns in many ways, and provides almost all the methods (i.e. Polars Expressions) you will need to operate on them.
 
 ```{python}
 df.select(pl.col(pl.Int64))
@@ -2577,16 +2401,19 @@ df.select(pl.col(pl.Utf8))
 ```
 
 Python List of Polars dtypes
+
 ```{python}
 df.select(pl.col([pl.Int64, pl.Float64]))
 ```
 
 Patterns ("glob")
+
 ```{python}
 df.select(pl.col("*")) # same as df.select(pl.all())
 ```
 
 Regular Expression. Important! Use `pl.col('^<patterh>$')` to match regular expressions.
+
 ```{python}
 df.select(pl.col("^\w{4}$")) 
 ```
@@ -2601,6 +2428,7 @@ df.select(pl.col("^.*te.*$")) # regex matching anything with a "te"
 ```
 
 You can use `pl.col()` to exclude columns.
+
 ```{python}
 df.select(pl.col("*").exclude("integer"))
 ```
@@ -2609,7 +2437,7 @@ df.select(pl.col("*").exclude("integer"))
 df.select(pl.col("*").exclude(pl.Float64))
 ```
 
-Exciting! [New API](https://pola-rs.github.io/Polars/py-Polars/html/reference/selectors.html) for column selection. 
+Exciting! [New API](https://pola-rs.github.io/Polars/py-Polars/html/reference/selectors.html) for column selection.
 
 ```{python}
 #| label: pl-column-selector
@@ -2627,7 +2455,6 @@ df.select(cs.starts_with('i') | cs.starts_with('d'))
 ```{python}
 df.select(cs.starts_with('i') | cs.starts_with('d'))
 ```
-
 
 ### Selecting Rows By Index
 
@@ -2661,12 +2488,11 @@ Because `.sample()` requires row counts, it will not work for lazy objects.
 df.row(1) # get row as tuple
 ```
 
-
 ### Selecting Rows By Condition {#sec-filtering-rows}
 
-Aka [Projection](https://en.wikipedia.org/wiki/Projection_(relational_algebra)). 
+Aka [Projection](https://en.wikipedia.org/wiki/Projection_(relational_algebra)).
 
-Enter the `df.filter()` context. 
+Enter the `df.filter()` context.
 
 ```{python}
 #| label: filter-context
@@ -2678,11 +2504,10 @@ df.filter(pl.col("integer").eq(2))
 
 Things to note:
 
-- `df.filter()` is a **Polars Context**. 
-- It is a **keep** filter, not a **drop** filter: it will evaluate expressions, and return the rows where the expression does not evaluate to `False`. 
+-   `df.filter()` is a **Polars Context**.
+-   It is a **keep** filter, not a **drop** filter: it will evaluate expressions, and return the rows where the expression does not evaluate to `False`.
 -   The `[` operator does not support indexing with boolean such as `df[df["integer"] == 2]`.
 -   The `filter()` method is recommended over `[` by the authors of Polars, to facilitate lazy evaluation (discussed later).
-
 
 An alternative syntax for equality filtering, known as **constraint** in the Polars documentation.
 
@@ -2691,6 +2516,7 @@ df.filter(integer = 2)
 ```
 
 AND conditions:
+
 ```{python}
 #| label: filter-and
 df.filter(
@@ -2707,8 +2533,8 @@ df.filter(
 )
 ```
 
-
 OR conditions:
+
 ```{python}
 #| label: filter-or
 df.filter(
@@ -2717,27 +2543,24 @@ df.filter(
 )
 ```
 
-::: {.callout-note}
+::: callout-note
 How would you write an AND, or OR condition, without using the comparison methods `.eq()`, `.gt()`, etc.?
 :::
-
 
 ### Selecting From Single Item Frame
 
 Say your operation returned a Polars frame with a single float, which you want to manipulate as a Python float:
+
 ```{python}
 #| label: single-item-to-python
 pl.DataFrame([1]).item()
 ```
 
+## Column Transformations
 
+1.  Transformations are done with Polars Expressions (@sec-expressions) within a **context** (see @sec-contexts).
 
-
-## Column Transformations 
-
-1. Transformations are done with Polars Expressions (@sec-expressions) within a **context** (see @sec-contexts).
 -   The output column will have the same name as the input, unless you use the `alias()` method to rename it.
-
 
 ```{python}
 #| label: with-columns
@@ -2749,6 +2572,7 @@ df.with_columns(
 ```
 
 Warning!
+
 ```{python}
 #| eval: false
 df.with_columns(
@@ -2758,17 +2582,16 @@ df.with_columns(
 )
 ```
 
-
-
 Things to note:
 
 -   You cannot use `[` to assign! This would not have worked `df['integer3'] = df['integer'] * 2`
 -   The columns `integer` is multiplied by 2 **in place**, because no `alias` is used.
 -   As of Polars version \>15.*.* (I think), you can use `=` to assign. That is how `integer3` is created.
 -   The column `integer` is copied, by renaming it to `integer2`.
--   Why `.truediv()`? To distinguish from `.floordiv()` and `.mod()`. See [this issue](https://github.com/pola-rs/polars/issues/12450) for a discussion of the topic. 
+-   Why `.truediv()`? To distinguish from `.floordiv()` and `.mod()`. See [this issue](https://github.com/pola-rs/polars/issues/12450) for a discussion of the topic.
 
 If a selection returns multiple columns, all will be transformed:
+
 ```{python}
 #| label: with-columns-multiple
 df.with_columns(
@@ -2784,6 +2607,7 @@ df.with_columns(
 ```
 
 You cannot `.alias()` when operating on multiple columns. But you can use `.name.suffix()` or `.name.prefix()` from the `.name.` namespace.
+
 ```{python}
 #| label: with-columns-multiple-2
 df.with_columns(
@@ -2791,12 +2615,31 @@ df.with_columns(
 )
 ```
 
+### Arithmetic
+
+```{python}
+#| label: expression-add
+df.select(pl.col('integer').add(1))
+```
+
+```{python}
+#| label: expression-sub
+df.select(pl.col('integer').sub(1))
+```
+
+```{python}
+#| label: expression-mul
+df.select(pl.col('integer').mul(2))
+```
+
+```{python}
+#| label: expression-truediv
+df.select(pl.col('integer').truediv(2))
+```
+
 ### Transform the Transformed Columns
 
-All the expressions within a context see the frame as it's initial state. 
-Recall, odds are expressions will be evaluated in parallel, and not sequentially. 
-So how can I operate on columns I have just transformed?
-By chaining contexts!
+All the expressions within a context see the frame as it's initial state. Recall, odds are expressions will be evaluated in parallel, and not sequentially. So how can I operate on columns I have just transformed? By chaining contexts!
 
 ```{python}
 #| label: chained-contexts
@@ -2810,8 +2653,6 @@ By chaining contexts!
   )
 )
 ```
-
-
 
 ### Conditional Transformation (if-else)
 
@@ -2829,9 +2670,10 @@ df.with_columns(
 
 Things to note:
 
--  The `otherwise()` method is optional. If omitted, the original column will be returned (see next example).
--  `pl.lit(1)` is a Polars expression that returns the literal 1. It may be ommited, but it is good practice to include it for clarity and safety.
--  `pl.col("integer").gt(2)` could have been replaced with `pl.col("integer") > 2`. I like the former because it allows easier composition of conditions.
+-   When you think of it, `pl.when().then().otherwise()` is a `pl.Expr()` methdod; one that is not available for `pl.Series`.
+-   The `otherwise()` method is optional. If omitted, the original column will be returned (see next example).
+-   `pl.lit(1)` is a Polars expression that returns the literal 1. It may be ommited, but it is good practice to include it for clarity and safety.
+-   `pl.col("integer").gt(2)` could have been replaced with `pl.col("integer") > 2`. I like the former because it allows easier composition of conditions.
 
 ```{python}
 df.with_columns(
@@ -2844,11 +2686,10 @@ df.with_columns(
 )
 ```
 
-
-
 ### Python Lambda Functions
 
 Apply your own lambda function.
+
 ```{python}
 df.select([pl.col("integer"), pl.col("float")]).map_rows(lambda x: x[0] + x[1])
 ```
@@ -2867,15 +2708,12 @@ df_big = pl.DataFrame(np.random.randn(1000000, 2), schema=["a", "b"]) # previous
 %timeit -n2 -r2 df_big.map_rows(lambda x: x[0] + x[1])
 ```
 
-
-
 ### Numpy Ufuncs
 
-You can use Numpy's universal functions (ufuncs) on Polars frames. 
-There is little overhead in using Numpy ufuncs.
+You can use Numpy's universal functions (ufuncs) on Polars frames. There is little overhead in using Numpy ufuncs.
 
-- See [here](https://docs.pola.rs/user-guide/expressions/numpy/) to use Numpy   ufuncs in Polars.
-- See [here](https://www.w3schools.com/python/numpy/numpy_ufunc_create_function.asp) to create your own Numpy ufunc's.
+-   See [here](https://docs.pola.rs/user-guide/expressions/numpy/) to use Numpy ufuncs in Polars.
+-   See [here](https://www.w3schools.com/python/numpy/numpy_ufunc_create_function.asp) to create your own Numpy ufunc's.
 
 Applying off-the-shelf Numpy ufuncs is as simple.
 
@@ -2887,8 +2725,8 @@ df.select(pl.col('integer').pipe(np.sin))
 # df.select(np.sin(pl.col('integer')))
 ```
 
+Writing your own Numpy ufunc is easy.
 
-Writing your own Numpy ufunc is easy. 
 ```{python}
 #| label: numpy-ufunc-2
 
@@ -2905,13 +2743,9 @@ df.select(
 
 Things to note:
 
-- My Ufunc is created with `np.frompyfunc()`. It could have also been created with `np.vectorize()`.
-- The `casting='unsafe'` argument is required, to deal with dtype mismatch. There could be a more elegant way, but I did not find it. 
-- Calling a **Ufunc with multiple arguments** is slightly more involved, and I currently did not find a "clean" solution. 
-
-
-
-
+-   My Ufunc is created with `np.frompyfunc()`. It could have also been created with `np.vectorize()`.
+-   The `casting='unsafe'` argument is required, to deal with dtype mismatch. There could be a more elegant way, but I did not find it.
+-   Calling a **Ufunc with multiple arguments** is slightly more involved, and I currently did not find a "clean" solution.
 
 ## Uniques and Duplicates
 
@@ -2923,6 +2757,7 @@ df.unique()
 ```
 
 Can be used with column subset
+
 ```{python}
 #| label: dataframe-unique-subset
 df.unique(["integer", "float"])
@@ -2936,16 +2771,13 @@ df.is_unique()
 df.is_duplicated()
 ```
 
-
 ```{python}
 df.n_unique()
 ```
 
-
-
 ## Missing
 
-Make some data with missing. 
+Make some data with missing.
 
 ```{python}
 #| label: make-dataframe-with-nulls
@@ -2965,9 +2797,7 @@ df_with_nulls.null_count() # same as pd.isnull().sum()
 df_with_nulls.drop_nulls() # same as pd.dropna()
 ```
 
-Can I also drop `np.nan`'s? 
-There is no `drop_nan()` method. 
-See [StackOverflow](https://stackoverflow.com/questions/75548444/Polars-dataframe-drop-nans) for workarounds.
+Can I also drop `np.nan`'s? There is no `drop_nan()` method. See [StackOverflow](https://stackoverflow.com/questions/75548444/Polars-dataframe-drop-nans) for workarounds.
 
 ```{python}
 #| label: df-fill-nulls
@@ -2975,6 +2805,7 @@ df_with_nulls.fill_null(0) # same as pd.fillna(0)
 ```
 
 But recall that `None` and `np.nan` are not the same thing.
+
 ```{python}
 #| label: df-fill-nans
 df_with_nulls.fill_nan(99)
@@ -2984,11 +2815,6 @@ df_with_nulls.fill_nan(99)
 #| label: df-null-interpolate
 df_with_nulls.interpolate()
 ```
-
-
-
-
-
 
 ## Sorting
 
@@ -3000,32 +2826,26 @@ df.sort(by=["integer","float"])
 df.reverse()
 ```
 
-
-
-
 ## Groupby
 
 High level:
 
 -   `df.group_by()` is a **context**, for grouping. Just like Pandas, only parallelized, etc. The output will have as many rows as the number of groups.
 -   `df.partion_by()` will return a **list** of frames.
--   `pl.col().expression().over()` is like Pandas `df.groupby.transform()`: will will not collapse rows in the original frame. Rather, it will assign each row in the original frame with the aggregate in the group. The output will have the same number of rows as the input. 
+-   `pl.col().expression().over()` is like Pandas `df.groupby.transform()`: will will not collapse rows in the original frame. Rather, it will assign each row in the original frame with the aggregate in the group. The output will have the same number of rows as the input.
 
 Grouping over time:
 
 -   `df.grouby_rolling()` for rolling window grouping, a.k.a. a sliding window. Each row will be assigned the aggregate in the window.
 -   `df.group_by_dynamic()` for dynamic grouping. Each period will be assigned the agregate in the period. The output may have more rows than the input.
 
-
-
 The `group_by()` context will be followed by an aggregation:
 
-1.   `df.group_by().agg()`: an aggregating context. 
-2.   `df.group_by().apply()`: deprecated and replaced by `df.group_by().map_groups()`.
-3.   `df.group_by().map_groups()`: to apply your own function to each group.
+1.  `df.group_by().agg()`: an aggregating context.
+2.  `df.group_by().apply()`: deprecated and replaced by `df.group_by().map_groups()`.
+3.  `df.group_by().map_groups()`: to apply your own function to each group.
 
-See the [API reference](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.group_by.html) for the various options. 
-Also see the [user guide](https://docs.pola.rs/user-guide/transformations/time-series/rolling/) for more details.
+See the [API reference](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.group_by.html) for the various options. Also see the [user guide](https://docs.pola.rs/user-guide/transformations/time-series/rolling/) for more details.
 
 ```{python}
 df2 = pl.DataFrame({
@@ -3045,6 +2865,7 @@ df2 = pl.DataFrame({
 ### partition_by()
 
 Make the list of frames
+
 ```{python}
 #| label: partition-by
 partitioner = df2.partition_by("integer")
@@ -3052,6 +2873,7 @@ partitioner
 ```
 
 The iterate like any Python list, with a function that operates on Polars frames:
+
 ```{python}
 def myfunc(
   df: pl.DataFrame
@@ -3061,8 +2883,6 @@ def myfunc(
 for df in partitioner: 
   print(myfunc(df))
 ```
-
-
 
 ### group_by()
 
@@ -3079,24 +2899,25 @@ groupper.agg(
 )
 ```
 
-
 Things to note:
 
-- Don't expect an index. This is Polars, not Pandas.
-- The grouping may be saved as an object, and used later.
-- The `group_by()` and `.agg()` contexts offer the usual functonality of `.select()` and `.with_columns()`. In particular, you can use `pl.col()` to access columns, or the `pl.selector` module (`cs`).
-- In the selector is not followed by an expression, it will collapse the Series to a Polars List (see @sec-nested-dtypes). 
+-   Don't expect an index. This is Polars, not Pandas.
+-   The grouping may be saved as an object, and used later.
+-   The `group_by()` and `.agg()` contexts offer the usual functonality of `.select()` and `.with_columns()`. In particular, you can use `pl.col()` to access columns, or the `pl.selector` module (`cs`).
+-   In the selector is not followed by an expression, it will collapse the Series to a Polars List (see @sec-nested-dtypes).
 
 Some random/useful examples now follow.
 
 #### Examples
 
 The count (length) of each group:
+
 ```{python}
 groupper.agg(pl.len())
 ```
 
 When operating on all columns,
+
 ```{python}
 groupper.len()
 ```
@@ -3105,15 +2926,9 @@ groupper.len()
 groupper.sum()
 ```
 
-
-
-
 ### over()
 
-You may be familar with Pandas `group_by().transform()`, which will return a frame with the same row-count as its input. 
-You may be familiar with Postgres SQL [window function](https://www.postgresql.org/docs/current/tutorial-window.html). 
-You may not be familiar with neither, and still want to aggregate within group, but propagate the result to all group members. 
-Polars' `.over()` is the answer.
+You may be familar with Pandas `group_by().transform()`, which will return a frame with the same row-count as its input. You may be familiar with Postgres SQL [window function](https://www.postgresql.org/docs/current/tutorial-window.html). You may not be familiar with neither, and still want to aggregate within group, but propagate the result to all group members. Polars' `.over()` is the answer.
 
 ```{python}
 #| label: over
@@ -3124,9 +2939,9 @@ df2.with_columns(
 
 Things to note:
 
-- The output will have the same number of rows as the input.
-- `.over()` is a **context**. As such, you can evaluate column selectors and expressions within it.
-- **Careful**: `over()` should be the last operation in a chain. @over-wrong will sadly **not fail**, while it should have.
+-   The output will have the same number of rows as the input.
+-   `.over()` is a **context**. As such, you can evaluate column selectors and expressions within it.
+-   **Careful**: `over()` should be the last operation in a chain. @over-wrong will sadly **not fail**, while it should have.
 
 ```{python}
 #| label: over-wrong
@@ -3138,15 +2953,13 @@ df2.with_columns(
 )
 ```
 
-
-
 ### Grouping on time
 
 High level:
 
-1. Grouping on time is special, because a temporal variable implies multiple resolutions which may be used for grouping. E.g. a date may be grouped by year, month, day, etc.
-2. For a temporal version of `group_by()`, use `df.group_by_dynamic()`.
-3. For a temporal version of `over()`, use `df.rolling()`.
+1.  Grouping on time is special, because a temporal variable implies multiple resolutions which may be used for grouping. E.g. a date may be grouped by year, month, day, etc.
+2.  For a temporal version of `group_by()`, use `df.group_by_dynamic()`.
+3.  For a temporal version of `over()`, use `df.rolling()`.
 
 ```{python}
 #| label: group-by-dynamic
@@ -3161,7 +2974,6 @@ High level:
 )
 ```
 
-
 ```{python}
 #| label: rolling
 (
@@ -3175,15 +2987,12 @@ High level:
 )
 ```
 
-
-
-
 ## Joins {#sec-joins}
 
 High level:
 
 -   `df.join()` for joins; like Pandas `pd.merge()` or `df.join()`.
--  `df.join_asof()` for asof joins; like Pandas `pd.merge_asof()`.
+-   `df.join_asof()` for asof joins; like Pandas `pd.merge_asof()`.
 -   `df.hstack()` for horizontal concatenation; like Pandas `pd.concat([],axis=1)` or R's `cbind`.
 -   `df.vstack()` for vertical concatenation; like Pandas `pd.concat([],axis=0)` or R's `rbind`.
 -   `df.merge_sorted()` for vertical stacking, with sorting.
@@ -3191,8 +3000,6 @@ High level:
 -   `df.extend()` for vertical concatenation, but with memory re-chunking. Similar to `df.vstack().rechunk()`.
 
 For more on the differences between these methods, see [here](https://www.rhosignal.com/posts/Polars-extend-vstack/).
-
-
 
 ### join()
 
@@ -3231,10 +3038,9 @@ Things to note:
 
 -   Repeating column names have been suffixed with "\_right".
 -   Recall, there are **no indices**. The `on`/`left_on`/`right_on` argument is always required.
-- `how=` may take the following values: 'inner', 'left', 'outer', 'semi', 'anti', 'cross'. 'inner' is the default. 
-- I like to add the `validate=` argument, for safety. 
-- The join is super fast, as demonstrated in @sec-motivation above.
-
+-   `how=` may take the following values: 'inner', 'left', 'outer', 'semi', 'anti', 'cross'. 'inner' is the default.
+-   I like to add the `validate=` argument, for safety.
+-   The join is super fast, as demonstrated in @sec-motivation above.
 
 ### join_asof()
 
@@ -3255,10 +3061,8 @@ Things to note:
 -   The `strategy=` argument may take the following values: 'backward', 'forward'.
 -   The `tolerance=` argument may take the following values: '1w', '1d', '1h', '1m', '1s', '1ms', '1us', '1ns'.
 
-
-
-
 ### hstack
+
 ```{python}
 #| label: hstack
 new_column = pl.Series("c", np.repeat(1, df.height))
@@ -3267,14 +3071,14 @@ df.hstack([new_column])
 ```
 
 ### vstack
+
 ```{python}
 #| label: vstack
 
 df.vstack(df2)
 ```
 
-Caution: Joining along rows is possible only if matched columns have the same dtype. Timestamps may be tricky because they may have different time units. Recall that timeunits may be cast before joining using `series.dt.cast_time_unit()`. 
-Here is a demonstration of the problem:
+Caution: Joining along rows is possible only if matched columns have the same dtype. Timestamps may be tricky because they may have different time units. Recall that timeunits may be cast before joining using `series.dt.cast_time_unit()`. Here is a demonstration of the problem:
 
 ```{python}
 #| label: vstack-caution
@@ -3292,16 +3096,16 @@ Here is a demonstration of the problem:
 
 ### merge_sorted
 
-This is a **vertical** stacking, when expecting a sorted result, and assuming inputs are sorted. 
+This is a **vertical** stacking, when expecting a sorted result, and assuming inputs are sorted.
 
 ```{python}
 df.merge_sorted(df2, key="integer") 
 ```
 
-
 ### concat()
 
-Vertical 
+Vertical
+
 ```{python}
 pl.concat([df, df2]) 
 # equivalent to:
@@ -3309,6 +3113,7 @@ pl.concat([df, df2])
 ```
 
 Horizontal
+
 ```{python}
 pl.concat(
   [df,new_column.to_frame()], 
@@ -3317,21 +3122,19 @@ pl.concat(
 ```
 
 Diagonal
+
 ```{python}
 pl.concat(
   [df,new_column.to_frame()], 
   how='diagonal')
 ```
 
-What is the difference between `pl.concat()` and `df.vstack()` and `hstack()`?
-`pl.concat()` is more general with more functionality.
+What is the difference between `pl.concat()` and `df.vstack()` and `hstack()`? `pl.concat()` is more general with more functionality.
 
-- concat includes re-chunking, which is useful for memory management.
-- concat includes diagonal concatenation, which is useful when columns are not shared.
-- concat includes parallel execution, which is useful for performance.
-- concat has recenetly been equipped with `how=vertial_relaxed` and `how=horizontal_relaxed`, which finds a common dtype if schemas are mismatched.
-
-
+-   concat includes re-chunking, which is useful for memory management.
+-   concat includes diagonal concatenation, which is useful when columns are not shared.
+-   concat includes parallel execution, which is useful for performance.
+-   concat has recenetly been equipped with `how=vertial_relaxed` and `how=horizontal_relaxed`, which finds a common dtype if schemas are mismatched.
 
 ### extend()
 
@@ -3341,36 +3144,31 @@ Like `vstack()`, but with memory re-chunking. Similar to `df.vstack().rechunk()`
 df.extend(df2) 
 ```
 
-Why should I care about re-chunking?
-Since Polar is a columnar store, it is important to have contiguous memory layout. Otherwise, you may not enjoy the benefits of vectorized operations. 
+Why should I care about re-chunking? Since Polar is a columnar store, it is important to have contiguous memory layout. Otherwise, you may not enjoy the benefits of vectorized operations.
 
-Is there a method for `df.hstack().rechunk()`?
-No. 
-A columnar storage is not sensitive to emory framgmentation along columns.
-
-
+Is there a method for `df.hstack().rechunk()`? No. A columnar storage is not sensitive to emory framgmentation along columns.
 
 ## Nested dtypes {#sec-nested-dtypes}
 
 Recall the nested dtypes:
 
-1. Polars Struct: Like a Python dict within a cell; Multiple named elements. 
-2. Polars List: Similar to a Python list within a cell; Multiple unnamed elements. Unlike the Python list, in a Polars list, all elements must have the same dtype.
-3. Polars Array: Like a Polars list, but with a fixed length for all cells in the column.
+1.  Polars Struct: Like a Python dict within a cell; Multiple named elements.
+2.  Polars List: Similar to a Python list within a cell; Multiple unnamed elements. Unlike the Python list, in a Polars list, all elements must have the same dtype.
+3.  Polars Array: Like a Polars list, but with a fixed length for all cells in the column.
 
 ### Polars Struct {#sec-struct}
 
 Why would I want to use a Polars Struct?
 
-1. To call functions that expects a dict argument constructed from multiple columns. E.g. a Ufunc called using `pl.col().pipe()` or `pl.col().map_elements()`. See [here](https://docs.pola.rs/user-guide/expressions/user-defined-functions/). 
-2. To use column methods on multiple columns: hashing, checking uniqueness, etc.
-3. As the output of a an operation that returns multiple columns. E.g. `value_counts()` within a `group_by()` context.
-4. When information cannot be structured into tabular form. 
+1.  To call functions that expects a dict argument constructed from multiple columns. E.g. a Ufunc called using `pl.col().pipe()` or `pl.col().map_elements()`. See [here](https://docs.pola.rs/user-guide/expressions/user-defined-functions/).
+2.  To use column methods on multiple columns: hashing, checking uniqueness, etc.
+3.  As the output of a an operation that returns multiple columns. E.g. `value_counts()` within a `group_by()` context.
+4.  When information cannot be structured into tabular form.
 
 See [here](https://docs.pola.rs/user-guide/expressions/structs/) for more information on Polars Structs.
 
-
 Make a Polars Struct
+
 ```{python}
 #| label: struct
 #| lst-label: struct
@@ -3388,6 +3186,7 @@ df.with_columns(
 ```
 
 Or more compactly:
+
 ```{python}
 df.with_columns(
   pl.struct('integer', 'float', 'string').alias('struct')
@@ -3395,6 +3194,7 @@ df.with_columns(
 ```
 
 Now add field names:
+
 ```{python}
 df_with_struct = df.select(
   pl.struct(
@@ -3409,6 +3209,7 @@ df_with_struct
 ```
 
 Convert struct to string in JSON format
+
 ```{python}
 df_with_struct.select(
   pl.col("struct").struct.json_encode()
@@ -3416,6 +3217,7 @@ df_with_struct.select(
 ```
 
 Get field names
+
 ```{python}
 #| label: struct-fields
 #| lst-label: struct-fields
@@ -3423,13 +3225,12 @@ Get field names
 df_with_struct["struct"].struct.fields
 ```
 
-::: {.callout-note}
-In @struct-fields, I used a Series method. 
-For reasons I do not understand, `struct.fields` has currently only a `pl.Series` [version](https://docs.pola.rs/py-polars/html/reference/series/struct.html), and not a `pl.Expr` [version](https://docs.pola.rs/py-polars/html/reference/expressions/struct.html).
+::: callout-note
+In @struct-fields, I used a Series method. For reasons I do not understand, `struct.fields` has currently only a `pl.Series` [version](https://docs.pola.rs/py-polars/html/reference/series/struct.html), and not a `pl.Expr` [version](https://docs.pola.rs/py-polars/html/reference/expressions/struct.html).
 :::
 
-
 Accessing fields
+
 ```{python}
 #| label: struct-access
 df_with_struct.select(
@@ -3438,21 +3239,21 @@ df_with_struct.select(
 ```
 
 Struct to columns with `unnest()`
+
 ```{python}
 df_with_struct.unnest(columns=["struct"])
 ```
-
 
 ### Polars List
 
 When will I want to use a Polars List?
 
-1. When I want to hold variable length data in a single cell. E.g. a list of tags, a list of items in a shopping cart, etc.
+1.  When I want to hold variable length data in a single cell. E.g. a list of tags, a list of items in a shopping cart, etc.
 
 See [here](https://docs.pola.rs/user-guide/expressions/lists/) for more information on Polars Lists.
 
-
 Make a Polars Series with strings
+
 ```{python}
 #| label: list
 
@@ -3474,6 +3275,7 @@ df_with_long_strings
 ```
 
 Break strings into list
+
 ```{python}
 #| label: list-split
 
@@ -3486,6 +3288,7 @@ df_with_list
 ```
 
 Start Operating on List Elements
+
 ```{python}
 #| label: list-operations
 
@@ -3503,13 +3306,12 @@ df_with_list.select(
 
 Things to note:
 
-1. Use `.list.` to access list methods.
-2. The full list of list methods is [here](https://docs.pola.rs/py-polars/html/reference/expressions/list.html).
-
+1.  Use `.list.` to access list methods.
+2.  The full list of list methods is [here](https://docs.pola.rs/py-polars/html/reference/expressions/list.html).
 
 ### explode()
 
-Polars List columns may be "exploded", i.e. broken into rows of a single list element each. 
+Polars List columns may be "exploded", i.e. broken into rows of a single list element each.
 
 ```{python}
 #| label: explode
@@ -3518,14 +3320,12 @@ df_with_list.explode("employees").shape
 
 ```
 
-
-
 #### List-to-Struct and Struct-to List
 
-Sometimes, you need to convert a list to a struct. 
-For instance, if you want to `unnest()` a list, you will need to convert it to a struct first. Alternatively, if you want named access to list elements. 
+Sometimes, you need to convert a list to a struct. For instance, if you want to `unnest()` a list, you will need to convert it to a struct first. Alternatively, if you want named access to list elements.
 
 List to Struct
+
 ```{python}
 #| label: list-to-struct
 
@@ -3541,26 +3341,13 @@ List to Struct
 
 ```
 
-When converting list to struct there are two things to consider: the number of fields and their names.
-The number of fields is governed by the `n_field_strategy` argument.
-The name of the fields is governed by the `fields` argument.
-
+When converting list to struct there are two things to consider: the number of fields and their names. The number of fields is governed by the `n_field_strategy` argument. The name of the fields is governed by the `fields` argument.
 
 ### Polars Array
 
-As of March 2024, Arrays are quite new to Polars. 
-Currently, the behave mostly like lists, but with a fixed length.
-I can expect that the fixed length constraint will allow for more efficient memory allocation, and simpler API than the more general Polars Lists. 
-
+As of March 2024, Arrays are quite new to Polars. Currently, the behave mostly like lists, but with a fixed length. I can expect that the fixed length constraint will allow for more efficient memory allocation, and simpler API than the more general Polars Lists.
 
 See [here](https://docs.pola.rs/py-polars/html/reference/expressions/array.html) for more information on Polars Arrays.
-
-
-
-
-
-
-
 
 ## Reshaping
 
@@ -3572,8 +3359,6 @@ High level:
 -   `df.unnest()` for breaking structs into columns.
 -   `df.unstack()`
 
-
-
 ### transpose()
 
 Recall
@@ -3583,16 +3368,15 @@ df
 ```
 
 Since there are no indices, if you want to keep the column names, as a new column you need to use the `include_header=True` argument.
+
 ```{python}
 df.transpose(include_header=True)
 ```
 
-
-
-
 ### Wide to Long- melt()
 
 Some data in wide format
+
 ```{python}
 # The following example is adapted from Pandas documentation: https://Pandas.pydata.org/docs/reference/api/Pandas.wide_to_long.html
 
@@ -3607,6 +3391,7 @@ wide
 ```
 
 Reshape into long format
+
 ```{python}
 wide.melt(
   id_vars=['famid', 'birth'], 
@@ -3617,12 +3402,10 @@ wide.melt(
 
 Things to note:
 
-- `id_vars` are the columns that index the wide format; these will be repeated.
-- `value_vars` are the columns that hold information in the wide format; these will be stacked in the long format.
-- `variable_name` is the column name, in the long format, that holds the column names from the wide format. The indexing columns in the long format will thus be `id_vars`+`variable_name`.
-- `value_name` is the column name, in the long format, that holds the values after stacking.
-
-
+-   `id_vars` are the columns that index the wide format; these will be repeated.
+-   `value_vars` are the columns that hold information in the wide format; these will be stacked in the long format.
+-   `variable_name` is the column name, in the long format, that holds the column names from the wide format. The indexing columns in the long format will thus be `id_vars`+`variable_name`.
+-   `value_name` is the column name, in the long format, that holds the values after stacking.
 
 ### Long to Wide- pivot()
 
@@ -3639,6 +3422,7 @@ long
 ```
 
 Pivot Without Aggregation
+
 ```{python}
 long.pivot(
   index='id', # index in the wide format
@@ -3648,8 +3432,6 @@ long.pivot(
 ```
 
 If each combinatio of `index=` and `columns=` maps to more than a single value of `values=`, you can use the `aggregate_function=` argument of `.pivot()`.
-
-
 
 #### pivot() VS value_counts()
 
@@ -3699,12 +3481,11 @@ counts_with_value_counts
 
 Things to note:
 
-- The `.pivot()` methods return a column per unique value. 
-- `value_counts()` returns a Polars-List of Polars-Struct per group. This may be a pro or a con; depending on your planned usage, or the number of unique values in each group. To see this, consider a case where each group has 1000 value, non overlapping with the other groups; how many columns will the `.pivot()` method return?
+-   The `.pivot()` methods return a column per unique value.
+-   `value_counts()` returns a Polars-List of Polars-Struct per group. This may be a pro or a con; depending on your planned usage, or the number of unique values in each group. To see this, consider a case where each group has 1000 value, non overlapping with the other groups; how many columns will the `.pivot()` method return?
 
+Here is my best attempt to extract the frequencies of each value. If you have a better solution, please let me know.
 
-Here is my best attempt to extract the frequencies of each value. 
-If you have a better solution, please let me know.
 ```{python}
 #| label: pivot-vs-value_counts-2
 (
@@ -3715,11 +3496,9 @@ If you have a better solution, please let me know.
 )
 ```
 
-
 ### Long to Wide- unstack()
 
-Another way to pivot from long to wide, which is less general but more efficient, is the `unstack()` method.
-Unstacking is much "dumber" than pivoting, and thus, much faster. 
+Another way to pivot from long to wide, which is less general but more efficient, is the `unstack()` method. Unstacking is much "dumber" than pivoting, and thus, much faster.
 
 ```{python}
 #| label: unstack
@@ -3735,14 +3514,9 @@ Unstacking is much "dumber" than pivoting, and thus, much faster.
 )
 ```
 
-
-
 ### unest()
 
 See @sec-struct.
-
-
-
 
 ## Dataframe in Memory
 
@@ -3754,21 +3528,13 @@ df.estimated_size(unit="mb")
 df.rechunk() # ensure contiguous memory layout
 ```
 
-
 ```{python}
 df.n_chunks() # number of ChunkedArrays in the dataframe
 ```
 
-
 ```{python}
 df.shrink_to_fit() # reduce memory allocation to actual size
 ```
-
-
-
-
-
-
 
 # I/O
 
@@ -3776,47 +3542,46 @@ df.shrink_to_fit() # reduce memory allocation to actual size
 
 ### tl;dr
 
-If you want an eager frame use `pl.read_xxx()`, and if you want a lazy frame use `pl.scan_xxx()`. 
+If you want an eager frame use `pl.read_xxx()`, and if you want a lazy frame use `pl.scan_xxx()`.
 
 ### In Detail
 
 To read data from disk we need to think about the following:
 
-1. What is the taget object?
-2. What is the struture of the data on disk?
-   1. Single file VS multiple files? If multiple files, how are they organized? 
-   2. Format of each file. 
-   3. Are the files remote or local? 
+1.  What is the taget object?
+2.  What is the struture of the data on disk?
+    1.  Single file VS multiple files? If multiple files, how are they organized?
+    2.  Format of each file.
+    3.  Are the files remote or local?
 
-If the target object is an eager frame you will want to use `pl.read_xxx()`.
-So to read a csv you will use `pl.read_csv()`, to read a parquet you will use `pl.read_parquet()`, etc.
+If the target object is an eager frame you will want to use `pl.read_xxx()`. So to read a csv you will use `pl.read_csv()`, to read a parquet you will use `pl.read_parquet()`, etc.
 
-If the target object is a lazy frame you will want to use `pl.scan_xxx()`.
-So to read a csv you will use `pl.scan_csv()`, to read a parquet you will use `pl.scan_parquet()`, etc.
+If the target object is a lazy frame you will want to use `pl.scan_xxx()`. So to read a csv you will use `pl.scan_csv()`, to read a parquet you will use `pl.scan_parquet()`, etc.
 
-If the data is stored in multiple files, `scan_xxx()` methods currently have better support. 
-You can state the locations of the files in many ways. 
-Note, however, that if you are used to Pandas that takes a path to folder and will import, recursively, all the files in the folder, Polars will not do that; it will expect a more precise glob. 
+If the data is stored in multiple files, `scan_xxx()` methods currently have better support. You can state the locations of the files in many ways. Note, however, that if you are used to Pandas that takes a path to folder and will import, recursively, all the files in the folder, Polars will not do that; it will expect a more precise glob.
 
-For example, say the data is in 
+For example, say the data is in
 
-.  
-|-- data
-|   |-- 2022
-|   |   |-- 01
-|   |   |   |-- 01.parquet
-|   |   |   |-- 02.parquet
-|   |-- 2023
-|   |   |-- 01
-|   |   |   |-- 01.parquet
-|   |   |   |-- 02.parquet
+./
 
-In Pandas you could use `pd.read_parquet("data/")`.
-This will not work in Polars (TTBOMK), where you will need the following glob `pl.scan_parquet("data/**/*.parquet)"`.
+\|– 2022/
 
-Multiple Parquet files also make an Apache Arrow Dataset. 
-Polars will allow you to read an Arrow Dataset with `pl.scan_arrow_dataset()`.
-The syntax was used in @sec-polars-lazy-in-memory and  looks like:
+\|. \|–01/
+
+\|. \|–01.parquet
+
+\|. \|–02.parquet
+
+\|. \|–02/
+
+\|. \|–01.parquet
+
+\|. \|–02.parquet
+
+In Pandas you could use `pd.read_parquet("data/")`. This will not work in Polars (TTBOMK), where you will need the following glob `pl.scan_parquet("data/**/*.parquet)"`.
+
+Multiple Parquet files also make an Apache Arrow Dataset. Polars will allow you to read an Arrow Dataset with `pl.scan_arrow_dataset()`. The syntax was used in @sec-polars-lazy-in-memory and looks like:
+
 ```{python}
 #| eval: false
 dset = ds.dataset("data/", format="parquet") 
@@ -3825,21 +3590,18 @@ pl.scan_pyarrow_dataset(dset)
 
 When using this functionality you should recall the follwing:
 
-1. PyArrow has more functionality that Polars. As such, it may be able to read more formats, and more complex formats, where `pl.scan_xxx()` may fail.
-2. Polars native readers are more optimized than PyArrow. In particular, they push-down more operations, which is particularly imopirtant when reading from remote storage (i.e. DataLakes) such as S3 or Azure Blob Storage.
-
+1.  PyArrow has more functionality that Polars. As such, it may be able to read more formats, and more complex formats, where `pl.scan_xxx()` may fail.
+2.  Polars native readers are more optimized than PyArrow. In particular, they push-down more operations, which is particularly imopirtant when reading from remote storage (i.e. DataLakes) such as S3 or Azure Blob Storage.
 
 ### Why Parquet?
 
 Why do I prefer Parquet over CSV, Pickle, Feather, or other formats?
 
-I prefer Parquet over CSV because Parquet is compressed, and stores schema. Thus avoiding time and errors involved in guessing the schema at import time. 
+I prefer Parquet over CSV because Parquet is compressed, and stores schema. Thus avoiding time and errors involved in guessing the schema at import time.
 
-I prefer Parquet over Pickle because Parquet is a standard, and is not specific to a particular Python version. Also, being optimized for columnar storage, Parquet has better compression and read performance. 
+I prefer Parquet over Pickle because Parquet is a standard, and is not specific to a particular Python version. Also, being optimized for columnar storage, Parquet has better compression and read performance.
 
-I Prefer Parquet over Feather because Parquet has better compression. 
-
-
+I Prefer Parquet over Feather because Parquet has better compression.
 
 ## Writing Frames to Disk {#sec-disk-export}
 
@@ -3849,29 +3611,111 @@ An eager Polars frame will have a `.write_xxx()` method.
 
 If the output of an opeation does not fit into memory, so that an eager frame cannot materialize, look into the `.sink_parquet()` engine. It will write to disk in a streaming fashion. Alas, it currently supports a very limited set of operations.
 
+## Databases
 
+See [here](https://docs.pola.rs/user-guide/io/database/#difference-between-read_database_uri-and-read_database) for the user guide.
+
+Note you can (currently) only read Eager Frames from disk.
 
 # Polars Expressions {#sec-expressions}
 
+Now that you are familiar with column transformations in Polars' contexts, it is time to tell you: **all those transformations are Polars expressions**.
+
 Things to recall about Polars expressions:
 
-1. Think of them as functions, that can be chained, and evaluated (lazyly) within a Polars context such as `df.select()`, `df.with_columns()`, etc.
-2. They are not the same as Python functions, and will not work outside of a Polars context.
-3. Almost all `pl.Series()` methods are available as Polars expressions. There are however some exceptions.
+1.  Think of them as functions of other Polars expressions. As such, expressions can be **chained**. 1. An expression, or chain thereof, meterializes when a `.collect()` method is called.
+2.  Almost all `pl.Series()` methods are available as Polars expressions, and vice-versa. There are however exceptions.
 
-
-Because almost all Polars Series methods are available as Polars expressions, we refer the reader to @sec-series for a review of importanta series methods. 
-In this section we will focus on exceptions, and some important expressions that are not available for Series.
-
-
-## Arithmetic
-
-
-
-
-
+Because almost all Polars Series methods are available as Polars expressions, we refer the reader to @sec-series for a review of importanta series methods. In this section we will focus on exceptions, and some important expressions that are not available for Series.
 
 # Polars LazyFrames
+
+Recalling- a LazyFrame is a Polars DataFrame that has not been materialized. I.e., it is nothing but **a plan** to import some file from disk and to operate on it. It will only materialize when a `.collect()` method is called.
+
+In the case I did not repeat it enough- LazyFrames allow you to process data that does not fit in your memory. This is a tremendous difference with Pandas, or Numpy, where the data is memory resident. Imagine processing 100GB of data in your MAcBook Air! Or your EC2 instance!
+
+## LazyFrame Is Not a Single Computing Engine
+
+As previously mentioned, Polars has multiple evaluation engines. The Eager Frames' engine is the first. The evaluation of LazyFrames, can be done by multiple engines. The depend on:
+
+1.  **In/out of RAM**: In memory or streaming processing?
+2.  **Reader**: Polars native or PyArrow file readers?
+3.  **Output**: Output to memory or disk?
+
+| In/out of RAM | Reader  | Output | Command                                             |
+|------------|------------|------------|-------------------------------------|
+| RAM           | Native  | RAM    | `pl.scan_parquet()...collect()`                     |
+| Stream        | Native  | RAM    | `pl.scan_parquet()....collect(streaming=True)`      |
+| RAM           | PyArrow | RAM    | `pl.scan_pyarrow_dataset().collect()`               |
+| Stream        | PyArrow | RAM    | `pl.scan_pyarrow_dataset().collect(streaming=True)` |
+| Stream        | Native  | Disk   | `pl.scan_csv()....sink_parquet()`                   |
+
+Things worth knowing:
+
+1.  The authors of Polars make considerable effort so that the transition between engines is seamless to the user. This effort is usually successful, but exceptions exist. An easy way to debug your code, is first to try a different engine. In my experience, the RAM/Native/RAM engine is the most complete and robust.
+2.  The Stream/Native/Disk engine is very very limited. Currently, it is really useful to convert from CSV to parquet.
+3.  The PyArrow reader are the most general and stable to import into Arrow format. Not being Native to Polar, they may be less efficient.
+
+## Creating A Lazy Frame
+
+A LazyFrame is created in two ways:
+
+1.  By using a `pl.scan_xxx()` method to read data from disk.
+2.  By the `.lazy()` method of an eager frame.
+
+Here is a `pl.scan_xxx()`example
+
+```{python}
+path_to_file = 'data/NYC/yellow_tripdata_2023-01.parquet'
+
+f"{os.path.getsize(path_to_file)/1e7:.2f} MB on disk"
+
+```
+
+```{python}
+#| label: lazy-scan
+taxi_lazy = pl.scan_parquet(path_to_file)
+
+taxi_lazy.limit(5).collect()
+```
+
+## Operations on LazyFrames
+
+Almost everything we did with eager frames, we can do with lazy frames.
+
+If an operation fails, it may be it has not yet been implemented for the engine you are using. You will find that error messages are **less informative** for the streaming engine, than they are for the eager engine. Try changing the engine as a first step of debugging.
+
+Here is a random example
+
+```{python}
+#| label: random-operations-on-lazy-frame
+(
+  taxi_lazy # calling a lazy frame
+  
+  # do some operations....
+  .select(
+    pl.col(pl.Float64).mean().name.suffix("_mean"),
+  )
+  .collect() # don't forget to collect
+  
+  # Handle the printing
+  .transpose(include_header=True)
+  .to_pandas() # for nice printing
+)
+```
+
+
+## Useful Tricks to Make The Most of LazyFrames
+
+1.  Use Parquet or Feather. CSV and Pickle should be **avoided**. 
+
+2.  Store your data **partitioned**, along your frequent group_by's and filters.
+
+3. Materialize as late as possible. 
+
+4. Read about the options of the native readers. In particular: 
+  - Try the `low_memory=True` option of the native readers, before trying the streaming engine. 
+  - When reading multiple files with a glob pattern, set the `rechunk=False` default to `True`, if your memory allows it. 
 
 
 
@@ -3906,7 +3750,6 @@ Things to note:
 -   Why not use `pl.col('blah').mean()` within the `map_dict()`? That is indeed more reasonable. It simply did not work.
 -   Try it yourself: Can you use multiple `with_context()`?
 
-
 ### Imputation Example
 
 ```{python}
@@ -3932,25 +3775,193 @@ test_lf = pl.LazyFrame(
 
 ```
 
-
-
-
-
 # Extensions
 
 ## SQL
 
+```{python}
+
+res = (
+  pl.SQLContext(frame=df)
+  .execute(
+    "SELECT * FROM frame WHERE integer > 2"
+  )
+)
+res.collect()
+```
+
+Things to notes:
+
+- The name of the frame is the one regietered (`frame`) and the name of the object. 
+- I suspect that the SQL context is not as optimized as the native Polars operations. I have very little experience with it. 
+
+For more on the SQL context see[here](https://docs.pola.rs/py-polars/html/reference/sql.html).
+
+
+
+
 ## Plotting
 
-## ML 
+### The Plotting Backend
+
+Requires the `hvplot` module. 
+
+```{python}
+df.plot()
+```
+
+```{python}
+df.plot.hist()
+```
+
+Things to note:
+
+- The default `.plot()` will behave like `pd.df.plot()`, i.e., return a line plot of all columns.
+- `df.plot.` will give you access to the usual plotting methods (of hvplot), such as `hist()`, `scatter()`, etc.
+
+
+### As Input to Plotting Libraries
+
+My preferred plotting library us plotly, not hvplot. 
+Since plotly is (currently) not a plotting backend for Polars, I will use the frame as an input to plotly functions. 
+
+```{python}
+px.line(
+  df, 
+  x="integer", 
+  y="float",
+  markers=True,
+  )
+```
+
+Things to note:
+
+- Recent versions of Plotly can deal with a Polars frame as any other Pandas frame. In particular, it can exctract columns using their name, and use it as axis titles. 
+
+
+## Tables
+
+Polars can print tables in ASCII, or write in HTML to ipython notebooks. 
+
+```{python}
+#| label: df-to-ascii
+print(df)
+```
+
+```{python}
+#| label: df-to-html
+
+df
+```
+
+If, like myself, you are not satisfied with these options, you can gain more control on the printing of tables using the following:
+
+1. Exporting as Pandas dataframe. 
+2. Posit's GreatTables module. 
+
+### Export as Pandas Dataframe
+
+```{python}
+(
+  df
+  .to_pandas()
+  .style
+    .format({
+      'float': '{:.1f}',
+      'date': '{:%Y-%m-%d}'
+      })
+    .background_gradient(
+      cmap='Reds', 
+      axis=0,
+      )
+)
+```
+
+
+### Great Tables
+
+```{python}
+import great_tables as gt
+
+(
+  gt.GT(
+    df,
+    # rowname_col="integer",
+    )
+  .tab_header(
+    title="Nonsense Data", 
+    subtitle="But looking good!")
+  .fmt_number(columns="float", compact=True)
+  .fmt_date(columns="date", date_style="wd_m_day_year")
+  .tab_stubhead(label="integer")
+  .data_color(
+    columns=["float",'integer'],
+    # domain=[1, 6],
+    # palette=["rebeccapurple", "white", "orange"],
+    # na_color="white",
+)
+  # .fmt_currency(columns=["open", "high", "low", "close"])
+  .cols_hide(columns="string")
+
+)
+
+```
 
 
 
 
+## ML
+
+When doing ML with Polars frames there are two possibliities:
+
+1. Your learning function can ingest Polars frames. This is currently the exception. 
+2. You will need to convert your Polars frame to a Numpy array, or a PyTorch tensor, or a Pandas frame, etc. This is currently the rule. 
+
+Example
+```{python}
+import sklearn as sk
+from sklearn.linear_model import LinearRegression
+
+# predict `label` with `float`
+X = df.select(["float"])
+y = df["string"].to_dummies()
+
+model = LinearRegression()
+model.fit(X.to_numpy(), y.to_numpy())
+
+```
+
+Can SKlearn ingest Polars Series? Yes.
+
+```{python}
+model.fit(X, y)
+```
+
+This is because SKlearn takes [Array-Like](https://scikit-learn.org/stable/glossary.html#term-array-like) objects, i.e., anything that `np.asarray()` can convert to a numpy array. 
+This also means that with SKlearn, your learning is memory resident.
+
+```{python}
+np.asarray(X)
+```
 
 
 
+### Patsy
+
+[Patsy](https://patsy.readthedocs.io/en/latest/) is a Python library for describing statistical models and building design matrices using R's tilde syntax (`y~X`). 
+
+Patsy can already be used with Polars frames. 
+
+```{python}
+import patsy as pt
+
+y, X = pt.dmatrices("float ~ integer", df)
+
+model = LinearRegression()
+model.fit(X, y)
+```
 
 
+### Polars-ds
 
-
+[Polars-ds](https://github.com/abstractqqq/polars_ds_extension) is a Polars extension designed to give Polars some more Data-Science functionality. It is currently in development and worth following. 
