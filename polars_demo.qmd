@@ -42,34 +42,41 @@ Initially there were R's `data.frame`. R has evolved, and it now offers `tibble`
 
 -   [Pandas](https://Pandas.pydata.org/): The original Python dataframe module. Build by Wes McKinney, on top of numpy.
 -   [Polars](https://www.pola.rs/): A new dataframe module, build by Ritchie Vink, on top of Rust and Apache Arrow.
+-   [DuckDB](https://duckdb.org/): 
+-   [ClickHouse chDB](https://github.com/chdb-io/chdb)
+-   [Datafusion](https://arrow.apache.org/datafusion/)
+-   [Databend](https://github.com/datafuselabs/databend)
+-   [PyArrow](https://arrow.apache.org/docs/python/index.html)
+-   [Daft](https://www.getdaft.io/): A distributed dataframe library built for "Complex Data" (data that doesn't usually fit in a SQL table such as images, videos, documents etc).
+-   [Fugue](https://fugue-tutorials.readthedocs.io/): A dataframe library that allows you to write SQL-like code, and execute it on different backends (e.g. Spark, Dask, Pandas, Polars, etc).
+-   [pySpark](https://spark.apache.org/docs/latest/api/python/index.html): The Python API for Spark. Spark is a distributed computing engine, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
+-   [CUDF](https://github.com/rapidsai/cudf): A **GPU accelerated** dataframe library, build on top of Apache Arrow.
 -   [datatable](https://datatable.readthedocs.io/en/latest/): An attempt to recreate R's [data.table](https://github.com/Rdatatable/data.table) API and (crazy) speed in Python.
 -   [Dask](https://www.dask.org/): A distributed computing engine for Python, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
 -   [Vaex](https://vaex.io/): A high performance Python library for lazy Out-of-Core DataFrames (similar to dask, but with a different API).
 -   [Modin](https://github.com/modin-project/modin): A drop-in distributed replacement for Pandas, built on top of [Ray](https://www.ray.io/).
--   [DuckDB](https://duckdb.org/): An embeddable SQL OLAP database management system. These are dataframe that are stored on disk, compute on a single process, and queried with SQL or pythonic API.
--   [Daft](https://www.getdaft.io/): A distributed dataframe library built for "Complex Data" (data that doesn't usually fit in a SQL table such as images, videos, documents etc).
--   [Fugue](https://fugue-tutorials.readthedocs.io/): A dataframe library that allows you to write SQL-like code, and execute it on different backends (e.g. Spark, Dask, Pandas, Polars, etc).
--   [pySpark](https://spark.apache.org/docs/latest/api/python/index.html): The Python API for Spark. Spark is a distributed computing engine, with support for distributing data over multiple processes running Pandas (or numpy, Polars, etc).
--   [CUDF](https://github.com/rapidsai/cudf): A GPU accelerated dataframe library, build on top of Apache Arrow.
 
-See [here](https://pola-rs.github.io/Polars-book/user-guide/misc/alternatives/) and [here](https://www.getdaft.io/projects/docs/en/latest/dataframe_comparison.html) for more details.
 
-# Motivation {#sec-motivation}
+For more details see [here](https://pola-rs.github.io/Polars-book/user-guide/misc/alternatives/), [here](https://www.getdaft.io/projects/docs/en/latest/dataframe_comparison.html), [here](https://www.linkedin.com/posts/mimounedjouallah_duckdb-pyarrow-clickhouse-activity-7172389181011161088-q1lk?utm_source=share&utm_medium=member_desktop).
+
+
+
+# Motivation to Use Polars {#sec-motivation}
 
 Each of the following, alone(!), is amazing.
 
-1.  Small memory footprint.
-2.  Native dtypes: missing, strings.
-3.  Lazy evaluation allows query Planning.
-4.  Streaming engine: No need to load entire dataset into memory.
-5.  Out of the box parallelism: Fast and informative messages for debugging.
-6.  Strict typing: This means the dtype of output is defined by the operation and not bu the input. This is both safer, and allows static analysis.
+1.  Out of the box parallelism: Fast and informative messages for debugging.
+2.  Lazy Evaluation: With planning and optimization of queries.
+3.  Streaming engine: Can stream data from disk to memory for processing.
+4.  Complete set of native dtypes; including missing and strings.
+
 
 ## Setting Up the Environment
 
 At this point you may want to create and activate a [venv](https://realpython.com/python-virtual-environments-a-primer/) for this project.
 
 ```{python}
+#| label: setup-env
 # %pip install --upgrade pip
 # %pip install --upgrade polars
 # %pip install --upgrade pyarrow
@@ -116,11 +123,13 @@ pio.renderers.default = "plotly_mimetype+notebook"
 
 What modules and dependencies are installed
 ```{python}
+#| label: show-versions
 pl.show_versions()
 ```
 
 How many cores are available for parallelism?
 ```{python}
+#| label: show-cores
 pl.thread_pool_size()
 ```
 
@@ -128,70 +137,80 @@ pl.thread_pool_size()
 
 ### Memory Footprint of Storage
 
-Comparing Polars to Pandas- the memory footprint of a series of strings.
+Comparing Polars to Pandas - the memory footprint of a series of strings.
 
 Polars.
 
 ```{python}
+#|  label: Polars-memory-footprint
 letters = pl.Series(list(string.ascii_letters))
 
 n = int(10e6)
-letter1 = letters.sample(n,with_replacement=True)
+letter1 = letters.sample(n, with_replacement=True)
+
 letter1.estimated_size(unit='gb') 
+```
+
+And with some optimization
+
+```{python}
+#|  label: Polars-memory-footprint-optimized
+letter1.shrink_dtype().estimated_size(unit='gb') 
 ```
 
 Pandas before Pandas 2.0.
 
 ```{python}
+#|  label: Pandas-memory-footprint
 # Pandas with Ver 1.x backend
 letter1_Pandas = letter1.to_pandas(use_pyarrow_extension_array=False) 
-letter1_Pandas.memory_usage(deep=True, index=False) / 1e9
+letter1_Pandas.memory_usage(deep=True, index=True) / 1e9
 ```
 
 Pandas after Pandas 2.0, with the Pyarrow backend (Apr 2023).
 
 ```{python}
+#|  label: Pandas-memory-footprint-with-Arrow
 letter1_Pandas = letter1.to_pandas(use_pyarrow_extension_array=True) 
-letter1_Pandas.memory_usage(deep=True, index=False) / 1e9
+letter1_Pandas.memory_usage(deep=True, index=True) / 1e9
 ```
 
-### Operating From Disk to Disk
 
-What if my data does not fit into RAM? Turns out you manifest a lazy frame into disk, instead of RAM, thus avoiding the need to load the entire dataset into memory. Alas, the function that does so, [sink_parquet()](https://pola-rs.github.io/Polars/py-Polars/html/reference/lazyframe/api/Polars.LazyFrame.sink_parquet.html), has currently limited functionality. It is certainly worth keeping an eye on this function, as it matures.
-
-::: callout-note
-Although the potential of `sink_parquet()` is amazing, I find that it currently does not support complicated queries.
-:::
 
 ## Lazy Frames and Query Planning {#sec-query-planning}
 
 Consider a sort operation that follows a filter operation. Ideally, filter precedes the sort, but we did not ensure this... We now demonstrate that Polars' query planner will do it for you. En passant, we see Polars is more efficient also without the query planner.
 
-Polars' Eager evaluation in the **wrong** order. Sort then filter.
+Polars' eager evaluation in the **wrong** order. Sort then filter.
 
 ```{python}
+#| label: polars-eager-wrong-order
 %timeit -n 2 -r 2 letter1.sort().filter(letter1.is_in(['a','b','c']))
 ```
 
 Polars' Eager evaluation in the **right** order. Filter then sort.
 
 ```{python}
+#| label: polars-eager-right-order
 %timeit -n 2 -r 2 letter1.filter(letter1.is_in(['a','b','c'])).sort()
 ```
 
 ```{python}
+#| label: polars-make-lazy
 latter1_lazy = letter1.alias('letters').to_frame().lazy()
 ```
 
 Polars' Lazy evaluation in the **wrong** order; **without** query planning
 
 ```{python}
+#| label: polars-lazy-wrong-order-no-optimization
 %timeit -n 2 -r 2 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect(no_optimization=True)
 ```
 
 Polars' Lazy evaluation in the **wrong** order; **with** query planning
 
 ```{python}
+#| label: polars-lazy-wrong-order-optimization
 %timeit -n 2 -r 2 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).collect()
 ```
 
@@ -200,23 +219,39 @@ Things to note:
 1.  A lazy evaluation was triggered when `df.lazy()` converted the Polars DataFrame to a Polars LazyFrame.
 2.  The query planner worked: The Lazy evaluation in the wrong order timed as much as an eager evaluation in the right order; even when accounting for the overhead of converting the frame from eager to lazy.
 
+Here is the actual query plan of each.
+The non-optimized version:
+
+```{python}
+#| label: polars-lazy-wrong-order-no-optimization-plan
+latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).show_graph(optimized=False)
+```
+
+```{python}
+#| label: polars-lazy-wrong-order-optimization-plan
+latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).show_graph(optimized=True)
+```
+
 Now compare to Pandas...
 
 Pandas' eager evaluation in the **wrong** order.
 
 ```{python}
+#| label: pandas-eager-wrong-order
 %timeit -n1 -r1 letter1_Pandas.sort_values().loc[lambda x: x.isin(['a','b','c'])]
 ```
 
 Pandas eager evaluation in the **right** order: Filter then sort.
 
 ```{python}
+#| label: pandas-eager-right-order
 %timeit -n1 -r1 letter1_Pandas.loc[lambda x: x.isin(['a','b','c'])].sort_values()
 ```
 
-Pandas without lambda functions syntax; looks slightly better.
+Pandas without lambda syntax.
 
 ```{python}
+#| label: pandas-eager-right-order-no-lambda
 %timeit -n 2 -r 2 letter1_Pandas.loc[letter1_Pandas.isin(['a','b','c'])].sort_values()
 ```
 
@@ -226,18 +261,25 @@ Things to note:
 2.  Pandas has dramatically improved since \<2.0.0.
 3.  Lambda functions are always slow (both Pandas and Polars).
 
+For a full list of the operations that are optimized by Polars' query planner see [here](https://docs.pola.rs/user-guide/lazy/optimizations/). 
+
+
+
 ## Optimized for Within-Column Operations
 
 Polars seamlessly parallelizes over columns (also within, when possible). As the number of columns in the data grows, we would expect fixed runtime until all cores are used, and then linear scaling. The following code demonstrates this idea, using a simple sum-within-column.
 
 ```{python}
-# Mac users with Apple silicon (M1 or M2) may also want to benchmark Apples' mlx:
+#| label: import-mlx
+
+# M ac users with Apple silicon (M1 or M2) may also want to benchmark Apples' mlx:
 # %pip install mlx
 import mlx.core as mx
 
 ```
 
 ```{python}
+#| label: make-data-for-benchmark
 
 # Maker an array of floats.
 A_numpy = np.random.randn(int(1e6), 10)
@@ -701,7 +743,7 @@ Things to note:
 ## The Polars API
 
 -   You will fall in love with it!
--   Much more similar to PySpark than to Pandas. The Pandas API is simply not amenable to lazy evaluation.
+-   Much more similar to [PySpark](https://blog.det.life/pyspark-or-polars-what-should-you-use-breakdown-of-similarities-and-differences-b261a825b9d6) than to Pandas. The Pandas API is simply not amenable to lazy evaluation. If you are familiar with PySpark, you should feel at home pretty fast. 
 
 ### Some Design Principles {#sec-api-principles}
 
