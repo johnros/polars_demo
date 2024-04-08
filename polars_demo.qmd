@@ -11,11 +11,11 @@ jupyter: python3
 pdf-engine: lualatex
 # theme: pandoc
 html:
-    code-tools: false
+    code-tools: true
     fold-code: false
     author: Jonathan D. Rosenblatt
-    data: 02-27-2023
-    toc: false
+    data: 03-12-2024
+    toc: true
     number-sections: true
     number-depth: 3
     embed-resources: true
@@ -234,7 +234,7 @@ latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).s
 ```
 
 ```{python}
-#| label: polars-lazy-wrong-order-optimization-plan
+#| label: polars-lazy-wrong-order-optimization-plan-2
 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).show_graph(optimized=True)
 ```
 
@@ -1046,6 +1046,10 @@ Scikit-learn currently does not [support Arrow](https://github.com/scikit-learn/
 XGBoost, however, does support Arrow.
 
 
+Show the internal representation of the series.
+```{python}
+s.to_physical()
+```
 
 ## Memory Representation of Series
 
@@ -2915,6 +2919,40 @@ Things to note:
 -   The `casting='unsafe'` argument is required, to deal with dtype mismatch. There could be a more elegant way, but I did not find it.
 -   Calling a **Ufunc with multiple arguments** is slightly more involved, and I currently did not find a "clean" solution.
 
+
+### Functions of Multiple Columns
+
+TODO
+
+```{python}
+#| eval: false
+
+def calc_Δt(n: int, Δomega: int, Δp: int) -> float:
+    return (98 / (n**2) * Δomega) + (5.5 * Δp)
+
+
+def calc_Δt_v2(n: pl.Expr, Δomega: pl.Expr, Δp: pl.Expr) -> pl.Expr:
+    return (98 / (n**2) * Δomega) + (5.5 * Δp)
+
+
+print(
+    pl.DataFrame({"foo": [1, 2, 3], "bar": [0, 1, 2], "baz": [1, 2, 3]})
+    .with_columns(
+        # original way
+        delta_t1 = pl.struct(["foo", "bar", "baz"]).map_elements(lambda x: calc_Δt(x["foo"], x["bar"], x["baz"])),
+        
+        # just use the function directly, passing the columns as arguments
+        delta_t2 = calc_Δt(pl.col("foo"), pl.col("bar"), pl.col("baz")),
+        
+      # same thing, but with type hints specifying the expression type
+        delta_t3 = calc_Δt_v2(pl.col("foo"), pl.col("bar"), pl.col("baz"))
+    )
+)
+
+```
+
+
+
 ## Uniques and Duplicates
 
 Keep uniques; same as `pd.drop_duplicates()`.
@@ -3743,21 +3781,16 @@ If the data is stored in multiple files, `scan_xxx()` methods currently have bet
 
 For example, say the data is in
 
-./
-
-\|– 2022/
-
-\|. \|–01/
-
-\|. \|–01.parquet
-
-\|. \|–02.parquet
-
-\|. \|–02/
-
-\|. \|–01.parquet
-
-\|. \|–02.parquet
+```{text}
+/
+|– 2022/
+| . |–01/
+| . |–01.parquet
+| . |–02.parquet
+| . |–02/
+| . |–01.parquet
+| . |–02.parquet
+```
 
 In Pandas you could use `pd.read_parquet("data/")`. This will not work in Polars (TTBOMK), where you will need the following glob `pl.scan_parquet("data/**/*.parquet)"`.
 
@@ -3943,7 +3976,7 @@ q = (
         df3.lazy()
         )
     .with_columns(
-        pl.col('float').map_dict(remapping={4.0:None}, default=100).fill_null(pl.col('blah').mean()).alias('float2'),
+        pl.col('float').mapping(remapping={4.0:None}, default=100).fill_null(pl.col('blah').mean()).alias('float2'),
         )
     )
 
@@ -3954,7 +3987,7 @@ Things to note:
 
 -   `with_context()` is a lazy operation. This is great news, since it means both frames will benefit from query planning, etc.
 -   `with_context()` will not copy the data, but rather, add a reference to the data.
--   Why not use `pl.col('blah').mean()` within the `map_dict()`? That is indeed more reasonable. It simply did not work.
+-   Why not use `pl.col('blah').mean()` within the `mapping()`? That is indeed more reasonable. It simply did not work.
 -   Try it yourself: Can you use multiple `with_context()`?
 
 ### Imputation Example
