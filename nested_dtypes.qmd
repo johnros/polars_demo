@@ -245,6 +245,8 @@ print(dir(pl.element()))
 ```
 
 
+
+
 ## List Methods
 
 `.list.eval(pl.element())` will operate one element at a time. 
@@ -430,7 +432,6 @@ Careful where you put the `.sample()`!
 
 ```
 
-ECDF example:
 
 
 
@@ -456,14 +457,23 @@ ECDF example:
 
 ### Logical Aggregations
 
-.any:
+```{python}
+#| label: list-logical-aggregations
 
-.all:
+(
+    df_with_list
+    .select(
+        pl.col('ab'),
+        pl.col('ab').list.eval(pl.element().eq(1)).list.any().alias('any'),
+        pl.col('ab').list.eval(pl.element().eq(1)).list.all().alias('all'),
+        )
+)
+
+```
 
 
 
 ### String Operations
-
 
 ```{python}
 #| label: list-strings
@@ -494,7 +504,7 @@ df_2_with_list = pl.DataFrame(
 
 ### Missing
 
-.drop_nulls:
+I believe everything can be done with `.list.eval(pl.element().method())`.
 
 
 
@@ -510,13 +520,6 @@ df_2_with_list = pl.DataFrame(
 
 
 
-
-
-
-
-
-.list.rank
-.list.sort
 
 
 ### Exporting to Other Nested Dtypes
@@ -536,7 +539,65 @@ df_2_with_list = pl.DataFrame(
 ```
 
 
-### Some Powerful Combos
+### Examples
+
+#### ECDF 
+
+```{python}
+#| label: list-ecdf
+
+(
+    df_with_list
+    .select(
+        pl.col('ab').alias('raw'),
+        pl.col('ab').list.eval(pl.element().rank()).alias('ranks'),
+        pl.col('ab').list.eval(pl.element().rank().truediv(2)).alias('ecdf_1'),
+        # pl.col('ab').list.eval(pl.element().rank().truediv(pl.col('ab').list.len())).alias('ecdf_2'),
+    )
+)
+
+```
+
+Things to note:
+
+- Currently, `.list.eval()` cannot reference another column. See [issue](https://github.com/pola-rs/polars/issues/7210).
+- `.list.eval(pl.element())` can do more than point_wise operations. Think about the `rank()` example.
+- `.rank()` has a `method` argument that can be used to specify how to deal with ties.
+
+
+
+
+
+#### arg_max_horizontal
+
+Note, there currently is no `pl.arg_max_horizontal()` method.
+We will try to make one by concatenating columns to list, and then using the `.list.arg_max()`.
+In particular, we will want the arg_max col name, and not the index. 
+
+```{python}
+#| label: arg-max-horizontal
+
+(
+    df
+    .with_columns(
+        pl.concat_list([pl.col("a"), pl.col("b")]).list.arg_max().alias('arg_max'),
+        )
+    .select(
+        'a','b',
+        (
+            pl.col('arg_max')
+            .map_elements(lambda i: df.columns[i], return_dtype=pl.Utf8)
+            .alias('arg_max_col_name')
+        )
+        
+    )
+)
+
+```
+
+Things to note:
+
+- Can you find a more efficient way to do this? Maybe using a struct?
 
 
 
@@ -544,26 +605,104 @@ df_2_with_list = pl.DataFrame(
 
 ## `.list.explode()` {#sec-list-explode}
 
+Explode: "explode" the list onto a column.
+```{python}
+(
+    df_with_list
+    .select(
+        pl.col('ab').list.explode().alias('ab_exploded'),
+        )
+)
 
-.list.explode
-.list.explode.implode
-df.explode
-df.explode.group_by
+```
 
-### Computing A Quantile
+Implode: "implode" the list back into a list.
+```{python}
+(
+    df_with_list
+    .select(
+        pl.col('ab').implode().alias('ab_imploded'),
+        pl.col('ab').list.explode().implode().alias('ab_exploded_imploded'),
+        )
+)
+```
+
+Use group-wise to work on the list as a column.
+
+```{python}
+(
+    df_with_list
+    .with_row_index()
+    .group_by('index')
+    .agg(
+        pl.col('ab').list.explode().alias('this_is_actually_a_column'),
+        )
+)
+
+```
+
+
+There is also  `df.explode()`
+```{python}
+#| label: df-explode
+df_with_list.explode('ab')
+```
+
+
+
+### Examples 
+
+#### Quantile
+
+Recall there is no `.list.quantile()` method; so we need to brew our own. 
 
 ```{python}
 #| label: quantile-example
 
-(
+df_for_quantile = (
     df_with_list
     .select(
         pl.col('ab').list.sample(100, with_replacement=True),
     )
-    .to_pandas()
 )
 
+df_for_quantile.to_pandas()
+
 ```
+
+```{python}
+(
+    df_for_quantile
+    .with_row_index()
+    .group_by('index')
+    .agg(
+        pl.col('ab').explode().quantile(0.2)
+        )
+)
+```
+
+Things to note:
+
+1. The explode within row index is a powerful trick to apply any `pl.col()` method to a list.
+2. There is another way to apply `pl.col()` methods to a list... With `.list.eval(pl.element())` as in the next example.
+
+
+```{python}
+(
+    df_for_quantile
+    .select(
+        pl.col('ab').list.eval(pl.element().quantile(0.2))
+        .list.first() # to extract a float from a list
+        .alias('quantile_0.2'),
+    )
+
+
+
+)
+```
+
+
+
 
 
 # Polars Struct {#sec-struct}

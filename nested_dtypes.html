@@ -441,7 +441,7 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </div>
 </div>
 <p>List from concatenation of pl.Lists:</p>
-<div id="6b36b383" class="cell" data-execution_count="12">
+<div id="2fd1ddf1" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    df</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
@@ -575,16 +575,16 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td>1</td>
-<td>[1, 2]</td>
+<td>3</td>
+<td>[5, 6]</td>
 </tr>
 <tr class="even">
 <td>2</td>
 <td>[3, 4]</td>
 </tr>
 <tr class="odd">
-<td>3</td>
-<td>[5, 6]</td>
+<td>1</td>
+<td>[1, 2]</td>
 </tr>
 </tbody>
 </table>
@@ -598,7 +598,7 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>df.with_columns(pl.col(<span class="st">"b"</span>).implode().over(<span class="st">"a"</span>)) <span class="co"># no good</span></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>df.with_columns(pl.concat_list(<span class="st">'b'</span>).over(<span class="st">"a"</span>)) <span class="co"># no good</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="18683f2f" class="cell" data-execution_count="16">
+<div id="644025c0" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>df.with_columns(pl.col(<span class="st">"b"</span>).over(<span class="st">"a"</span>, mapping_strategy<span class="op">=</span><span class="st">"join"</span>)) <span class="co"># good!</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="15">
 <div>
@@ -1042,27 +1042,27 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 <tr class="even">
 <td data-quarto-table-cell-role="th">1</td>
 <td>[1, 2]</td>
-<td>[2, 1, 1, 2, 2, 1, 2, 2, 2, 1]</td>
+<td>[1, 2, 1, 2, 2, 1, 1, 1, 1, 1]</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">2</td>
 <td>[2, 3]</td>
-<td>[3, 3, 2, 3, 2, 3, 2, 3, 3, 3]</td>
+<td>[2, 3, 2, 3, 3, 2, 2, 2, 2, 2]</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">3</td>
 <td>[2, 4]</td>
-<td>[4, 2, 2, 2, 2, 2, 4, 2, 2, 4]</td>
+<td>[4, 2, 4, 2, 4, 4, 2, 4, 2, 4]</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">4</td>
 <td>[3, 5]</td>
-<td>[3, 5, 3, 3, 3, 5, 3, 3, 3, 5]</td>
+<td>[3, 3, 5, 5, 5, 3, 3, 3, 3, 5]</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">5</td>
 <td>[3, 6]</td>
-<td>[3, 3, 6, 3, 3, 3, 3, 3, 6, 6]</td>
+<td>[6, 3, 3, 6, 6, 6, 3, 6, 3, 6]</td>
 </tr>
 </tbody>
 </table>
@@ -1072,7 +1072,7 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </div>
 </div>
 <p>Careful where you put the <code>.sample()</code>!</p>
-<div id="ed0c8d8e" class="cell" data-execution_count="23">
+<div id="7627823e" class="cell" data-execution_count="23">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
@@ -1098,32 +1098,32 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">0</td>
 <td>[1, 1, 1, 1, 1, 1, 1, 1, 1, 1]</td>
-<td>[2, 4]</td>
+<td>[3, 5]</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">1</td>
-<td>[1, 2, 2, 2, 1, 1, 2, 2, 2, 2]</td>
-<td>[2, 3]</td>
+<td>[2, 2, 1, 2, 2, 1, 2, 2, 1, 2]</td>
+<td>[3, 5]</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">2</td>
-<td>[3, 2, 3, 2, 3, 2, 3, 3, 3, 2]</td>
-<td>[3, 6]</td>
+<td>[3, 2, 2, 3, 2, 2, 3, 3, 3, 3]</td>
+<td>[2, 4]</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">3</td>
-<td>[4, 4, 2, 2, 2, 4, 4, 2, 4, 2]</td>
-<td>[2, 3]</td>
+<td>[4, 2, 4, 2, 2, 2, 2, 4, 4, 4]</td>
+<td>[3, 6]</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">4</td>
-<td>[5, 3, 3, 5, 5, 3, 3, 5, 5, 3]</td>
-<td>[2, 3]</td>
+<td>[3, 3, 5, 3, 5, 3, 3, 5, 3, 3]</td>
+<td>[1, 1]</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">5</td>
-<td>[6, 6, 3, 3, 3, 6, 6, 6, 6, 6]</td>
-<td>[3, 5]</td>
+<td>[3, 3, 3, 6, 3, 3, 6, 3, 3, 6]</td>
+<td>[1, 1]</td>
 </tr>
 </tbody>
 </table>
@@ -1427,7 +1427,6 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </div>
 </div>
 </div>
-<p>ECDF example:</p>
 </section>
 <section id="sequence-operations" class="level3">
 <h3 class="anchored" data-anchor-id="sequence-operations">Sequence Operations</h3>
@@ -1495,29 +1494,96 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </section>
 <section id="logical-aggregations" class="level3">
 <h3 class="anchored" data-anchor-id="logical-aggregations">Logical Aggregations</h3>
-<p>.any:</p>
-<p>.all:</p>
+<div id="cell-list-logical-aggregations" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>),</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.<span class="bu">eval</span>(pl.element().eq(<span class="dv">1</span>)).<span class="bu">list</span>.<span class="bu">any</span>().alias(<span class="st">'any'</span>),</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.<span class="bu">eval</span>(pl.element().eq(<span class="dv">1</span>)).<span class="bu">list</span>.<span class="bu">all</span>().alias(<span class="st">'all'</span>),</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="list-logical-aggregations" class="cell-output cell-output-display" data-execution_count="27">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (6, 3)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">ab</th>
+<th data-quarto-table-cell-role="th">any</th>
+<th data-quarto-table-cell-role="th">all</th>
+</tr>
+<tr class="odd">
+<th>list[i64]</th>
+<th>bool</th>
+<th>bool</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>[1, 1]</td>
+<td>true</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>[1, 2]</td>
+<td>true</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>[2, 3]</td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>[2, 4]</td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>[3, 5]</td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>[3, 6]</td>
+<td>false</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
 </section>
 <section id="string-operations" class="level3">
 <h3 class="anchored" data-anchor-id="string-operations">String Operations</h3>
-<div id="cell-list-strings" class="cell" data-execution_count="28">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>df_2_with_list <span class="op">=</span> pl.DataFrame(</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"ab"</span>: [[<span class="st">"a"</span>, <span class="st">"b"</span>, <span class="st">"c"</span>], [<span class="st">"d"</span>, <span class="st">"e"</span>, <span class="st">"f"</span>], [<span class="st">"g"</span>, <span class="st">"h"</span>, <span class="st">"i"</span>]],</span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">'sep'</span>: [<span class="st">'@'</span>, <span class="st">'#'</span>, <span class="st">'$'</span>]</span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>(</span>
-<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>    df_2_with_list</span>
-<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>    .select(</span>
-<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>),</span>
-<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.join(pl.col(<span class="st">'sep'</span>)).alias(<span class="st">'joined'</span>),</span>
-<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.contains(<span class="st">'a'</span>).alias(<span class="st">'contains_a'</span>),</span>
-<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.count_matches(<span class="st">'a'</span>).alias(<span class="st">'count_a'</span>),</span>
-<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div id="list-strings" class="cell-output cell-output-display" data-execution_count="27">
+<div id="cell-list-strings" class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>df_2_with_list <span class="op">=</span> pl.DataFrame(</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"ab"</span>: [[<span class="st">"a"</span>, <span class="st">"b"</span>, <span class="st">"c"</span>], [<span class="st">"d"</span>, <span class="st">"e"</span>, <span class="st">"f"</span>], [<span class="st">"g"</span>, <span class="st">"h"</span>, <span class="st">"i"</span>]],</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">'sep'</span>: [<span class="st">'@'</span>, <span class="st">'#'</span>, <span class="st">'$'</span>]</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    df_2_with_list</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>),</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.join(pl.col(<span class="st">'sep'</span>)).alias(<span class="st">'joined'</span>),</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.contains(<span class="st">'a'</span>).alias(<span class="st">'contains_a'</span>),</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.count_matches(<span class="st">'a'</span>).alias(<span class="st">'count_a'</span>),</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="list-strings" class="cell-output cell-output-display" data-execution_count="28">
 <div>
 <div><style>
 .dataframe > thead > tr,
@@ -1570,7 +1636,7 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </section>
 <section id="missing" class="level3">
 <h3 class="anchored" data-anchor-id="missing">Missing</h3>
-<p>.drop_nulls:</p>
+<p>I believe everything can be done with <code>.list.eval(pl.element().method())</code>.</p>
 </section>
 <section id="set-operations" class="level3">
 <h3 class="anchored" data-anchor-id="set-operations">Set Operations</h3>
@@ -1578,20 +1644,19 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 <p>.list.set_union</p>
 <p>.list.set_difference</p>
 <p>.list.set_symmetric_difference</p>
-<p>.list.rank .list.sort</p>
 </section>
 <section id="exporting-to-other-nested-dtypes" class="level3">
 <h3 class="anchored" data-anchor-id="exporting-to-other-nested-dtypes">Exporting to Other Nested Dtypes</h3>
-<div id="cell-list-to-struct" class="cell" data-execution_count="29">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>(</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>),</span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.to_struct().alias(<span class="st">'ab_struct'</span>),</span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.to_array(width<span class="op">=</span><span class="dv">2</span>).alias(<span class="st">'ab_array'</span>),</span>
-<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div id="list-to-struct" class="cell-output cell-output-display" data-execution_count="28">
+<div id="cell-list-to-struct" class="cell" data-execution_count="30">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>),</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.to_struct().alias(<span class="st">'ab_struct'</span>),</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.to_array(width<span class="op">=</span><span class="dv">2</span>).alias(<span class="st">'ab_array'</span>),</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="list-to-struct" class="cell-output cell-output-display" data-execution_count="29">
 <div>
 <div><style>
 .dataframe > thead > tr,
@@ -1652,24 +1717,448 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </div>
 </div>
 </section>
-<section id="some-powerful-combos" class="level3">
-<h3 class="anchored" data-anchor-id="some-powerful-combos">Some Powerful Combos</h3>
+<section id="examples" class="level3">
+<h3 class="anchored" data-anchor-id="examples">Examples</h3>
+<section id="ecdf" class="level4">
+<h4 class="anchored" data-anchor-id="ecdf">ECDF</h4>
+<div id="cell-list-ecdf" class="cell" data-execution_count="31">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).alias(<span class="st">'raw'</span>),</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.<span class="bu">eval</span>(pl.element().rank()).alias(<span class="st">'ranks'</span>),</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.<span class="bu">eval</span>(pl.element().rank().truediv(<span class="dv">2</span>)).alias(<span class="st">'ecdf_1'</span>),</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># pl.col('ab').list.eval(pl.element().rank().truediv(pl.col('ab').list.len())).alias('ecdf_2'),</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="list-ecdf" class="cell-output cell-output-display" data-execution_count="30">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (6, 3)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">raw</th>
+<th data-quarto-table-cell-role="th">ranks</th>
+<th data-quarto-table-cell-role="th">ecdf_1</th>
+</tr>
+<tr class="odd">
+<th>list[i64]</th>
+<th>list[f64]</th>
+<th>list[f64]</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>[1, 1]</td>
+<td>[1.5, 1.5]</td>
+<td>[0.75, 0.75]</td>
+</tr>
+<tr class="even">
+<td>[1, 2]</td>
+<td>[1.0, 2.0]</td>
+<td>[0.5, 1.0]</td>
+</tr>
+<tr class="odd">
+<td>[2, 3]</td>
+<td>[1.0, 2.0]</td>
+<td>[0.5, 1.0]</td>
+</tr>
+<tr class="even">
+<td>[2, 4]</td>
+<td>[1.0, 2.0]</td>
+<td>[0.5, 1.0]</td>
+</tr>
+<tr class="odd">
+<td>[3, 5]</td>
+<td>[1.0, 2.0]</td>
+<td>[0.5, 1.0]</td>
+</tr>
+<tr class="even">
+<td>[3, 6]</td>
+<td>[1.0, 2.0]</td>
+<td>[0.5, 1.0]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<p>Things to note:</p>
+<ul>
+<li>Currently, <code>.list.eval()</code> cannot reference another column. See <a href="https://github.com/pola-rs/polars/issues/7210">issue</a>.</li>
+<li><code>.list.eval(pl.element())</code> can do more than point_wise operations. Think about the <code>rank()</code> example.</li>
+<li><code>.rank()</code> has a <code>method</code> argument that can be used to specify how to deal with ties.</li>
+</ul>
+</section>
+<section id="arg_max_horizontal" class="level4">
+<h4 class="anchored" data-anchor-id="arg_max_horizontal">arg_max_horizontal</h4>
+<p>Note, there currently is no <code>pl.arg_max_horizontal()</code> method. We will try to make one by concatenating columns to list, and then using the <code>.list.arg_max()</code>. In particular, we will want the arg_max col name, and not the index.</p>
+<div id="cell-arg-max-horizontal" class="cell" data-execution_count="32">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    df</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    .with_columns(</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>        pl.concat_list([pl.col(<span class="st">"a"</span>), pl.col(<span class="st">"b"</span>)]).<span class="bu">list</span>.arg_max().alias(<span class="st">'arg_max'</span>),</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">'a'</span>,<span class="st">'b'</span>,</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>        (</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>            pl.col(<span class="st">'arg_max'</span>)</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>            .map_elements(<span class="kw">lambda</span> i: df.columns[i], return_dtype<span class="op">=</span>pl.Utf8)</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>            .alias(<span class="st">'arg_max_col_name'</span>)</span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="arg-max-horizontal" class="cell-output cell-output-display" data-execution_count="31">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (6, 3)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">a</th>
+<th data-quarto-table-cell-role="th">b</th>
+<th data-quarto-table-cell-role="th">arg_max_col_name</th>
+</tr>
+<tr class="odd">
+<th>i64</th>
+<th>i64</th>
+<th>str</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>1</td>
+<td>"a"</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>2</td>
+<td>"b"</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>3</td>
+<td>"b"</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>4</td>
+<td>"b"</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>5</td>
+<td>"b"</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>6</td>
+<td>"b"</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<p>Things to note:</p>
+<ul>
+<li>Can you find a more efficient way to do this? Maybe using a struct?</li>
+</ul>
+</section>
 </section>
 </section>
 <section id="sec-list-explode" class="level2">
 <h2 class="anchored" data-anchor-id="sec-list-explode"><code>.list.explode()</code></h2>
-<p>.list.explode .list.explode.implode df.explode df.explode.group_by</p>
-<section id="computing-a-quantile" class="level3">
-<h3 class="anchored" data-anchor-id="computing-a-quantile">Computing A Quantile</h3>
-<div id="cell-quantile-example" class="cell" data-execution_count="30">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>(</span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.sample(<span class="dv">100</span>, with_replacement<span class="op">=</span><span class="va">True</span>),</span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    .to_pandas()</span>
-<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div id="quantile-example" class="cell-output cell-output-display" data-execution_count="29">
+<p>Explode: “explode” the list onto a column.</p>
+<div id="04b7d9ed" class="cell" data-execution_count="33">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.explode().alias(<span class="st">'ab_exploded'</span>),</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="32">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (12, 1)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">ab_exploded</th>
+</tr>
+<tr class="odd">
+<th>i64</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+</tr>
+<tr class="even">
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+</tr>
+<tr class="even">
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+</tr>
+<tr class="even">
+<td>…</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+</tr>
+<tr class="even">
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+</tr>
+<tr class="even">
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<p>Implode: “implode” the list back into a list.</p>
+<div id="a2c954dc" class="cell" data-execution_count="34">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).implode().alias(<span class="st">'ab_imploded'</span>),</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.explode().implode().alias(<span class="st">'ab_exploded_imploded'</span>),</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="33">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (1, 2)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">ab_imploded</th>
+<th data-quarto-table-cell-role="th">ab_exploded_imploded</th>
+</tr>
+<tr class="odd">
+<th>list[list[i64]]</th>
+<th>list[i64]</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>[[1, 1], [1, 2], … [3, 6]]</td>
+<td>[1, 1, … 6]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<p>Use group-wise to work on the list as a column.</p>
+<div id="00c76be8" class="cell" data-execution_count="35">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>    .with_row_index()</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    .group_by(<span class="st">'index'</span>)</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>    .agg(</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.explode().alias(<span class="st">'this_is_actually_a_column'</span>),</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="34">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (6, 2)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">index</th>
+<th data-quarto-table-cell-role="th">this_is_actually_a_column</th>
+</tr>
+<tr class="odd">
+<th>u32</th>
+<th>list[i64]</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>[1, 1]</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>[1, 2]</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>[2, 3]</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>[2, 4]</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>[3, 5]</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>[3, 6]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<p>There is also <code>df.explode()</code></p>
+<div id="cell-df-explode" class="cell" data-execution_count="36">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>df_with_list.explode(<span class="st">'ab'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="df-explode" class="cell-output cell-output-display" data-execution_count="35">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (12, 3)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">a</th>
+<th data-quarto-table-cell-role="th">b</th>
+<th data-quarto-table-cell-role="th">ab</th>
+</tr>
+<tr class="odd">
+<th>i64</th>
+<th>i64</th>
+<th>i64</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>5</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>6</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>6</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<section id="examples-1" class="level3">
+<h3 class="anchored" data-anchor-id="examples-1">Examples</h3>
+<section id="quantile" class="level4">
+<h4 class="anchored" data-anchor-id="quantile">Quantile</h4>
+<p>Recall there is no <code>.list.quantile()</code> method; so we need to brew our own.</p>
+<div id="cell-quantile-example" class="cell" data-execution_count="37">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>df_for_quantile <span class="op">=</span> (</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    df_with_list</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.sample(<span class="dv">100</span>, with_replacement<span class="op">=</span><span class="va">True</span>),</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>df_for_quantile.to_pandas()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="quantile-example" class="cell-output cell-output-display" data-execution_count="36">
 <div>
 <div>
 
@@ -1688,23 +2177,23 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">1</td>
-<td>[2, 1, 1, 2, 1, 1, 1, 1, 2, 2, 1, 2, 1, 1, 2, ...</td>
+<td>[1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, ...</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">2</td>
-<td>[2, 3, 2, 2, 3, 3, 3, 3, 2, 2, 3, 2, 3, 2, 3, ...</td>
+<td>[3, 2, 3, 2, 2, 2, 2, 3, 3, 3, 2, 3, 2, 2, 3, ...</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">3</td>
-<td>[4, 2, 4, 2, 2, 4, 4, 2, 2, 4, 4, 4, 2, 2, 4, ...</td>
+<td>[4, 2, 2, 2, 4, 2, 2, 2, 4, 4, 4, 4, 2, 4, 2, ...</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">4</td>
-<td>[3, 3, 3, 5, 5, 5, 5, 5, 3, 3, 5, 5, 3, 3, 5, ...</td>
+<td>[3, 3, 3, 5, 3, 3, 5, 3, 5, 3, 3, 5, 3, 5, 3, ...</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">5</td>
-<td>[3, 3, 3, 6, 6, 3, 6, 6, 3, 6, 3, 6, 3, 6, 6, ...</td>
+<td>[6, 6, 3, 6, 6, 6, 3, 3, 3, 6, 6, 6, 6, 3, 3, ...</td>
 </tr>
 </tbody>
 </table>
@@ -1713,6 +2202,129 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 </div>
 </div>
 </div>
+<div id="940e98dd" class="cell" data-execution_count="38">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>    df_for_quantile</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    .with_row_index()</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    .group_by(<span class="st">'index'</span>)</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    .agg(</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).explode().quantile(<span class="fl">0.2</span>)</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="37">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (6, 2)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">index</th>
+<th data-quarto-table-cell-role="th">ab</th>
+</tr>
+<tr class="odd">
+<th>u32</th>
+<th>f64</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>1.0</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>2.0</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>2.0</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>3.0</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>3.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<p>Things to note:</p>
+<ol type="1">
+<li>The explode within row index is a powerful trick to apply any <code>pl.col()</code> method to a list.</li>
+<li>There is another way to apply <code>pl.col()</code> methods to a list… With <code>.list.eval(pl.element())</code> as in the next example.</li>
+</ol>
+<div id="e07f63e4" class="cell" data-execution_count="39">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>    df_for_quantile</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>        pl.col(<span class="st">'ab'</span>).<span class="bu">list</span>.<span class="bu">eval</span>(pl.element().quantile(<span class="fl">0.2</span>))</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">list</span>.first() <span class="co"># to extract a float from a list</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>        .alias(<span class="st">'quantile_0.2'</span>),</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="38">
+<div>
+<div><style>
+.dataframe > thead > tr,
+.dataframe > tbody > tr {
+  text-align: right;
+  white-space: pre-wrap;
+}
+</style>
+<small>shape: (6, 1)</small>
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">quantile_0.2</th>
+</tr>
+<tr class="odd">
+<th>f64</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>1.0</td>
+</tr>
+<tr class="odd">
+<td>2.0</td>
+</tr>
+<tr class="even">
+<td>2.0</td>
+</tr>
+<tr class="odd">
+<td>3.0</td>
+</tr>
+<tr class="even">
+<td>3.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</section>
 </section>
 </section>
 </section>
@@ -1731,20 +2343,20 @@ xlsxwriter:           &lt;not installed&gt;</code></pre>
 <section id="exporting" class="level2">
 <h2 class="anchored" data-anchor-id="exporting">Exporting</h2>
 <p>Can I export to CSV? To Parquet?</p>
-<div id="32a2b5e5" class="cell" data-execution_count="31">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># get tmp file name from operating system</span></span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>temp_file <span class="op">=</span> os.path.join(tempfile._get_default_tempdir(), <span class="st">'something.csv'</span>)</span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>df_with_list.write_csv(<span class="st">'df_with_list.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="ead2be41" class="cell" data-execution_count="40">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># get tmp file name from operating system</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>temp_file <span class="op">=</span> os.path.join(tempfile._get_default_tempdir(), <span class="st">'something.csv'</span>)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>df_with_list.write_csv(<span class="st">'df_with_list.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-error">
 <pre><code>ComputeError: CSV format does not support nested data</code></pre>
 </div>
 </div>
 <p>What is the dtype when I export to Pandas?</p>
-<div id="export-to-pandas" class="cell" data-execution_count="32">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>df_with_list_pandas <span class="op">=</span> df_with_list.to_pandas()</span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>df_with_list_pandas.info()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="export-to-pandas" class="cell" data-execution_count="41">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>df_with_list_pandas <span class="op">=</span> df_with_list.to_pandas()</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>df_with_list_pandas.info()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>&lt;class 'pandas.core.frame.DataFrame'&gt;
 RangeIndex: 6 entries, 0 to 5
