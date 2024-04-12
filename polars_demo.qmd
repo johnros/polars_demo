@@ -3539,6 +3539,10 @@ df_with_list.explode("employees").shape
 
 ```
 
+
+
+
+
 #### List-to-Struct and Struct-to List
 
 Sometimes, you need to convert a list to a struct. For instance, if you want to `unnest()` a list, you will need to convert it to a struct first. Alternatively, if you want named access to list elements.
@@ -3562,11 +3566,64 @@ List to Struct
 
 When converting list to struct there are two things to consider: the number of fields and their names. The number of fields is governed by the `n_field_strategy` argument. The name of the fields is governed by the `fields` argument.
 
+
+
 ### Polars Array
 
 As of March 2024, Arrays are quite new to Polars. Currently, the behave mostly like lists, but with a fixed length. I can expect that the fixed length constraint will allow for more efficient memory allocation, and simpler API than the more general Polars Lists.
 
 See [here](https://docs.pola.rs/py-polars/html/reference/expressions/array.html) for more information on Polars Arrays.
+
+
+
+
+### Useful Tips and Methods for Nested Dtypes
+
+TODO
+
+- cannot explode a struct
+- implode explode combo
+
+```{python}
+value_counts=pl.DataFrame(
+    {
+        "a": [1, 2, 3,4],
+        "b": [3, 5, 1,15],
+    })
+```
+
+```{python}
+(
+    df
+    .melt(value_vars=['a', 'b']) # ordering here is important
+    .sort('value')
+    .select(
+        value=col('value').filter(col('variable') == 'b'),
+        proportion_lte=(
+            col('variable').eq('a').cum_sum()
+            .filter(col('variable') == 'b')
+            / df.height
+        )
+    )
+)
+```
+
+```{python}
+(
+    value_counts
+        .with_columns(z=pl.col('a').implode())
+        .with_columns(
+            z = pl.col('b').ge(pl.col('z').explode())
+            .implode()
+            .over('a')
+            .list.sum()
+            )
+          .truediv(pl.len())
+          
+)
+```
+
+
 
 ## Reshaping
 
