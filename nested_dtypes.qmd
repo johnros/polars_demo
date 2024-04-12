@@ -1,0 +1,616 @@
+---
+title: "Nested dtypes"
+
+execute:
+  eval: true
+  warning: true
+  error: true
+  keep-ipynb: true
+  cache: true
+jupyter: python3
+pdf-engine: lualatex
+# theme: pandoc
+html:
+    code-tools: true
+    fold-code: false
+    author: Jonathan D. Rosenblatt
+    data: 04-12-2024
+    toc: true
+    number-sections: true
+    number-depth: 3
+    embed-resources: true
+---
+
+```{python}
+#| echo: false
+# %pip install --upgrade pip
+# %pip install --upgrade polars
+# %pip install --upgrade pyarrow
+# %pip install --upgrade Pandas
+# %pip install --upgrade plotly
+# %pip freeze > requirements.txt
+```
+
+```{python}
+#| label: setup-env
+
+# %pip install -r requirements.txt
+```
+
+```{python}
+#| label: Polars-version
+%pip show Polars # check you Polars version
+```
+
+```{python}
+#| label: Pandas-version
+%pip show Pandas # check you Pandas version
+```
+
+```{python}
+#| label: preliminaries
+
+import polars as pl
+pl.Config(fmt_str_lengths=50)
+import polars.selectors as cs
+
+import pandas as pd
+import numpy as np
+import pyarrow as pa
+import plotly.express as px
+import string
+import random
+import os
+import sys
+%matplotlib inline 
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+# Following two lines only required to view plotly when rendering from VScode. 
+import plotly.io as pio
+# pio.renderers.default = "plotly_mimetype+notebook_connected+notebook"
+pio.renderers.default = "plotly_mimetype+notebook"
+```
+
+What Polars module and dependencies are installed?
+```{python}
+#| label: show-versions
+pl.show_versions()
+```
+
+How many cores are available for parallelism?
+```{python}
+#| label: show-cores
+pl.thread_pool_size()
+```
+
+
+# Introduction
+
+Recall the nested dtypes:
+
+1.  Polars Struct: Like a Python dict within a cell; Multiple named elements.
+2.  Polars List: Similar to a Python list within a cell; Multiple unnamed elements. Unlike the Python list, in a Polars list, all elements must have the same dtype.
+3.  Polars Array: Like a Polars list, but with a fixed length for all cells in the column.
+
+
+# Polars List {#sec-list}
+
+
+## Making a Polars List
+
+Make a Polars list from a Python list.
+
+```{python}
+#| label: make-list
+
+pl.DataFrame(
+    {
+        "a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+        "b": ["a", "b", "c"]
+    }
+)
+
+```
+
+Things to note:
+
+- `a` is not a Python list, rather, it is a Polars list. There are differences between the two. For instance, all elements in a Polars list must have the same dtype. Also, the Polars list is a columnar data structure, which is more efficient for certain operations. Finally, the Polars list is a first-class citizen in the Polars API, with its own methods and functions.
+- Can a Polars list hold a polars list? Yes. See the next example.
+
+Make a Polars list of Polars lists:
+
+```{python}
+#| label: make-list-of-list
+
+pl.DataFrame(
+    {
+        "a": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]], [[10, 11, 12], [13, 14, 15], [16, 17, 18]]],
+        "b": ["a", "b"]
+    }
+)
+
+```
+
+
+More often you will not make a Polars list directly, but rather you will create one from a Polars DataFrame:
+
+1. When grouping without aggregation. 
+2. When wrapping a bunch of columns with `pl.concat_list()`.
+3. When "imploding" (aka "collapsing") an `pl.Expr()`.  
+
+List from aggregation:
+```{python}
+#| label: list-from-aggregation
+
+df = pl.DataFrame(
+    {
+        "a": [1, 1, 2, 2, 3, 3],
+        "b": [1, 2, 3, 4, 5, 6]
+    }
+)
+
+df.group_by("a").agg(pl.col("b"))
+
+```
+
+List from concatenation of pl.Exprs():
+
+```{python}
+#| label: list-from-concatenation
+
+df.select(pl.concat_list([pl.col("a"), pl.col("b")]))
+
+```
+
+List from concatenation of pl.Lists:
+
+```{python}
+(
+    df
+    .select(
+        pl.concat_list([pl.col("a"), pl.col("b")]).alias('ab')
+        )
+    .with_columns(pl.col('ab').list.concat('ab'))
+    .to_pandas()
+)
+
+```
+
+List from imploding an `pl.Expr()`:
+
+```{python}
+#| label: list-from-imploding
+
+df.with_columns(pl.col("b").implode())
+
+```
+
+Implode within group:
+
+```{python}
+#| label: implode-within-group
+
+df.group_by("a").agg(pl.col("b"))
+
+```
+
+Implode over:
+
+```{python}
+#| label: implode-over
+#| eval: false
+df.with_columns(pl.col("b").over("a")) # no good
+df.with_columns(pl.col("b").implode().over("a")) # no good
+df.with_columns(pl.concat_list('b').over("a")) # no good
+```
+
+```{python}
+df.with_columns(pl.col("b").over("a", mapping_strategy="join")) # good!
+```
+
+See [here](https://github.com/pola-rs/polars/pull/6487) for more context. 
+
+
+###  More on `.over(mapping_strategy=...)`
+TODO
+
+
+
+## Operating on List Elements
+
+The most general way is to use `list.eval(pl.element())`:
+
+```{python}
+#| label: list-eval-element
+
+df_with_list = df.with_columns(pl.concat_list([pl.col("a"), pl.col("b")]).alias('ab'))
+
+(
+    df_with_list
+    .select(
+        pl.col('ab').list.eval(pl.element().add(1000))
+        )
+)
+```
+
+Things to note:
+
+- `.eval()` belongs to the `.list` namespace. 
+- `pl.element()` is a selector that selects the elements of the list. It has almost all the methods available to `pl.col()`.
+
+```{python}
+#| label: list-eval-element-methods
+print(dir(pl.element()))
+```
+
+
+## List Methods
+
+`.list.eval(pl.element())` will operate one element at a time. 
+If you want to operate on the list as a whole, you can wither use existing [list methods](https://docs.pola.rs/py-polars/html/reference/expressions/list.html), or use `pl.col()` methods, after exploding the list (see @sec-list-explode).
+
+We now demonstrate some of the list methods.
+
+
+
+### Selecting Elements
+
+Get, Gather, Slice, Gather_Every
+
+```{python}
+#| label: list-get-and-gather
+
+(
+    df_with_list.select(
+        pl.col('ab'),
+        pl.col('ab').list.get(0).alias('get_1'), 
+        pl.col('ab').list.gather([0]).alias('gather_1'), # returns a list
+        pl.col('ab').list.slice(0,1).alias('slice_1'), # returns a list
+        pl.col('ab').list.gather([0, 1]).alias('gather_2'),
+        pl.col('ab').list.slice(0,2).alias('slice_2'),
+        pl.col('ab').list.gather_every(2).alias('gather_every_2'),
+        )
+)
+
+```
+
+
+
+First, Head, Last, Tail
+
+```{python}
+#| label: list-methods
+
+(
+    df_with_list.select(
+        pl.col('ab'),
+        pl.col('ab').list.get(1).alias('first_1'),
+        pl.col('ab').list.first().alias('first_2'),
+        pl.col('ab').list.head(1).alias('first_5'), # returns a list
+        pl.col('ab').list.last().alias('last_2'), 
+        pl.col('ab').list.tail(1).alias('last_1'), # returns a list
+        pl.col('ab').list.tail(1).list.first().alias('last_3'),
+        )
+)
+
+```
+
+Shift
+
+```{python}
+#| label: list-shift
+
+(
+    df_with_list.select(
+        pl.col('ab'),
+        pl.col('ab').list.shift(1).alias('shift_1'),
+        pl.col('ab').list.shift(-1).alias('shift_-1'),
+        )
+)
+
+```
+
+Sample
+
+```{python}
+#| label: list-sample
+
+(
+    df_with_list.select(
+        pl.col('ab'),
+        pl.col('ab').list.sample(10, with_replacement=True).alias('sample'),
+        )
+    .to_pandas()
+)
+
+```
+
+
+Careful where you put the `.sample()`!
+
+```{python}
+(
+    df_with_list
+    .select(
+        pl.col('ab').list.sample(10, with_replacement=True).alias('within_row'),
+        pl.col('ab').sample(6, with_replacement=True).alias('within_column'),
+    )
+    .to_pandas()
+)
+```
+
+
+
+
+### Filtering
+
+```{python}
+#| label: list-filter
+
+(
+    df_with_list
+    .select(
+        pl.col('ab'),
+        pl.col('ab').list.eval(pl.element().gt(2)).alias('gt_2'),
+        # pl.col('ab').list.filter(pl.col('ab').list.gt(5)).alias('gt_5'), # not implemented yet
+        )
+)
+
+```
+
+
+
+### Statistical Aggregations
+
+.arg_max:
+
+.arg_min:
+
+.var:
+
+.std:
+
+.n_unique:
+
+.unique:
+
+.min:
+
+.max:
+
+.sum:
+
+.mean:
+
+.median:
+
+.len
+
+```{python}
+#| label: list-statistical-aggregations
+
+(
+    df_with_list
+    .select(
+        pl.col('ab'),
+        pl.col('ab').list.min().alias('min'),
+        pl.col('ab').list.max().alias('max'),
+        pl.col('ab').list.sum().alias('sum'),
+        pl.col('ab').list.mean().alias('mean'),
+        pl.col('ab').list.median().alias('median'),
+        pl.col('ab').list.var().alias('var'),
+        pl.col('ab').list.std().alias('std'),
+        pl.col('ab').list.n_unique().alias('n_unique'),
+        pl.col('ab').list.unique().alias('unique'),
+        pl.col('ab').list.len().alias('len'),
+        )
+)
+
+```
+
+### Ordering and Ranking
+
+.sort:
+
+.reverse:
+
+```{python}
+#| label: list-ordering-and-ranking
+
+(
+    df_with_list
+    .select(
+        pl.col('ab'),
+        # pl.col('ab').list.rank().alias('rank'),
+        pl.col('ab').list.sort().alias('sort'),
+        pl.col('ab').list.reverse().alias('reverse'),
+        )
+)
+
+```
+
+ECDF example:
+
+
+
+
+### Sequence Operations
+
+.diff
+
+```{python}
+#| label: list-diff
+
+(
+    df_with_list
+    .select(
+        pl.col('ab'),
+        pl.col('ab').list.diff().alias('diff'),
+        )
+)
+
+```
+
+
+
+### Logical Aggregations
+
+.any:
+
+.all:
+
+
+
+### String Operations
+
+
+```{python}
+#| label: list-strings
+
+df_2_with_list = pl.DataFrame(
+    {
+        "ab": [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]],
+        'sep': ['@', '#', '$']
+    }
+)
+
+(
+    df_2_with_list
+    .select(
+        pl.col('ab'),
+        pl.col('ab').list.join(pl.col('sep')).alias('joined'),
+        pl.col('ab').list.contains('a').alias('contains_a'),
+        pl.col('ab').list.count_matches('a').alias('count_a'),
+        )
+)
+
+```
+
+
+
+
+
+
+### Missing
+
+.drop_nulls:
+
+
+
+### Set Operations
+
+.list.set_intersection
+
+.list.set_union
+
+.list.set_difference
+
+.list.set_symmetric_difference
+
+
+
+
+
+
+
+
+.list.rank
+.list.sort
+
+
+### Exporting to Other Nested Dtypes
+
+```{python}
+#| label: list-to-struct
+
+(
+    df_with_list
+    .select(
+        pl.col('ab'),
+        pl.col('ab').list.to_struct().alias('ab_struct'),
+        pl.col('ab').list.to_array(width=2).alias('ab_array'),
+        )
+)
+
+```
+
+
+### Some Powerful Combos
+
+
+
+
+
+## `.list.explode()` {#sec-list-explode}
+
+
+.list.explode
+.list.explode.implode
+df.explode
+df.explode.group_by
+
+### Computing A Quantile
+
+```{python}
+#| label: quantile-example
+
+(
+    df_with_list
+    .select(
+        pl.col('ab').list.sample(100, with_replacement=True),
+    )
+    .to_pandas()
+)
+
+```
+
+
+# Polars Struct {#sec-struct}
+
+pl.struct
+.list.to_struct
+pl.struct.rename_fields
+pl.struct.field
+pl.struct().str.json_decode()
+
+df.unnest
+
+Explode? 
+Struct to list?
+
+
+
+# Polars Array {#sec-array}
+
+
+
+# Discussion
+
+Can I use list methods on a struct?(e.g. argmax)
+When a Polars list and when a Polars struct?
+When a Polars list and when a Polars Array? 
+When a Polars Array and when a set of columns?
+
+## Exporting
+
+Can I export to CSV? To Parquet? 
+```{python}
+# get tmp file name from operating system
+import tempfile
+temp_file = os.path.join(tempfile._get_default_tempdir(), 'something.csv')
+
+df_with_list.write_csv('df_with_list.csv')
+```
+
+
+What is the dtype when I export to Pandas?
+```{python}
+#| label: export-to-pandas
+
+df_with_list_pandas = df_with_list.to_pandas()
+df_with_list_pandas.info()
+```
+
+
+
