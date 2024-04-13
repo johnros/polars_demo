@@ -4072,6 +4072,50 @@ test_lf = pl.LazyFrame(
 
 ```
 
+
+# Polars Functions
+
+TODO
+
+pl.all()
+
+pl.all_horizontal()
+
+pl.any()
+
+pl.any_horizontal()
+
+pl.map_groups()
+
+pl.approx_n_unique()
+
+pl.arange()
+
+pl.arg_sort_by()
+
+pl.arg_where()
+
+pl.business_day_count()
+
+pl.coalesce()
+
+pl.concat_str()
+
+pl.count()
+
+pl.cum_count()
+
+pl.cum_fold()
+
+pl.fold()
+
+pl.reduce()
+
+
+
+
+
+
 # Misc
 
 ## SQL
