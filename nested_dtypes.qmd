@@ -702,34 +702,325 @@ Things to note:
 ```
 
 
+## Polars Lists of Polars Lists
+
+```{python}
+#| label: list-of-list
+
+df_with_list_of_list = pl.DataFrame(
+    {
+        "a": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]], [[10, 11, 12], [13, 14, 15], [16, 17, 18]]],
+        "b": ["a", "b"]
+    }
+)
+
+df_with_list_of_list
+
+```
+
+List operations will work one level deep.
+
+```{python}
+#| label: list-of-list-inner
+
+(
+    df_with_list_of_list
+    .select(
+        pl.col('a'),
+        pl.col('a').list.get(0).alias('get_1'), 
+        # pl.col('a').list.gather([0]).alias('gather_1'), # returns a list
+        # pl.col('a').list.slice(0,1).alias('slice_1'), # returns a list
+        # pl.col('a').list.gather([0, 1]).alias('gather_2'),
+        # pl.col('a').list.slice(0,2).alias('slice_2'),
+        # pl.col('a').list.gather_every(2).alias('gather_every_2'),
+        )
+)
+
+```
 
 
 
-# Polars Struct {#sec-struct}
+## Examples
 
-pl.struct
-.list.to_struct
-pl.struct.rename_fields
-pl.struct.field
-pl.struct().str.json_decode()
+### Filter A List With A Predicte
 
-df.unnest
 
-Explode? 
-Struct to list?
+```{python}
+
+# Sample data
+data = {
+    'string_list': [
+        ["apple", "banana", "orange", "grape", "pear"],
+        ["apple", "banana", "orange", "grape"],
+        ["apple", "banana", "orange"],
+        ["apple", "banana"],
+        ["apple"],
+        ["apple", "banana", "orange", "grape", "pear"],
+        ["apple", "banana", "orange", "grape"],
+    ],
+        }
+
+# Create a polars DataFrame
+df = pl.DataFrame(data)
+df
+```
+
+In each list, keep only strings of length 4.
+
+Syntax 1:
+
+```{python}
+(
+    df
+    .with_row_index('i')
+    .with_columns(
+        pl.col('string_list').list.gather(
+            pl.arg_where(
+                pl.col('string_list').explode().str.len_chars().eq(4))
+                )
+                .over('i')
+            )
+    .drop('i')
+)
+```
+
+Syntax 2:
+
+```{python}
+(
+    df
+    .with_row_index('i')
+    .with_columns(
+        (
+            (cntr:=pl.col('string_list').explode())
+            .filter(cntr.str.len_chars().eq(4))
+            )
+        .implode()
+        .over('i')
+        )
+    .drop('i')
+)
+
+```
+
+Syntax 3:
+
+```{python}
+(
+    df
+    .select(
+        pl.col('string_list').list.gather(
+            pl.col('string_list').list.eval(
+                pl.arg_where(
+                    pl.element().str.len_chars().eq(4)
+                    )
+                )
+            )
+        )
+)
+
+```
+
 
 
 
 # Polars Array {#sec-array}
 
+Polars Arrays as Polars lists with a fixed length.
+
+## Making a Polars Array
+
+Make a Polars array from a Python list.
+
+```{python}
+#| label: make-array
+
+pl.DataFrame(
+    [
+        pl.Series("Array_1", [[1, 3], [2, 5]]),
+        pl.Series("Array_2", [[1, 7, 3], [8, 1, 0]]),
+    ],
+    schema={
+        "Array_1": pl.Array(pl.Int64, 2),
+        "Array_2": pl.Array(pl.Int64, 3),
+    },
+)
+
+```
+
+Things to note:
+
+- The dtype of the array is specified in the schema. Otherwise, a Polars list would have been inferred. 
+
+
+## Array Methods
+
+Currently, list methods and array methods seem to be the same. 
+I expect these lists to diverge in the future, because more operations can be defined when assuming a fixed length.
+
+
+
+
+
+
+
+# Polars Struct {#sec-struct}
+
+##  Making a Polars Struct
+
+Make a Polars struct from a Python dict.
+
+```{python}
+#| label: make-struct
+
+pl.DataFrame(
+    {
+        "a": [{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 5, "y": 6}],
+        "b": ["a", "b", "c"]
+    }
+)
+
+```
+
+What are the differences between a Polars struct and a Python dict? 
+
+1. The Polars stuct must have the same keys (called `fields`) in all rows. 
+2. A Polars struct is a first-class citizen in the Polars API, with its own methods and functions.
+3. Besides these, I am still figuring it out. 
+
+What are the differences between a Polars struct and a Polars list?
+
+1. A Polars struct has named elements, while a Polars list has unnamed elements.
+2. Because the struct has the same fields in all rows, it must have the same length in all rows. This is not the case for a Polars list.
+
+More often you will not make a Polars struct directly, but rather you will create one from a Polars DataFrame:
+
+1. By directly creating a struct.
+2. As the output of some operation, like `pl.Expr().value_counts()`, or all the horizontal cumulators like `pl.cum_sum_horizontal()`, `pl.cum_reduce()`, `pl.cum_fold()`, ...
+3. From a Polars list. 
+
+
+
+### Making a Polars Struct Directly
+
+```{python}
+#| label: make-struct-directly
+df_with_struct = df.select(pl.struct(['a','b']).alias('struct'))
+df_with_struct
+```
+
+Verify that the column is a struct:
+
+```{python}
+#| label: verify-struct
+df_with_struct.schema
+```
+
+Alternative constructors
+
+```{python}
+df.select(pl.struct(aaa=pl.col('a'), bbb=pl.col('b'))).schema
+```
+
+
+### Struct As Output
+
+```{python}
+df.select(pl.col('a').value_counts())
+# df.select(pl.col('a').value_counts()).schema
+```
+
+
+### Struct From List
+
+```{python}
+#| label: struct-from-list
+df_with_list.select(pl.col('ab').list.to_struct())
+```
+
+
+
+
+## Struct Methods
+
+
+### Extracting Elements
+
+```{python}
+#| label: struct-get
+(
+    df_with_struct
+    .select(
+        pl.col('struct').struct.field('a'),
+        pl.col('struct').struct.field('b'),
+        )
+)
+```
+
+To text in JSON format:
+
+```{python}
+#| label: struct-to-json
+(
+    df_with_struct
+    .select(
+        pl.col('struct').struct.json_encode()
+        )
+)
+
+```
+
+
+## Struct to List
+
+There is no `.struct.to_list()` method. 
+This makes sense, since a struct does not require all fields to have the same dtype. 
+In the case where all fields have the same dtype, you can use the following.
+
+```{python}
+#| label: struct-to-list
+(
+    df_with_struct
+    .unnest('struct')
+    .select(pl.concat_list(pl.all()))
+)
+
+```
+
+You can also consider element-by-element extractions.
+
+```{python}
+#| label: struct-to-list-element-by-element
+(
+    df_with_struct
+    .select(
+        pl.concat_list([
+            pl.col('struct').struct.field('a'), 
+            pl.col('struct').struct.field('b')
+            ])
+        )
+)
+
+```
+
 
 
 # Discussion
 
-Can I use list methods on a struct?(e.g. argmax)
-When a Polars list and when a Polars struct?
-When a Polars list and when a Polars Array? 
-When a Polars Array and when a set of columns?
+## General 
+
+Q: Can I have a list of list of lists (i.e. more than 2 layers of nesting)?  
+A: No. Only a list within a list. 
+
+Q: Can I use list methods on a struct?(e.g. argmax)  
+A: No. But you can extract the struct to a list, and then use list methods.
+
+
+Q: When a Polars Array and when a set of columns?
+A: I am still thinking about it. 
+
+
+
 
 ## Exporting
 
