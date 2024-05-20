@@ -2400,6 +2400,14 @@ To PyArrow Table
 df.to_arrow()
 ```
 
+To PyTorch array:
+
+```{python}
+TODO
+```
+
+
+
 ## Statistical Aggregations
 
 ```{python}
