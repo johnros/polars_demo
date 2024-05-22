@@ -946,7 +946,7 @@ The following will not work, but may be fixed.
 
 
 ```{python}
-#eval: false
+
 (
     df_with_list
     .with_row_index()
@@ -955,7 +955,6 @@ The following will not work, but may be fixed.
         (abrank:=pl.col('ab').explode().rank()).truediv(abrank.len()),
     )
 )
-
 
 ```
 
@@ -1213,7 +1212,7 @@ When a list has constant length, which you want to access by name, it makes sens
 
 ```{python}
 #| label: struct-from-list
-df_with_list.select(pl.col('ab').list.to_struct())
+df_with_list.select(pl.col('ab').list.to_struct().struct.json_encode())
 ```
 
 
@@ -1265,6 +1264,7 @@ Getting a field is actually getting a column from a sub-frame.
 )
 ```
 
+
 To text in JSON format:
 
 ```{python}
@@ -1277,6 +1277,26 @@ To text in JSON format:
 )
 
 ```
+
+
+### The New (>= 0.20.27) Way to Access Fields
+
+As of version 0.20.27, you can access fields using a `.with_fields()` context, akin to the `.with_columns()` context.
+
+```{python}
+(
+    df_with_struct
+    .select(
+        pl.col('struct').struct.with_fields(
+            new_field = pl.col('struct').struct.field('a') * 
+            pl.col('struct').struct.field('b')
+            )
+        .struct.json_encode()
+    )
+)
+```
+
+
 
 
 ## Struct to List
@@ -1415,6 +1435,8 @@ import tempfile
 temp_file = os.path.join(tempfile._get_default_tempdir(), 'something.csv')
 
 df_with_list.write_csv('df_with_list.csv')
+df_with_list.write_parquet('df_with_list.parquet')
+pl.read_parquet('df_with_list.parquet').schema
 ```
 
 

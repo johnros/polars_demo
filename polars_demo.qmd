@@ -3896,16 +3896,50 @@ See [here](https://docs.pola.rs/user-guide/io/database/#difference-between-read_
 
 Note you can (currently) only read Eager Frames from disk.
 
+
+
 # Polars Expressions {#sec-expressions}
 
 Now that you are familiar with column transformations in Polars' contexts, it is time to tell you: **all those transformations are Polars expressions**.
 
 Things to recall about Polars expressions:
 
-1.  Think of them as functions of other Polars expressions. As such, expressions can be **chained**. 1. An expression, or chain thereof, meterializes when a `.collect()` method is called.
+1.  Think of them as functions of other Polars expressions. As such, expressions can be **chained**. 
+1. An expression, or chain thereof, meterializes when a `.collect()` method is called.
 2.  Almost all `pl.Series()` methods are available as Polars expressions, and vice-versa. There are however exceptions.
 
 Because almost all Polars Series methods are available as Polars expressions, we refer the reader to @sec-series for a review of importanta series methods. In this section we will focus on exceptions, and some important expressions that are not available for Series.
+
+
+## Reusing and Compounding Expressions
+
+Polars expression can be assigned, without evaluation, as a Python object:
+
+```{python}
+
+my_expression = pl.col('integer').add(pl.col('float')).mul(2).alias('new_column')
+
+(
+  df
+  .select(my_expression)
+)
+```
+
+
+Assigned expressions may be compounded (composed):
+
+```{python}
+
+my_expression_2 = my_expression.mul(1e6)
+
+(
+  df
+  .select(my_expression_2)
+)
+
+```
+
+
 
 
 
