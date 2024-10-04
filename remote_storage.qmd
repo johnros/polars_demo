@@ -1,0 +1,209 @@
+---
+title: "DB connectivity"
+
+execute:
+  eval: true
+  warning: true
+  error: true
+  keep-ipynb: true
+  cache: true
+jupyter: python3
+pdf-engine: lualatex
+# theme: pandoc
+html:
+    code-tools: true
+    fold-code: false
+    author: Jonathan D. Rosenblatt
+    data: 04-20-2024
+    toc: true
+    number-sections: true
+    number-depth: 3
+    embed-resources: true
+---
+
+```{python}
+#| echo: false
+# pip install connectorx
+# %pip install --upgrade pip
+# %pip install --upgrade polars
+# %pip install --upgrade pyarrow
+# %pip install --upgrade Pandas
+# %pip install --upgrade plotly
+# %pip freeze > requirements.txt
+```
+
+```{python}
+#| label: setup-env
+
+# %pip install -r requirements.txt
+```
+
+```{python}
+#| label: Polars-version
+%pip show Polars # check you Polars version
+```
+
+```{python}
+#| label: Pandas-version
+%pip show Pandas # check you Pandas version
+```
+
+```{python}
+#| label: preliminaries
+
+import polars as pl
+pl.Config(fmt_str_lengths=50)
+import polars.selectors as cs
+
+import pandas as pd
+import numpy as np
+import pyarrow as pa
+import plotly.express as px
+import string
+import random
+import os
+import sys
+%matplotlib inline 
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+# Following two lines only required to view plotly when rendering from VScode. 
+import plotly.io as pio
+# pio.renderers.default = "plotly_mimetype+notebook_connected+notebook"
+pio.renderers.default = "plotly_mimetype+notebook"
+```
+
+What Polars module and dependencies are installed?
+```{python}
+#| label: show-versions
+pl.show_versions()
+```
+
+
+
+# Read from S3
+
+```{python}
+import boto3
+
+session = boto3.session.Session()
+credentials = session.get_credentials()
+pl.read_parquet(f's3://{bucket_name}/{file_path}', 
+                storage_options={
+                "aws_access_key_id": credentials.access_key,
+                "aws_secret_access_key": credentials.secret_key,
+                "session_token":credentials.token,
+                "region": "us-west-2",
+}) 
+```
+
+
+# read_database_uri()
+
+```{python}
+import json
+from boto3.session import Session
+from urllib.parse import quote_plus
+
+
+REDSHIFT_DATABASE = 'dev'
+REDSHIFT_CLUSTER_IDENTIFIER = 'fairmatic-dev'
+REDSHIFT_HOST = 'redshift.fairmatic.org'
+REDSHIFT_PORT = 5439
+
+# Use boto to discover the AWS credentials to access redshift
+session = Session(profile_name="fairmatic")
+iam_client = session.client('iam')
+redshift_client = session.client('redshift')
+redshift_user_name = iam_client.get_user()['User']['UserName']
+
+# Make an object with all redshift required credentials
+redshift_creds = redshift_client.get_cluster_credentials(
+    DbUser=redshift_user_name,
+    DbName=REDSHIFT_DATABASE,
+    ClusterIdentifier=REDSHIFT_CLUSTER_IDENTIFIER,
+    DurationSeconds=3600,
+    AutoCreate=True,
+)
+
+# Tailor the connection string in the read_database_uri() expected format: "postgres://username:password@server:port/database"
+REDSHIFT_CONNECTION_STRING = f"redshift://{quote_plus(redshift_creds['DbUser'])}:{quote_plus(redshift_creds['DbPassword'])}@{REDSHIFT_HOST}:{REDSHIFT_PORT}/{REDSHIFT_DATABASE}"
+
+
+query = "select * from analytics.report_portfolio_policy_insights"
+
+import polars as pl
+v = pl.read_database_uri(query=query, uri=REDSHIFT_CONNECTION_STRING)
+
+print(v)
+
+```
+
+
+
+
+# read_database()
+
+
+
+```{python}
+import json
+from boto3.session import Session
+from urllib.parse import quote_plus
+
+REDSHIFT_DATABASE = 'dev'
+REDSHIFT_CLUSTER_IDENTIFIER = 'fairmatic-dev'
+REDSHIFT_HOST = 'redshift.fairmatic.org'
+REDSHIFT_PORT = 5439
+
+
+session = Session()
+iam_client = session.client('iam')
+redshift_client = session.client('redshift')
+
+redshift_user_name = iam_client.get_user()['User']['UserName']
+redshift_creds = redshift_client.get_cluster_credentials(
+    DbUser=redshift_user_name,
+    DbName=REDSHIFT_DATABASE,
+    ClusterIdentifier=REDSHIFT_CLUSTER_IDENTIFIER,
+    DurationSeconds=3600,
+    AutoCreate=True,
+)
+
+```
+
+```{python}
+REDSHIFT_CONNECTION_STRING = f"postgres://{quote_plus(redshift_creds['DbUser'])}:{quote_plus(redshift_creds['DbPassword'])}@{REDSHIFT_HOST}:{REDSHIFT_PORT}/{REDSHIFT_DATABASE}"
+
+
+REDSHIFT_CONNECTION_STRING
+```
+
+
+```{python}
+conn = 'postgres://username:password@server:port/database'         # connection token
+
+query = "SELECT * FROM table    limit 10"      
+
+import connectorx as cx
+cx.read_sql(
+    REDSHIFT_CONNECTION_STRING, 
+    query,
+    )
+
+```
+
+
+```{python}
+from sqlalchemy import create_engine
+conn = create_engine(f"sqlite:///test.db")
+
+query = "SELECT * FROM foo"
+
+pl.read_database(
+    query=query, 
+    connection=conn.connect()
+    )
+```
+
+

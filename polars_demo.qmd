@@ -97,10 +97,12 @@ At this point you may want to create and activate a [venv](https://realpython.co
 %pip show Polars # check you Polars version
 ```
 
+
 ```{python}
 #| label: Pandas-version
 %pip show Pandas # check you Pandas version
 ```
+
 
 ```{python}
 #| label: preliminaries
@@ -125,6 +127,9 @@ from datetime import datetime
 import plotly.io as pio
 # pio.renderers.default = "plotly_mimetype+notebook_connected+notebook"
 pio.renderers.default = "plotly_mimetype+notebook"
+
+# set path to current file's path
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 ```
 
 What Polars module and dependencies are installed?
@@ -229,12 +234,12 @@ Here is the actual query plan of each.
 The non-optimized version:
 
 ```{python}
-#| label: polars-lazy-wrong-order-no-optimization-plan
+#| label: fig-polars-lazy-wrong-order-no-optimization-plan
 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).show_graph(optimized=False)
 ```
 
 ```{python}
-#| label: polars-lazy-wrong-order-optimization-plan-2
+#| label: fig-polars-lazy-wrong-order-optimization-plan-2
 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).show_graph(optimized=True)
 ```
 
@@ -457,6 +462,11 @@ We benchmark by making synthetic data, save it on disk, and reimporting it.
 n_rows = int(1e5)
 n_cols = 10
 data_Polars = pl.DataFrame(np.random.randn(n_rows,n_cols))
+
+# make folder data is does not exist
+if not os.path.exists('data'):
+    os.makedirs('data')
+
 data_Polars.write_csv('data/data.csv', include_header = False)
 f"{os.path.getsize('data/data.csv')/1e7:.2f} MB on disk"
 ```
@@ -587,6 +597,7 @@ file_names = os.listdir(path)
 ```{python}
 %%time 
 taxi_Pandas = pd.read_parquet(path)
+taxi_Pandas.shape
 
 query = '''
     passenger_count > 0 and 
@@ -632,11 +643,12 @@ import pyarrow.dataset as ds
 
 q = (
     
+    # pl.scan_parquet("data/NYC/*.parquet") # will now work because parquet was created with Int32, and not Int64. 
+    
+    # Use pyarrow reader for robustness
     pl.scan_pyarrow_dataset(
       ds.dataset("data/NYC", format="parquet") # Using PyArrow's Parquet reader
     )
-    
-    # pl.scan_parquet("data/NYC/*.parquet") # will now work because parquet was created with Int32, and not Int64. 
     
     .filter(
         pl.col('passenger_count').is_between(1,4),
@@ -664,6 +676,7 @@ Things to note:
 
 1.  I did not use the native `pl.scan_parquet()` as it is recommended. For your purposes, you will almost always use the native readers. It is convenient to remember, however, that you can also use the PyArrow importers in the native importers fail.
 2.  I only have 2 parquet files. When I run the same with more files, despite my 16GB of RAM, **Pandas will crash my python kernel**.
+
 
 ### Polars Lazy From Disk
 
@@ -882,43 +895,6 @@ polars_frame_2 = (
 
 ```
 
-Can you parse the following in your head?
-
-```{python}
-
-polars_frame_3 = pl.DataFrame(make_data(10,1))
-
-(
-  polars_frame.lazy()
-  .select(
-    pl.col('*').name.suffix('_first')
-  )
-  .with_context(
-    polars_frame_3.lazy()
-    .select(
-      pl.col('*').name.suffix('_third')
-    ) 
-  )
-  .select(
-    'column_0_first',
-
-    pl.when(
-      pl.col('column_0_first').mod(2).eq(0)
-      )
-    .then(
-      pl.lit(1)
-      )
-    .otherwise(
-      polars_frame_3
-      .select(
-        pl.last().min()
-        )
-      )
-  )
-  .collect(streaming=True)
-)
-
-```
 
 ## Getting Help
 
@@ -1239,7 +1215,7 @@ Thanks to Arrow, Polars has built in missing value support for all(!) dtypes. Th
 -   `pl.Null`, and `np.nan`s have their own separate functions for imputing, counting, etc.
 
 ```{python}
-m = pl.Series("a", [1, 2, None, np.nan])
+m = pl.Series("a", [1, 2, None, np.nan], strict=False)
 ```
 
 ```{python}
@@ -1274,8 +1250,8 @@ We now compare the behavior of Polars to Pandas when operating on missing values
 ```{python}
 # Polars
 m1 = pl.Series("a", [1, None, 2, ]) # python native None
-m2 = pl.Series("a", [1, np.nan, 2, ]) # numpy's nan
-m3 = pl.Series("a", [1, float('nan'), 2, ]) # python's nan
+m2 = pl.Series("a", [1, np.nan, 2, ], strict=False) # numpy's nan
+m3 = pl.Series("a", [1, float('nan'), 2, ], strict=False) # python's nan
 
 # Pandas
 m4 = pd.Series([1, None, 2 ])
@@ -1444,6 +1420,7 @@ s.equals(pl.Series("a", [1, 2, 3]))
 ```
 
 ```{python}
+#| eval: false
 s.equals([1,2,3])
 ```
 
@@ -1502,7 +1479,7 @@ s.is_between(2, 3, closed='both')
 Applying your own function. Also note the informative error message (introduced in Polars Ver 0.18.0) that will try to recommend a more efficient way to do things.
 
 ```{python}
-s.map_elements(lambda x: x + 1)
+s.map_elements(lambda x: x + 1, return_dtype=pl.Int32)
 ```
 
 Are lambda functions really so much slower?
@@ -1514,7 +1491,7 @@ s1 = pl.Series(np.random.randn(int(1e6)))
 Adding 1 with apply:
 
 ```{python}
-%timeit -n2 -r2 s1.map_elements(lambda x: x + 1)
+%timeit -n2 -r2 s1.map_elements(lambda x: x + 1, return_dtype=pl.Float64)
 ```
 
 Adding 1 without apply:
@@ -1844,33 +1821,34 @@ diffs.dt.total_minutes()
 ```
 
 ```{python}
-diffs.dt.total_days()
+diffs.dt.total_hours()
 ```
 
 ```{python}
-diffs.dt.total_hours()
+diffs.dt.total_days()
 ```
+
 
 ### Date Aggregations
 
 Note that aggregating dates, returns a `datetime` type object.
 
 ```{python}
-date.dt.max()
+date.max()
 ```
 
 ```{python}
-date.dt.min()
+date.min()
 ```
 
 I never quite undersootd that is the "average day."
 
 ```{python}
-date.dt.mean()
+date.mean()
 ```
 
 ```{python}
-date.dt.median()
+date.median()
 ```
 
 ### Adding Constant Periods
@@ -2403,7 +2381,8 @@ df.to_arrow()
 To PyTorch array:
 
 ```{python}
-TODO
+import torch
+df.select(['integer','float','date']).to_torch()
 ```
 
 
@@ -2583,8 +2562,10 @@ df.select(pl.col("*")) # same as df.select(pl.all())
 Regular Expression. Important! Use `pl.col('^<patterh>$')` to match regular expressions.
 
 ```{python}
-df.select(pl.col("^\w{4}$")) 
+df.select(pl.col(r"^\w{4}$")) 
 ```
+
+Note: Without the `r` prefix, "\w" will be interpreted as an escape character.
 
 ```{python}
 df.select(pl.col('^.*g$'))
@@ -2996,8 +2977,8 @@ Make some data with missing.
 ```{python}
 #| label: make-dataframe-with-nulls
 df_with_nulls = df.with_columns(
-    null_1 = pl.Series("missing", [3, None, np.nan]),
-    null_2 = pl.Series("missing", [None, 5, 6]),
+    null_1 = pl.Series("missing", [3, None, np.nan], strict=False),
+    null_2 = pl.Series("missing", [None, 5, 6], strict=False),
 )
 ```
 
@@ -3220,6 +3201,7 @@ High level:
 
 -   `df.join()` for joins; like Pandas `pd.merge()` or `df.join()`.
 -   `df.join_asof()` for asof joins; like Pandas `pd.merge_asof()`.
+-   `df.join_where()` to join on an arbitrary predicate (link)[https://docs.pola.rs/api/python/dev/reference/dataframe/api/polars.DataFrame.join_where.html]. 
 -   `df.hstack()` for horizontal concatenation; like Pandas `pd.concat([],axis=1)` or R's `cbind`.
 -   `df.vstack()` for vertical concatenation; like Pandas `pd.concat([],axis=0)` or R's `rbind`.
 -   `df.merge_sorted()` for vertical stacking, with sorting.
@@ -3593,7 +3575,7 @@ TODO
 - implode explode combo
 
 ```{python}
-value_counts=pl.DataFrame(
+data_left = pl.DataFrame(
     {
         "a": [1, 2, 3,4],
         "b": [3, 5, 1,15],
@@ -3602,14 +3584,14 @@ value_counts=pl.DataFrame(
 
 ```{python}
 (
-    df
-    .melt(value_vars=['a', 'b']) # ordering here is important
+    data_left
+    .unpivot(on=['a', 'b']) # ordering here is important
     .sort('value')
     .select(
-        value=col('value').filter(col('variable') == 'b'),
+        value=pl.col('value').filter(pl.col('variable') == 'b'),
         proportion_lte=(
-            col('variable').eq('a').cum_sum()
-            .filter(col('variable') == 'b')
+            pl.col('variable').eq('a').cum_sum()
+            .filter(pl.col('variable') == 'b')
             / df.height
         )
     )
@@ -3618,7 +3600,7 @@ value_counts=pl.DataFrame(
 
 ```{python}
 (
-    value_counts
+    data_left
         .with_columns(z=pl.col('a').implode())
         .with_columns(
             z = pl.col('b').ge(pl.col('z').explode())
@@ -3626,7 +3608,10 @@ value_counts=pl.DataFrame(
             .over('a')
             .list.sum()
             )
-          .truediv(pl.len())
+          .select(
+            pl.all().truediv(pl.all().len())
+          )
+          
           
 )
 ```
@@ -3639,7 +3624,7 @@ High level:
 
 -   `df.transpose()` as the name suggests.
 -   `df.melt()` for wide to long.
--   `df.pivot()` for long to wide.
+-   `df.pivot()` for long to wide. TODO:replace with `.unpivot`
 -   `df.unnest()` for breaking structs into columns.
 -   `df.unstack()`
 
@@ -3677,17 +3662,18 @@ wide
 Reshape into long format
 
 ```{python}
-wide.melt(
-  id_vars=['famid', 'birth'], 
-  value_vars=['ht1', 'ht2'], 
+wide.unpivot(
+  index=['famid', 'birth'],
+  # on=['ht1', 'ht2'],
   variable_name='treatment', 
-  value_name='height')
+  value_name='height'
+  )
 ```
 
 Things to note:
 
--   `id_vars` are the columns that index the wide format; these will be repeated.
--   `value_vars` are the columns that hold information in the wide format; these will be stacked in the long format.
+-   `index` are the columns that index the wide format; these will be repeated.
+-   `on` are the columns that hold information in the wide format; these will be stacked in the long format.
 -   `variable_name` is the column name, in the long format, that holds the column names from the wide format. The indexing columns in the long format will thus be `id_vars`+`variable_name`.
 -   `value_name` is the column name, in the long format, that holds the values after stacking.
 
@@ -3710,7 +3696,7 @@ Pivot Without Aggregation
 ```{python}
 long.pivot(
   index='id', # index in the wide format
-  columns='treatment', # defines columns in the wide format
+  on='treatment', # defines columns in the wide format
   values='height',
   )
 ```
@@ -3741,7 +3727,7 @@ The `.pivot()` method:
 #| label: pivot-vs-value_counts-0
 df_to_count.pivot(
   index="group",
-  columns="value",
+  on="value",
   values="value",
   aggregate_function="len",
   )
@@ -4059,99 +4045,186 @@ taxi_lazy.dtypes
 
 
 
-## Processing Multiple Frames Simultanously
 
-Q: What if you want to access a column from frame `df`, when processing frame `df2`?\
-A: Just join them.\
-Q: What if they are not joinable?\
-A: Use a diagonal join. Q: Can't I just add a search-space into the lazy query? A: Ahhh! Use `df.with_context()`.
-
-```{python}
-df3 = pl.Series("blah", [100,2,3]).to_frame()
-
-q = (
-    df.lazy()
-    .with_context( # add colums of df2 to the search space
-        df3.lazy()
-        )
-    .with_columns(
-        pl.col('float').mapping(remapping={4.0:None}, default=100).fill_null(pl.col('blah').mean()).alias('float2'),
-        )
-    )
-
-q.collect()
-```
-
-Things to note:
-
--   `with_context()` is a lazy operation. This is great news, since it means both frames will benefit from query planning, etc.
--   `with_context()` will not copy the data, but rather, add a reference to the data.
--   Why not use `pl.col('blah').mean()` within the `mapping()`? That is indeed more reasonable. It simply did not work.
--   Try it yourself: Can you use multiple `with_context()`?
-
-### Imputation Example
-
-```{python}
-train_lf = pl.LazyFrame(
-    {"feature_0": [-1.0, 0, 1], "feature_1": [-1.0, 0, 1]}
-)
-test_lf = pl.LazyFrame(
-    {"feature_0": [-1.0, None, 1], "feature_1": [-1.0, 0, 1]}
-)
-
-(
-  test_lf
-  .with_context(
-    train_lf
-    .select(pl.all().suffix("_train")))
-    .select(
-      pl.col("feature_0")
-      .fill_null(
-        pl.col("feature_0_train").median()
-      )
-  )
-).collect()
-
-```
 
 
 # Polars Functions
 
-TODO
+Some functionality is not exposed as methods on Polars DataFrames, Series, or LazyFrames. Instead, you can access this functionality with the `pl` object.
 
-pl.all()
+`pl.all()` to select all columns within a `df.select()` context.
+```{python}
+#| eval: false 
+data_left.select(pl.all().sum())
+```
 
-pl.all_horizontal()
 
-pl.any()
+`pl.all_horizontal()` to select all columns within a `df.select()` context, but will be executed horizontally.
 
-pl.any_horizontal()
 
-pl.map_groups()
+```{python}
+data_left.select(pl.all_horizontal('a','b'))
+```
 
-pl.approx_n_unique()
 
-pl.arange()
+`pl.any()` 
 
-pl.arg_sort_by()
+```{python}
+data_left.with_columns(a_bool=pl.col('a').eq(2),b_bool=pl.col('b').eq(2)).select(pl.any('a_bool','b_bool'))
+```
 
-pl.arg_where()
+`pl.any_horizontal()`
 
-pl.business_day_count()
+```{python}
+data_left.with_columns(a_bool=pl.col('a').eq(2),b_bool=pl.col('b').eq(2)).select(pl.any_horizontal('a_bool','b_bool'))
+```
 
-pl.coalesce()
+`pl.map_groups()` 
 
-pl.concat_str()
+```{python}
+#| label: map-groups-example
 
-pl.count()
+# df.group_by('a').agg(pl.map_groups())
+```
 
-pl.cum_count()
+`pl.approx_n_unique()` as fast version of `n_unique()`
 
-pl.cum_fold()
+```{python}
+#| label: approx-n-unique-example
 
-pl.fold()
 
-pl.reduce()
+data_left.select(pl.approx_n_unique('a'))
+```
+
+`pl.arange()` to create a sequence of numbers within a df (similar to `np.arange()`)
+
+```{python}
+#| label: arange-example
+
+data_left.select(pl.arange(0,100,10))
+```
+
+`pl.arg_sort_by()` arg-sort an expression.
+
+```{python}
+#| label: arg-sort-by-example
+
+data_left.select(pl.arg_sort_by('a'))
+```
+
+`pl.arg_where()` filter **expression** where predicate satisfied.
+
+```{python}
+#| label: arg-where-example
+data_left.select(pl.arg_where(pl.col('a').gt(2)))
+# df.with_columns(pl.arg_where(pl.col('a').gt(2))) will not work
+```
+
+`pl.business_day_count()` counts business days between two dates. 
+```{python}
+#| label: business-day-count-example
+(
+  df2
+  .with_columns(pl.col('date').cast(pl.Date))
+  .select(
+    pl.business_day_count(
+      start = pl.col('date'),
+      end = pl.col('date').dt.offset_by(by='100d')
+      )
+    )
+)
+```
+
+`pl.coalesce()` works like a fill_null between columns.
+
+```{python}
+#| label: coalesce-example
+
+(
+  data_left
+  .with_columns(
+    y=pl.Series([None,20,None,40]),
+    z=pl.Series([10,None,30,None])
+    )
+  .with_columns(
+    pl.coalesce('z','a'),
+    pl.coalesce('y','b')
+  )
+)
+
+```
+
+`pl.concat_str()` horizontally concatenate strings.
+
+```{python}
+data_left.select(pl.concat_str('a','b', separator='@'))
+```
+
+`pl.struct()` combine multiple columns into a single column of structs.
+
+```{python}
+(
+  data_left
+  
+  .select(c = pl.struct('a','b'))
+  
+  .select(pl.col('c').struct.json_encode())
+)
+```
+
+`pl.len()` count non-null elements in a group.
+
+```{python}
+data_left.group_by('a').agg(pl.len())
+```
+
+`pl.cum_count()` cumulative counts non-null values. 
+
+```{python}
+data_left.select(pl.cum_count('b'))
+```
+
+```{python}
+df_to_count.group_by('group').agg(pl.cum_count('value'))
+```
+
+`pl.fold()` accumulate horizontally, from left most column to right.
+
+```{python}
+data_left.select(
+  pl.fold(
+    acc=pl.lit(1), 
+    function=lambda acc, x: acc + x, 
+    exprs=pl.all()
+    )
+  )
+
+```
+
+
+`pl.cum_fold()` same as `pl.fold()`, but cumulative; returning a struct. 
+
+```{python}
+data_left.select(
+  pl.cum_fold(
+    acc=pl.lit(1), 
+    function=lambda acc, x: acc + x, 
+    exprs=pl.all()
+    )
+  )
+```
+
+
+`pl.reduce()` same as `pl.fold()`, but using the first column as the accumulator.
+
+```{python}
+data_left.select(
+  pl.reduce(
+    function=lambda acc, x: acc + x, 
+    exprs=pl.all()
+    )
+  )
+```
 
 
 
@@ -4165,7 +4238,7 @@ pl.reduce()
 ```{python}
 
 res = (
-  pl.SQLContext(frame=df)
+  pl.SQLContext(frame=df2)
   .execute(
     "SELECT * FROM frame WHERE integer > 2"
   )
@@ -4185,20 +4258,22 @@ For more on the SQL context see[here](https://docs.pola.rs/py-polars/html/refere
 
 ### The Plotting Backend
 
-Requires the `hvplot` module. 
+TODO: imoprove. 
+
+Requires the `altair` module. 
 
 ```{python}
-df.plot()
+df.plot.line(y='float',x='integer')
 ```
 
 ```{python}
-df.plot.hist()
+df.plot.scatter(y='float',x='integer')
 ```
 
 Things to note:
 
 - The default `.plot()` will behave like `pd.df.plot()`, i.e., return a line plot of all columns.
-- `df.plot.` will give you access to the usual plotting methods (of hvplot), such as `hist()`, `scatter()`, etc.
+- `df.plot.` will give you access to the usual plotting methods (of **altair**), such as `hist()`, `scatter()`, etc.
 
 
 ### As Input to Plotting Libraries
@@ -4300,6 +4375,7 @@ When doing ML with Polars frames there are two possibliities:
 
 Example
 ```{python}
+
 import sklearn as sk
 from sklearn.linear_model import LinearRegression
 
