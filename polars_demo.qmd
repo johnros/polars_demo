@@ -23,6 +23,8 @@ html:
 
 # Background {#sec-background}
 
+
+
 ## Ritchie Vink, Rust, Apache Arrow and Covid
 
 [Here](https://www.ritchievink.com/blog/2021/02/28/i-wrote-one-of-the-fastest-dataframe-libraries/) is the story, by the creator of Polars.
@@ -235,11 +237,13 @@ The non-optimized version:
 
 ```{python}
 #| label: fig-polars-lazy-wrong-order-no-optimization-plan
+
 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).show_graph(optimized=False)
 ```
 
 ```{python}
 #| label: fig-polars-lazy-wrong-order-optimization-plan-2
+
 latter1_lazy.sort(by='letters').filter(pl.col('letters').is_in(['a','b','c'])).show_graph(optimized=True)
 ```
 
@@ -694,7 +698,7 @@ Enough with motivation.
 Let's learn something!
 
 
-# Preliminaries
+# Preliminaries {#sec-preliminaries}
 
 ## Object Classes
 
@@ -1608,17 +1612,30 @@ Notes:
 )
 ```
 
-## Casting
+## Casting {#sec-casting}
+
+-   `cast()` is Polars' equivalent of Pandas' `astype()`.
+
+-   The dtypes to cast to are **Polars** dtypes. Don't try `s.cast("int32")`, `s.cast(np.int32)`, or `s.cast(pd.int)`
+
+-   For a list of dtypes see the official [documentation](see%20https://pola-rs.github.io/Polars/py-Polars/html/reference/datatypes.html).
+
 
 ```{python}
 s.cast(pl.Int32)
 ```
 
-Things to note:
 
--   `cast()` is Polars' equivalent of Pandas' `astype()`.
--   The dtypes to cast to are **Polars** dtypes. Don't try `s.cast("int32")`, `s.cast(np.int32)`, or `s.cast(pd.int)`
--   For a list of dtypes see the official [documentation](see%20https://pola-rs.github.io/Polars/py-Polars/html/reference/datatypes.html).
+Interesting cases to note:
+
+1. For Polars frames (not series) `.cast()` may take column names, but also dtypes. 
+2. Dates and Datetimes will usually not be case with `.cast()`. See @sec-date-and-time.
+
+
+
+
+
+### Shrink Dtype
 
 Find the most efficient dtype for a series; Like Pandas `pd.to_numeric(..., downcast="..."`).
 
@@ -1630,7 +1647,10 @@ s.shrink_dtype().dtype #
 Also see [here](http://braaannigan.github.io/software/2022/10/31/Polars-dtype-diet.html).
 
 
-## Ordering and Sorting
+
+
+
+## Ordering and Sorting {#sec-ordering-and-sorting}
 
 ```{python}
 #| label: series-sort
@@ -1661,7 +1681,7 @@ sorted_s = s[s.arg_sort()]
 
 
 
-## Sampling
+## Sampling {#sec-sampling}
 
 With replacement.
 
@@ -1678,7 +1698,7 @@ s.shuffle(seed=1) # random permutation
 
 
 
-## Date and Time
+## Date and Time {#sec-date-and-time}
 
 There are 4 datetime dtypes in Polars:
 
@@ -1932,7 +1952,7 @@ sd.str.to_time("%a %h %d %T %Y",strict=False)
 sd.str.strptime(pl.Time, "%a %h %d %T %Y", strict=False)
 ```
 
-## Strings
+## Strings {#sec-strings}
 
 String methods are accessed with the `.str` namespace.
 
@@ -2311,7 +2331,7 @@ df.get_column('integer').add(1)
 ```
 
 
-## Convert to Other Python Objects
+## Convert to Other Python Objects {#sec-convert-to-other-python-objects}
 
 You can always convert your `pl.Series` or `pl.DataFrame` to other Python objects.
 
@@ -2387,7 +2407,7 @@ df.select(['integer','float','date']).to_torch()
 
 
 
-## Statistical Aggregations
+## Statistical Aggregations {#sec-statistical-aggregations}
 
 ```{python}
 #| label: dataframe-describe
@@ -2712,7 +2732,9 @@ Say your operation returned a Polars frame with a single float, which you want t
 pl.DataFrame([1]).item()
 ```
 
-## Column Transformations
+
+
+## Column Transformations {#sec-column-transformations}
 
 1.  Transformations are done with Polars Expressions (@sec-expressions) within a **context** (see @sec-contexts).
 
@@ -2942,7 +2964,7 @@ print(
 
 
 
-## Uniques and Duplicates
+## Uniques and Duplicates {#sec-uniques-and-duplicates}
 
 Keep uniques; same as `pd.drop_duplicates()`.
 
@@ -2970,7 +2992,7 @@ df.is_duplicated()
 df.n_unique()
 ```
 
-## Missing
+## Missing Data {#sec-missing-data}
 
 Make some data with missing.
 
@@ -3011,7 +3033,7 @@ df_with_nulls.fill_nan(99)
 df_with_nulls.interpolate()
 ```
 
-## Sorting
+## Sorting {#sec-sorting}
 
 ```{python}
 df.sort(by=["integer","float"])
@@ -3021,7 +3043,7 @@ df.sort(by=["integer","float"])
 df.reverse()
 ```
 
-## Groupby
+## Group By {#sec-groupby}
 
 **High level:**
 
@@ -3199,14 +3221,29 @@ High level:
 
 High level:
 
--   `df.join()` for joins; like Pandas `pd.merge()` or `df.join()`.
+-   `df.join()` for joins; like Pandas `pd.merge()` or `df.join()`. The types of joins supported are:
+    -   `how='inner'`: only rows with matching keys in both dataframes are included in the result.
+    -   `how='left'`: all rows from the left dataframe are included in the result, and the right dataframe is matched by keys. If no match is found, the result is filled with nulls.
+    -   `how='right'`: all rows from the right dataframe are included in the result, and the left dataframe is matched by keys. If no match is found, the result is filled with nulls.
+    -   `how='full'`: all rows from both dataframes are included in the result. If no match is found, the result is filled with nulls. This is also known as a `outer` join.
+    -   `how='cross'`: all combinations of rows from both dataframes are included in the result.
+    -   `how='semi'`: all rows for which the left dataframe is matched by keys.
+    -   `how='anti'`: all rows for which the left dataframe is not matched by keys.
+
 -   `df.join_asof()` for asof joins; like Pandas `pd.merge_asof()`.
+
 -   `df.join_where()` to join on an arbitrary predicate (link)[https://docs.pola.rs/api/python/dev/reference/dataframe/api/polars.DataFrame.join_where.html]. 
+
 -   `df.hstack()` for horizontal concatenation; like Pandas `pd.concat([],axis=1)` or R's `cbind`.
+
 -   `df.vstack()` for vertical concatenation; like Pandas `pd.concat([],axis=0)` or R's `rbind`.
+
 -   `df.merge_sorted()` for vertical stacking, with sorting.
+
 -   `pl.concat()`, which is similar to the previous two, but with memory re-chunking. `pl.concat()` also allows diagonal concatenation, if columns are not shared.
+
 -   `df.extend()` for vertical concatenation, but with memory re-chunking. Similar to `df.vstack().rechunk()`.
+
 
 For more on the differences between these methods, see [here](https://www.rhosignal.com/posts/Polars-extend-vstack/).
 
@@ -3355,7 +3392,20 @@ df.extend(df2)
 
 Why should I care about re-chunking? Since Polar is a columnar store, it is important to have contiguous memory layout. Otherwise, you may not enjoy the benefits of vectorized operations.
 
-Is there a method for `df.hstack().rechunk()`? No. A columnar storage is not sensitive to emory framgmentation along columns.
+Is there a method for `df.hstack().rechunk()`? No. A columnar storage 
+is not sensitive to emory framgmentation along columns.
+
+
+## Casting 
+
+Some casting options are availalbe for Polars frames, that are not available for Series or Expressions. 
+For instnace, casting along dtype:
+
+```{python}
+df.cast({pl.Int64: pl.Int8})
+```
+
+
 
 ## Nested dtypes {#sec-nested-dtypes}
 
@@ -3364,6 +3414,7 @@ Recall the nested dtypes:
 1.  Polars Struct: Like a Python dict within a cell; Multiple named elements.
 2.  Polars List: Similar to a Python list within a cell; Multiple unnamed elements. Unlike the Python list, in a Polars list, all elements must have the same dtype.
 3.  Polars Array: Like a Polars list, but with a fixed length for all cells in the column.
+
 
 ### Polars Struct {#sec-struct}
 
@@ -3806,7 +3857,7 @@ df.n_chunks() # number of ChunkedArrays in the dataframe
 df.shrink_to_fit() # reduce memory allocation to actual size
 ```
 
-# I/O
+# I/O {#sec-io}
 
 ## Reading Frames from Disk
 
@@ -3899,6 +3950,8 @@ Because almost all Polars Series methods are available as Polars expressions, we
 
 ## Reusing and Compounding Expressions
 
+
+### Assigning Expressions
 Polars expression can be assigned, without evaluation, as a Python object:
 
 ```{python}
@@ -3911,7 +3964,7 @@ my_expression = pl.col('integer').add(pl.col('float')).mul(2).alias('new_column'
 )
 ```
 
-
+### Compounding Expressions
 Assigned expressions may be compounded (composed):
 
 ```{python}
@@ -3925,7 +3978,20 @@ my_expression_2 = my_expression.mul(1e6)
 
 ```
 
+### Adding Expressions to the `pl.Expr` Namespace
 
+
+1. Write a function that accepts `pl.Expr` objects and returns a `pl.Expr` object.
+2. Add this function to the `pl.Expr` namespace with the `pl.register_expr_function()` decorator.
+
+```{python}
+def my_sum(expr: pl.Expr) -> pl.Expr:
+  return expr.sum().alias('my_sum')
+
+pl.Expr.my_sum = my_sum
+
+df.select(pl.col('integer').my_sum())
+```
 
 
 
@@ -4048,7 +4114,7 @@ taxi_lazy.dtypes
 
 
 
-# Polars Functions
+# Polars Functions {#sec-polars-functions}
 
 Some functionality is not exposed as methods on Polars DataFrames, Series, or LazyFrames. Instead, you can access this functionality with the `pl` object.
 
@@ -4231,9 +4297,9 @@ data_left.select(
 
 
 
-# Misc
+# Misc {#sec-misc}
 
-## SQL
+## SQL {#sec-sql}
 
 ```{python}
 
