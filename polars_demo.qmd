@@ -3668,6 +3668,56 @@ data_left = pl.DataFrame(
 ```
 
 
+## JSON Type
+
+JSON are ultimately nearly structured strings. 
+What you will probably want to do, when importing JSON data, is to parse the strings into actual data structures.
+
+```{python}
+df_with_json = pl.DataFrame(
+  {"json": [
+    '{"a": 1, "b": 2}',
+    '{"a": 3, "b": 4}',
+    '{"a": 5, "b": 6}',
+    ]}
+  )
+
+df_with_json
+```
+
+From a JSON string to a Polars Struct
+```{python}
+(
+  df_with_json
+  .select(
+    pl.col('json').str.json_decode()
+  )
+)
+```
+
+From JSON string to columns
+
+```{python}
+(
+  df_with_json
+  .select(
+    pl.col('json').str.json_decode().alias('json_struct')
+  )
+  .unnest('json_struct')
+)
+```
+
+```{python}
+(
+  df_with_json
+  .select(
+    pl.col('json').str.json_path_match('$.a')
+  )
+)
+```
+
+
+
 
 ## Reshaping
 
