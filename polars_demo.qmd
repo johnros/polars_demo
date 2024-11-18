@@ -3955,7 +3955,6 @@ Because almost all Polars Series methods are available as Polars expressions, we
 Polars expression can be assigned, without evaluation, as a Python object:
 
 ```{python}
-
 my_expression = pl.col('integer').add(pl.col('float')).mul(2).alias('new_column')
 
 (
@@ -3963,6 +3962,11 @@ my_expression = pl.col('integer').add(pl.col('float')).mul(2).alias('new_column'
   .select(my_expression)
 )
 ```
+
+```{python}
+my_expression.meta.show_graph()
+```
+
 
 ### Compounding Expressions
 Assigned expressions may be compounded (composed):
